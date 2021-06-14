@@ -25,12 +25,12 @@ class Player extends Writable {
       (this.count - 1) * this.FRAME_LENGTH -
       (Date.now() - this.voice.startTime - this.voice.pauseTime);
     setTimeout(
-			() => this.voice.connection.sendAudio(chunk, { isOpus: true }),
-			ms
-		);
-		this.count++;
+      () => this.voice.connection.sendAudio(chunk, { isOpus: true }),
+      ms
+    );
+    this.count++;
 
-		return true;
+    return true;
   }
 }
 
@@ -43,7 +43,7 @@ export class Voice {
   public startTime;
   public pauseTime = 0;
   private streams: Record<string, any> = {};
-	private player: Player;
+  private player: Player;
   private currentlyPlaying;
   private readonly SAMPLE_RATE = 48000;
   private readonly AUDIO_CHANNELS = 2;
@@ -96,7 +96,7 @@ export class Voice {
       })
     );
     this.player = new Player(this);
-		this.streams.opus.pipe(this.player);
+    this.streams.opus.pipe(this.player);
   }
 
   public addStreamToQueue(buff: ReadStream) {
