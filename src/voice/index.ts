@@ -34,12 +34,12 @@ class Player extends Writable {
   }
 
   private calcMs(count: number) {
-    const { startTime, pauseTime } = this.voice;
+    const { startTime, restartTime, pauseTime } = this.voice;
     if (typeof startTime === 'boolean') return 0;
     return (
       this.FRAME_LENGTH +
       (count - 1) * this.FRAME_LENGTH -
-      (Date.now() - startTime - pauseTime)
+      (Date.now() - (restartTime ? restartTime : startTime) - pauseTime)
     );
   }
 
@@ -51,7 +51,8 @@ class Player extends Writable {
       setTimeout(
         () => (
           this.voice.connection.sendAudio(chunk, { isOpus: true }),
-          (this.curPos = ms)
+          (this.curPos = ms),
+          console.log('POS:', this.position, 'SS:', this.ss, 'CURPOS:', this.curPos)
         ),
         ms
       )
@@ -71,10 +72,12 @@ class Player extends Writable {
     this.voice.connection.sendAudioSilenceFrame();
 
     this.count = 0;
+    this.curPos = 0;
 
     if (!notCritical) {
       this.voice.playerKill();
       this.voice.startTime = false;
+      this.ss = 0;
     }
     debug('Player.kill() call');
   }
@@ -160,7 +163,12 @@ export class Voice {
   }
 
   private async start(ss?: number) {
-    this.killPrevious(typeof ss !== 'undefined');
+    const restarted = typeof ss !== 'undefined';
+    this.killPrevious(restarted);
+
+    if (!restarted && this.player) {
+      this.player.ss = 0;
+    }
 
     if (!this.tempPath) {
       debug('converting to SOX');
@@ -231,7 +239,7 @@ export class Voice {
   }
 
   public restart() {
-    if (!this.player || !this.currentlyPlaying) return;
+    if (!this.player) return;
 
     const ms = this.player.position;
     this.player.kill(true);
