@@ -51,8 +51,7 @@ class Player extends Writable {
       setTimeout(
         () => (
           this.voice.connection.sendAudio(chunk, { isOpus: true }),
-          (this.curPos = ms),
-          console.log('POS:', this.position, 'SS:', this.ss, 'CURPOS:', this.curPos)
+          (this.curPos = ms)
         ),
         ms
       )
