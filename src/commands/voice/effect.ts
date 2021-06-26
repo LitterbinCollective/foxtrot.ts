@@ -48,10 +48,23 @@ export default class JoinCommand extends BaseCommand {
       case 'set':
         if (!name) return ctx.reply('No setting name specified!');
         if (!afx.options[name]) return ctx.reply('Unknown setting!');
+
+        switch (typeof afx.options[name]) {
+          case 'number':
+            value = Number(value)
+            break;
+          case 'boolean':
+            value = value === 'true';
+            break;
+          default:
+            throw new Error('Unknown type of `options`! TODO: Add conversion method for `' + typeof afx.options[name] + '`.');
+        }
+
         if (typeof afx.options[name] !== typeof value)
           return ctx.reply(
             'The type of `value` argument not equal to the type of a specified option!'
           );
+
         if (typeof value === 'number' && afx.optionsRange[name]) {
           const [min, max] = afx.optionsRange[name];
           if (!(value >= min && value <= max))
