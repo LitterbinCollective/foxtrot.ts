@@ -23,6 +23,10 @@ export default class JoinCommand extends BaseCommand {
       return ctx.reply('Already in a voice channel on this server.');
     }
 
-    new Voice(this.commandClient.application, ctx.member.voiceChannel);
+    new Voice(
+      this.commandClient.application,
+      ctx.member.voiceChannel,
+      ctx.channel
+    );
   }
 }
