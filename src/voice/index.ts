@@ -11,8 +11,8 @@ import { spawn, ChildProcess } from 'child_process';
 import { file } from 'tempy';
 
 import { Application } from '../Application';
-import BaseEffect from './baseStructures/BaseEffect';
-import BaseFormat from './baseStructures/BaseFormat';
+import BaseEffect from './foundation/BaseEffect';
+import BaseFormat from './foundation/BaseFormat';
 
 const debug = dbg('Player');
 
@@ -76,6 +76,7 @@ class Player extends Writable {
     if (!notCritical) {
       this.voice.playerKill();
       this.voice.startTime = false;
+      this.voice.restartTime = null;
       this.ss = 0;
     }
     debug('Player.kill() call');
@@ -142,7 +143,7 @@ export class Voice {
   private convert2SOX(): Promise<string> {
     return new Promise((res, rej) => {
       const path = file();
-      this.children.ffmpeg = spawn('ffmpeg', [
+      const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', [
         '-i',
         '-',
         '-ar',
@@ -153,11 +154,13 @@ export class Voice {
         'sox',
         'pipe:1',
       ]);
-      this.currentlyPlaying.pipe(this.children.ffmpeg.stdin);
-      this.children.ffmpeg.stdout.pipe(createWriteStream(path));
-      this.children.ffmpeg.on('close', (code: number) =>
-        code === 0 ? res(path) : rej()
+      const timeout = setTimeout(() => (ffmpeg.kill(1), rej(new Error('Conversion timeout! Try again?'))), 30000);
+      this.currentlyPlaying.pipe(ffmpeg.stdin);
+      ffmpeg.stdout.pipe(createWriteStream(path));
+      ffmpeg.on('close', (code: number) =>
+        code === 0 ? (clearTimeout(timeout), res(path)) : rej()
       );
+      ffmpeg.on('error', (err) => rej(err));
     });
   }
 
@@ -238,7 +241,7 @@ export class Voice {
   }
 
   public restart() {
-    if (!this.player) return;
+    if (!this.player || !this.currentlyPlaying) return;
 
     const ms = this.player.position;
     this.player.kill(true);

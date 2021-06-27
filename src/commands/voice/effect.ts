@@ -1,27 +1,31 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
+import Table from 'cli-table';
 
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
-import BaseEffect from '../../voice/baseStructures/BaseEffect';
+import BaseEffect from '../../voice/foundation/BaseEffect';
 
-export default class JoinCommand extends BaseCommand {
+export default class EffectCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'effect',
       aliases: ['e'],
       label: 'effect',
       type: CommandArgumentTypes.STRING,
-      required: true,
       args: [
-        { name: 'cmd', type: CommandArgumentTypes.STRING, required: true },
-        { name: 'name' },
-        { name: 'value' },
+        { name: 'c', type: CommandArgumentTypes.STRING, consume: true },
       ],
+      metadata: {
+        usage: [
+          'mb!effect reverb -c enable',
+          'mb!effect reverb -c set:reverberance:100'
+        ]
+      }
     });
   }
 
-  public async run(ctx: Context, { effect, cmd, name, value }: ParsedArgs) {
+  public async run(ctx: Context, { effect, c }: ParsedArgs) {
     if (!ctx.member.voiceChannel)
       return ctx.reply('You are not in the voice channel.');
 
@@ -30,12 +34,16 @@ export default class JoinCommand extends BaseCommand {
     if (res.channel !== ctx.member.voiceChannel)
       return ctx.reply('You are not in the correct voice channel.');
 
+    let [ cmd, name, value ] = c.split(':');
+
+    const effectList = '```\n' + [...res.effects.keys()].join('\n') + '```';
+    if (!effect) return ctx.reply(effectList);
+    if (!cmd) return ctx.reply('Usage:\n' + this.metadata.usage.join('\n'));
+
     const afx: BaseEffect = res.effects.get(effect);
     if (!afx)
       return ctx.reply(
-        'That effect does not exist! Here is a list of available effects you can use:\n```\n' +
-          [...res.effects.keys()].join('\n') +
-          '```'
+        'That effect does not exist! Here is a list of available effects you can use:\n' + effectList
       );
 
     switch (cmd) {
@@ -48,6 +56,7 @@ export default class JoinCommand extends BaseCommand {
       case 'set':
         if (!name) return ctx.reply('No setting name specified!');
         if (!afx.options[name]) return ctx.reply('Unknown setting!');
+        if (!value) return ctx.reply('No value specified!');
 
         switch (typeof afx.options[name]) {
           case 'number':
@@ -62,7 +71,7 @@ export default class JoinCommand extends BaseCommand {
 
         if (typeof afx.options[name] !== typeof value)
           return ctx.reply(
-            'The type of `value` argument not equal to the type of a specified option!'
+            'The type of value is not equal to the type of a specified setting!'
           );
 
         if (typeof value === 'number' && afx.optionsRange[name]) {
@@ -79,19 +88,12 @@ export default class JoinCommand extends BaseCommand {
         ctx.reply('`' + name + '`: `' + option + '`');
         break;
       case 'list':
-        const list = [];
+        const tbl = new Table({
+          head: ['Name', 'Current Value', 'Range']
+        });
         for (const name in afx.options)
-          list.push(
-            '`' +
-              name +
-              '`: `' +
-              afx.options[name] +
-              '`' +
-              (afx.optionsRange[name]
-                ? ' (' + afx.optionsRange[name].join(' - ') + ')'
-                : '')
-          );
-        ctx.reply(list.join('\n'));
+          tbl.push([ name, afx.options[name], afx.optionsRange[name] ? afx.optionsRange[name].join(' - ') : '' ]);
+        ctx.reply('```\n' + tbl.toString().split(/\u001b\[(?:\d*;){0,5}\d*m/g).join('') + '```');
         break;
       default:
         return ctx.reply('enable, disable, set, get, list');
