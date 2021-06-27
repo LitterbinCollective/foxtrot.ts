@@ -1,4 +1,4 @@
-import BaseEffect from '../baseStructures/BaseEffect';
+import BaseEffect from '../foundation/BaseEffect';
 
 export default class ReverbEffect extends BaseEffect {
   public name = 'reverb';

@@ -1,7 +1,7 @@
 import { URL } from 'url';
 import { lookup } from 'dns';
 import fetch from 'node-fetch';
-import BaseFormat from '../baseStructures/BaseFormat';
+import BaseFormat from '../foundation/BaseFormat';
 
 export default class URLFormat extends BaseFormat {
   public regex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;

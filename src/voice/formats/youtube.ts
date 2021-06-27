@@ -1,6 +1,6 @@
-import * as ytdl from 'ytdl-core';
+import ytdl from 'ytdl-core';
 
-import BaseFormat from '../baseStructures/BaseFormat';
+import BaseFormat from '../foundation/BaseFormat';
 
 export default class YouTubeFormat extends BaseFormat {
   public regex = /http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g;
