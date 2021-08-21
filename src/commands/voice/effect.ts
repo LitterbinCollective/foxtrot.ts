@@ -34,17 +34,19 @@ export default class EffectCommand extends BaseCommand {
     if (res.channel !== ctx.member.voiceChannel)
       return ctx.reply('You are not in the correct voice channel.');
 
-    let [ cmd, name, value ] = c.split(':');
-
     const effectList = '```\n' + [...res.effects.keys()].join('\n') + '```';
     if (!effect) return ctx.reply(effectList);
-    if (!cmd) return ctx.reply('Usage:\n' + this.metadata.usage.join('\n'));
 
     const afx: BaseEffect = res.effects.get(effect);
     if (!afx)
       return ctx.reply(
         'That effect does not exist! Here is a list of available effects you can use:\n' + effectList
       );
+
+    if (!c)
+      return ctx.reply('Usage:\n' + this.metadata.usage.join('\n'));
+    let [ cmd, name, value ] = c.split(':');
+    if (!cmd) return ctx.reply('Usage:\n' + this.metadata.usage.join('\n'));
 
     switch (cmd) {
       case 'enable':

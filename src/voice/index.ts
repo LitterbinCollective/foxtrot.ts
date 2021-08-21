@@ -9,10 +9,12 @@ import { readdirSync, unlinkSync, createWriteStream } from 'fs';
 import dbg from 'debug';
 import { spawn, ChildProcess } from 'child_process';
 import { file } from 'tempy';
+import { EventEmitter } from 'events';
 
 import { Application } from '../Application';
 import BaseEffect from './foundation/BaseEffect';
 import BaseFormat from './foundation/BaseFormat';
+import { EMBED_COLORS, FILENAME_REGEX } from '../constants';
 
 const debug = dbg('Player');
 
@@ -83,7 +85,7 @@ class Player extends Writable {
   }
 }
 
-export class Voice {
+export class Voice extends EventEmitter {
   public effects: Map<string, BaseEffect> = new Map();
   public connection: VoiceConnection;
   public queue: Stream[] = [];
@@ -102,13 +104,13 @@ export class Voice {
   private readonly SAMPLE_RATE = 48000;
   private readonly AUDIO_CHANNELS = 2;
   private readonly FRAME_SIZE = 960;
-  private readonly FILENAME_REGEX = /\.[^/.]+$/;
 
   constructor(
     application: Application,
     channel: ChannelGuildVoice,
     logChannel: ChannelTextType
   ) {
+    super();
     this.application = application;
     this.channel = channel;
     this.logChannel = logChannel;
@@ -123,14 +125,14 @@ export class Voice {
     for (const formatFileName of readdirSync(__dirname + '/formats/')) {
       const Format: any = (
         await import(
-          './formats/' + formatFileName.replace(this.FILENAME_REGEX, '')
+          './formats/' + formatFileName.replace(FILENAME_REGEX, '')
         )
       ).default;
       this.formats.push(new Format());
     }
 
     for (const effectFileName of readdirSync(__dirname + '/effects/')) {
-      const name = effectFileName.replace(this.FILENAME_REGEX, '');
+      const name = effectFileName.replace(FILENAME_REGEX, '');
       const Effect: any = (await import('./effects/' + name)).default;
       this.effects.set(name, new Effect());
     }
@@ -138,6 +140,7 @@ export class Voice {
     this.connection = connection;
     this.connection.setOpusEncoder();
     this.connection.setSpeaking({ voice: true });
+    this.emit('initComplete');
   }
 
   private convert2SOX(): Promise<string> {
@@ -154,14 +157,34 @@ export class Voice {
         'sox',
         'pipe:1',
       ]);
-      const timeout = setTimeout(() => (ffmpeg.kill(1), rej(new Error('Conversion timeout! Try again?'))), 30000);
-      this.currentlyPlaying.pipe(ffmpeg.stdin);
-      ffmpeg.stdout.pipe(createWriteStream(path));
       ffmpeg.on('close', (code: number) =>
         code === 0 ? (clearTimeout(timeout), res(path)) : rej()
       );
+
+      const writeStream = createWriteStream(path);
+      const timeout = setTimeout(() => (ffmpeg.kill(0), rej(new Error('Conversion timeout!'))), 10000);
+
+      this.currentlyPlaying.pipe(ffmpeg.stdin);
+      ffmpeg.stdout.pipe(writeStream);
+
       ffmpeg.on('error', (err) => rej(err));
+      this.currentlyPlaying.on('error', (err: Error) => rej(err));
+      writeStream.on('error', (err: Error) => rej(err));
     });
+  }
+
+  private onError(err: Error) {
+    debug('error on one of the streams:', err);
+    this.logChannel.createMessage({
+      embed: {
+        title: 'Error occurred, skipping to the next track.',
+        description: '```\n' + err.message + '```',
+        color: EMBED_COLORS.ERR
+      }
+    });
+    if (this.player)
+      this.player.kill()
+    else this.playerKill();
   }
 
   private async start(ss?: number) {
@@ -174,7 +197,12 @@ export class Voice {
 
     if (!this.tempPath) {
       debug('converting to SOX');
-      this.tempPath = await this.convert2SOX();
+      try {
+        this.tempPath = await this.convert2SOX();
+      } catch (err) {
+        this.onError(err);
+        return debug('ERR: converting to SOX failed, reason:', err);
+      }
       debug('done, filename: ' + this.tempPath);
     }
 
@@ -214,6 +242,9 @@ export class Voice {
     this.streams.opus.pipe(this.player);
 
     this.streams.opus.on('end', () => this.player.onEnd());
+
+    this.streams.sox.on('error', (e: Error) => this.onError(e));
+    this.streams.opus.on('error', (e: Error) => this.onError(e));
   }
 
   public playerKill() {
@@ -226,17 +257,26 @@ export class Voice {
 
   public async playURL(url: string) {
     let result: Stream | boolean = false;
+
     for (const format of this.formats) {
       const res = url.match(format.regex);
       if (!res || res.length === 0) continue;
 
-      const streamOrFalse = await format.onMatch(url);
-      if (!streamOrFalse) continue;
-      debug(`submitted url matched to ${format.printName} format, yay!`);
+      let streamOrFalse: Stream | false;
+      try {
+        streamOrFalse = await format.onMatch(url);
+        if (!streamOrFalse) continue;
+      } catch (err) {
+        dbg(`error on ${format.printName} format`);
+        continue;
+      }
 
+      debug(`submitted url matched to ${format.printName} format, yay!`);
       result = streamOrFalse;
+
       break;
     }
+
     if (result !== false) this.addStreamToQueue(result);
   }
 
@@ -268,10 +308,11 @@ export class Voice {
       unlinkSync(this.tempPath), (this.tempPath = '');
   }
 
-  public async kill() {
-    this.player.kill();
+  public kill() {
+    if (this.player)
+      this.player.kill();
     this.killPrevious();
-    await this.channel.leave();
+    this.connection.kill();
     this.application.voices.delete(this.channel.guildId);
   }
 }
