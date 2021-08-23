@@ -9,7 +9,7 @@ import prism from 'prism-media';
 import { Readable } from 'stream';
 
 import { Voice } from '.';
-import { EMBED_COLORS, GOOGLE_COLORS } from '../constants';
+import { EMBED_COLORS, EMOJI_ICONS, GOOGLE_COLORS } from '../constants';
 
 const debug = dbg('GoogleAssistant');
 
@@ -69,9 +69,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
         '-b', '16',
         '-e', 'signed-integer',
         '-',
-        'vol',
-        '12',
-        'dB'
+        'vol', '12', 'dB'
       ]);
       this.sox.stdout.on('data', (data) =>
         this.conversation.write(data)
@@ -140,7 +138,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     this.responseMessage = true;
     this.responseMessage = await this.voice.logChannel.createMessage({
       embed: {
-        title: this.finalTranscription ? '`' + this.finalTranscription + '`' : null,
+        title: this.finalTranscription ? (EMOJI_ICONS.GOOGLE_ASSISTANT + ' `' + this.finalTranscription + '`') : null,
         description: text,
         color
       }
@@ -166,7 +164,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     if (!done) {
       try {
         const embed = new Embed({
-          title: '`' + transcription + '`',
+          title: EMOJI_ICONS.GOOGLE_MIC + ' `' + transcription + '`',
           color: GOOGLE_COLORS.BLUE,
         });
 
@@ -204,7 +202,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
         const editResponseMessage = async () => {
           const message = this.responseMessage as Message;
           const embed = message.embeds.get(0);
-          embed.title = '`' + transcription + '`';
+          embed.title = EMOJI_ICONS.GOOGLE_ASSISTANT + ' `' + transcription + '`';
 
           await message.edit({ embed });
           this.responseMessage = null;
