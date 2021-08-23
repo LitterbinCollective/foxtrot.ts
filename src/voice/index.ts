@@ -1,20 +1,21 @@
+import { spawn, ChildProcess } from 'child_process';
+import dbg from 'debug';
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
 import {
   ChannelGuildVoice,
   ChannelTextType,
 } from 'detritus-client/lib/structures';
+import { EventEmitter } from 'events';
+import fs from 'fs';
 import * as prism from 'prism-media';
 import { Stream, Writable } from 'stream';
-import { readdirSync, unlinkSync, createWriteStream } from 'fs';
-import dbg from 'debug';
-import { spawn, ChildProcess } from 'child_process';
 import { file } from 'tempy';
-import { EventEmitter } from 'events';
 
 import { Application } from '../Application';
 import BaseEffect from './foundation/BaseEffect';
 import BaseFormat from './foundation/BaseFormat';
 import { EMBED_COLORS, FILENAME_REGEX } from '../constants';
+import GoogleAssistantVoiceModule from './googleAssistant';
 
 const debug = dbg('Player');
 
@@ -92,6 +93,11 @@ export class Voice extends EventEmitter {
   public startTime: number | boolean;
   public pauseTime = 0;
   public restartTime?: number;
+  public denyOnAudioSubmission = false;
+  public googleAssistant?: GoogleAssistantVoiceModule;
+  public readonly SAMPLE_RATE = 48000;
+  public readonly AUDIO_CHANNELS = 2;
+  public readonly FRAME_SIZE = 960;
   public readonly application: Application;
   public readonly channel: ChannelGuildVoice;
   public readonly logChannel: ChannelTextType;
@@ -99,11 +105,8 @@ export class Voice extends EventEmitter {
   private streams: Record<string, any> = {};
   private children: Record<string, any> = {};
   private player: Player;
-  private currentlyPlaying;
+  private currentlyPlaying: Stream | string | false;
   private tempPath: string;
-  private readonly SAMPLE_RATE = 48000;
-  private readonly AUDIO_CHANNELS = 2;
-  private readonly FRAME_SIZE = 960;
 
   constructor(
     application: Application,
@@ -120,9 +123,9 @@ export class Voice extends EventEmitter {
   }
 
   private async initialize() {
-    const { connection } = await this.channel.join();
+    const { connection } = await this.channel.join({ receive: true });
 
-    for (const formatFileName of readdirSync(__dirname + '/formats/')) {
+    for (const formatFileName of fs.readdirSync(__dirname + '/formats/')) {
       const Format: any = (
         await import(
           './formats/' + formatFileName.replace(FILENAME_REGEX, '')
@@ -131,7 +134,7 @@ export class Voice extends EventEmitter {
       this.formats.push(new Format());
     }
 
-    for (const effectFileName of readdirSync(__dirname + '/effects/')) {
+    for (const effectFileName of fs.readdirSync(__dirname + '/effects/')) {
       const name = effectFileName.replace(FILENAME_REGEX, '');
       const Effect: any = (await import('./effects/' + name)).default;
       this.effects.set(name, new Effect());
@@ -146,9 +149,9 @@ export class Voice extends EventEmitter {
   private convert2SOX(): Promise<string> {
     return new Promise((res, rej) => {
       const path = file();
-      const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', [
-        '-i',
-        '-',
+      const isFile = typeof this.currentlyPlaying === 'string';
+
+      const ffmpegArgs: string[] = [
         '-ar',
         this.SAMPLE_RATE.toString(),
         '-ac',
@@ -156,19 +159,31 @@ export class Voice extends EventEmitter {
         '-f',
         'sox',
         'pipe:1',
-      ]);
+      ];
+      ffmpegArgs.unshift(
+        '-i',
+        (isFile ? (this.currentlyPlaying as string) : '-')
+      );
+  
+      const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', ffmpegArgs);
+  
       ffmpeg.on('close', (code: number) =>
-        code === 0 ? (clearTimeout(timeout), res(path)) : rej()
+        code === 0 ? (clearTimeout(timeout), res(path)) : rej(new Error('Close code is 1, error?'))
       );
 
-      const writeStream = createWriteStream(path);
-      const timeout = setTimeout(() => (ffmpeg.kill(0), rej(new Error('Conversion timeout!'))), 10000);
+      const writeStream = fs.createWriteStream(path);
+      const timeout = setTimeout(() => (ffmpeg.kill(1), rej(new Error('Conversion timeout!'))), 10000);
 
-      this.currentlyPlaying.pipe(ffmpeg.stdin);
+      if (!isFile) {
+        const stream = this.currentlyPlaying as Stream;
+        stream.pipe(ffmpeg.stdin);
+        stream.on('error', (err: Error) => rej(err));
+      }
+
       ffmpeg.stdout.pipe(writeStream);
 
       ffmpeg.on('error', (err) => rej(err));
-      this.currentlyPlaying.on('error', (err: Error) => rej(err));
+      ffmpeg.stdin.on('error', (err: Error) => rej(err));
       writeStream.on('error', (err: Error) => rej(err));
     });
   }
@@ -177,8 +192,8 @@ export class Voice extends EventEmitter {
     debug('error on one of the streams:', err);
     this.logChannel.createMessage({
       embed: {
-        title: 'Error occurred, skipping to the next track.',
-        description: '```\n' + err.message + '```',
+        title: 'Error occurred while playing audio',
+        description: err ? '```\n' + err.message + '```' : null,
         color: EMBED_COLORS.ERR
       }
     });
@@ -248,6 +263,7 @@ export class Voice extends EventEmitter {
   }
 
   public playerKill() {
+    this.emit('playerKill');
     if (this.queue.length === 0) return (this.currentlyPlaying = false);
     debug('another stream available, playing');
     const stream = this.queue.shift();
@@ -256,6 +272,14 @@ export class Voice extends EventEmitter {
   }
 
   public async playURL(url: string) {
+    if (this.denyOnAudioSubmission)
+      return this.logChannel.createMessage({
+        embed: {
+          title: 'You are denied to submit audio currently',
+          color: EMBED_COLORS.ERR
+        }
+      });
+
     let result: Stream | boolean = false;
 
     for (const format of this.formats) {
@@ -277,7 +301,13 @@ export class Voice extends EventEmitter {
       break;
     }
 
-    if (result !== false) this.addStreamToQueue(result);
+    if (result !== false) this.addToQueue(result);
+  }
+
+  public playFile(path: string) {
+    if (!fs.existsSync(path)) 
+      return debug('File', path, 'does not exist!');
+    this.addToQueue(path);
   }
 
   public restart() {
@@ -292,10 +322,11 @@ export class Voice extends EventEmitter {
     if (this.currentlyPlaying) this.start(ms / 1000);
   }
 
-  public addStreamToQueue(str: Stream) {
+  public addToQueue(str: Stream | string) {
     if (this.queue.length === 0 && !this.currentlyPlaying)
       return (this.currentlyPlaying = str), this.start();
-    this.queue.push(str);
+    if (typeof str !== 'string')
+      this.queue.push(str);
   }
 
   private killPrevious(hasRestarted: boolean = false) {
@@ -305,14 +336,16 @@ export class Voice extends EventEmitter {
     this.children = {};
 
     if (!hasRestarted && this.tempPath)
-      unlinkSync(this.tempPath), (this.tempPath = '');
+      fs.unlinkSync(this.tempPath), (this.tempPath = '');
   }
 
-  public kill() {
+  public kill(removeVoice = true) {
     if (this.player)
       this.player.kill();
     this.killPrevious();
-    this.connection.kill();
-    this.application.voices.delete(this.channel.guildId);
+    this.queue = [];
+    if (removeVoice)
+      this.connection.kill(),
+      this.application.voices.delete(this.channel.guildId);
   }
 }

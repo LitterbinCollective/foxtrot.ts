@@ -1,5 +1,5 @@
 import { Command } from 'detritus-client';
-import { ParsedArgs } from 'detritus-client/lib/slash';
+import { ParsedArgs } from 'detritus-client/lib/command';
 import { Embed } from 'detritus-client/lib/utils';
 import { CommandClientExtended } from './Application';
 
@@ -8,9 +8,9 @@ export default class BaseCommand extends Command.Command {
   public readonly disableDm = true;
   public readonly ERROR_COLOR = 0xaa0000;
 
-  public onBeforeRun(ctx: Command.Context, _args: any) {
-    return ctx.user.isClientOwner;
-  }
+  // public onBeforeRun(ctx: Command.Context, _args: any) {
+  //  return ctx.user.isClientOwner;
+  // }
 
   public onRunError(
     ctx: Command.Context,

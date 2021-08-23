@@ -21,6 +21,6 @@ export default class JoinCommand extends BaseCommand {
       return ctx.reply('You are not in the correct voice channel.');
 
     const file = fs.createReadStream('addicti.mp3');
-    res.addStreamToQueue(file);
+    res.addToQueue(file);
   }
 }

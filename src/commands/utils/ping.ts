@@ -15,7 +15,7 @@ export default class PingCommand extends BaseCommand {
     const message = await ctx.reply('...');
 
     message.edit(
-      'Pong! Took ' + (Date.now() - start) + 'ms to edit a message.'
+      'Pong! Took ' + (Date.now() - start) + 'ms to create a message.'
     );
   }
 }

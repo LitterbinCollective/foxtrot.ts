@@ -7,12 +7,15 @@ export default class YouTubeFormat extends BaseFormat {
   public printName = 'YouTube';
 
   public async onMatch(matched: string) {
+    let info: ytdl.videoInfo;
     try {
-      await ytdl.getBasicInfo(matched);
+      info = await ytdl.getBasicInfo(matched);
     } catch (err) {
       return false;
     }
 
-    return ytdl(matched);
+    const stream: any = ytdl(matched);
+    stream.info = info;
+    return stream;
   }
 }

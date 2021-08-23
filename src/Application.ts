@@ -3,7 +3,6 @@ import {
   CommandClient,
   CommandClientOptions,
   ShardClient,
-  SlashCommandClient,
 } from 'detritus-client';
 import { ActivityTypes } from 'detritus-client/lib/constants';
 
@@ -14,7 +13,7 @@ export class CommandClientExtended extends CommandClient {
 
   constructor(
     application: Application,
-    token: string | ClusterClient | ShardClient | SlashCommandClient,
+    token: string | ClusterClient | ShardClient,
     options?: CommandClientOptions
   ) {
     super(token, options);
@@ -23,9 +22,9 @@ export class CommandClientExtended extends CommandClient {
 }
 
 export class Application {
-  private config: IConfig;
-  public readonly commandClient: CommandClient;
+  public config: IConfig;
   public voices: Map<string, Voice> = new Map();
+  public readonly commandClient: CommandClient;
 
   constructor(config: IConfig) {
     this.config = config;

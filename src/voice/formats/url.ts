@@ -19,14 +19,16 @@ export default class URLFormat extends BaseFormat {
   public async onMatch(matched: string) {
     if (await this.isUrlLocal(matched)) return false;
 
-    let resp;
+    let resp: any;
     try {
       resp = await fetch(matched);
-      if (!resp.headers.get('content-type').startsWith('audio/')) return false;
+      const contentType = resp.headers.get('content-type');
+      if (!contentType.startsWith('audio/') && !contentType.startsWith('video/')) return false;
     } catch (err) {
       return false;
     }
 
+    resp.body.info = matched;
     return resp.body;
   }
 }
