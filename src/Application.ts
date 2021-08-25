@@ -31,6 +31,7 @@ export class Application {
 
     this.commandClient = new CommandClientExtended(this, this.config.token, {
       prefix: 'mb!',
+      useClusterClient: true,
       gateway: {
         presence: {
           activity: {
