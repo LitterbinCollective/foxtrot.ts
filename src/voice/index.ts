@@ -147,7 +147,6 @@ export class Voice extends EventEmitter {
   private player: Player;
   private currentlyPlaying: ExtendedReadable | string | false;
   private overlay: ExtendedReadable | false;
-  private tempPath: string;
   private rewindable: Rewindable;
 
   constructor(
@@ -197,68 +196,60 @@ export class Voice extends EventEmitter {
     debug('Voice initialized');
   }
 
-  private convert2SOX(streamOrFile = this.currentlyPlaying): Promise < string > {
-    return new Promise((res, rej) => {
-      const path = file();
-      const isFile = typeof streamOrFile === 'string';
+  private convert2SOX(streamOrFile = this.currentlyPlaying) {
+    const isFile = typeof streamOrFile === 'string';
 
-      const ffmpegArgs: string[] = [
-        '-ar',
-        this.SAMPLE_RATE.toString(),
-        '-ac',
-        this.AUDIO_CHANNELS.toString(),
-        '-f',
-        'sox',
-        'pipe:1',
-      ];
+    const ffmpegArgs: string[] = [
+      '-ar',
+      this.SAMPLE_RATE.toString(),
+      '-ac',
+      this.AUDIO_CHANNELS.toString(),
+      '-f',
+      'sox',
+      'pipe:1',
+    ];
 
-      ffmpegArgs.unshift(
-        '-i',
-        (isFile ? (streamOrFile as string) : 'pipe:3')
-      );
+    ffmpegArgs.unshift(
+      '-i',
+      (isFile ? (streamOrFile as string) : 'pipe:3')
+    );
 
-      if (this.overlay)
-        ffmpegArgs.splice(2, 0, '-i', 'pipe:4', '-filter_complex', 'amix=inputs=2')
+    if (this.overlay)
+      ffmpegArgs.splice(2, 0, '-i', 'pipe:4', '-filter_complex', 'amix=inputs=2');
 
-      const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', ffmpegArgs, {
-        stdio: [
-          'inherit',  'pipe',   'inherit',
-          'pipe',     'pipe'
-        ]
-      });
-
-      ffmpeg.on('close', (code: number) =>
-        code === 0 ? (clearTimeout(timeout), res(path)) : rej(new Error('Close code is 1, error?'))
-      );
-
-      const writeStream = fs.createWriteStream(path);
-      const timeout = setTimeout(() => (ffmpeg.kill(1), rej(new Error('Conversion timeout!'))), 30000);
-
-      const onError = (err: any) => err.code !== 'ECONNRESET' && rej(err);
-
-      if (!isFile) {
-        const stream = streamOrFile as Stream;
-        stream.pipe(ffmpeg.stdio[3] as Writable);
-        stream.pipe(this.rewindable);
-        stream.on('error', onError);
-      }
-
-      if (this.overlay) {
-        this.overlay.pipe(ffmpeg.stdio[4] as Writable);
-        this.overlay.on('error', onError);
-      }
-      
-      ffmpeg.stdout.pipe(writeStream);
-
-      ffmpeg.on('error', onError);
-      ffmpeg.stdio[3].on('error', onError);
-      ffmpeg.stdio[4].on('error', onError);
-      writeStream.on('error', onError);
+    const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', ffmpegArgs, {
+      stdio: [
+        'inherit',  'pipe',   'inherit',
+        'pipe',     'pipe'
+      ]
     });
+
+    ffmpeg.on('close', (code: number) =>
+      code === 1 && this.onPlayingError('ffmpeg', new Error('Close code is 1, error?'))
+    );
+
+    const onError = (err: any) => err.code !== 'ECONNRESET' && this.onPlayingError('ffmpeg', err);
+
+    if (!isFile) {
+      const stream = streamOrFile as Stream;
+      stream.pipe(ffmpeg.stdio[3] as Writable);
+      stream.pipe(this.rewindable);
+      stream.on('error', onError);
+    }
+
+    if (this.overlay) {
+      this.overlay.pipe(ffmpeg.stdio[4] as Writable);
+      this.overlay.on('error', onError);
+    }
+
+    ffmpeg.on('error', onError);
+    ffmpeg.stdio[3].on('error', onError);
+    ffmpeg.stdio[4].on('error', onError);
+    return ffmpeg.stdout;
   }
 
-  private onError(err: Error) {
-    debug('Error on one of the streams:', err);
+  private onPlayingError(cause: string, err: Error) {
+    debug('Error on one of the ' + cause + ' streams', err);
 
     this.error(
       'Error occurred while trying to play audio',
@@ -278,17 +269,8 @@ export class Voice extends EventEmitter {
       this.player.ss = 0;
     }
 
-    if (!this.tempPath) {
-      debug('converting to SOX');
-      this.rewindable = new Rewindable();
-      try {
-        this.tempPath = await this.convert2SOX();
-      } catch (err) {
-        this.onError(err);
-        return debug('ERR: converting to SOX failed, reason:', err);
-      }
-      debug('done, filename: ' + this.tempPath);
-    }
+    this.streams = {};
+    this.rewindable = new Rewindable();
 
     if (!restarted && this.currentlyPlaying !== false && typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying.info) {
       const {
@@ -322,7 +304,9 @@ export class Voice extends EventEmitter {
     debug('afx: ', effects);
 
     this.children.sox = spawn('sox', [
-      this.tempPath,
+      '-t',
+      'sox',
+      '-',
       '-r',
       this.SAMPLE_RATE.toString(),
       '-c',
@@ -337,8 +321,14 @@ export class Voice extends EventEmitter {
       ...effects,
     ]);
 
-    this.streams = {};
-    this.streams.sox = this.children.sox.stdin;
+    try {
+      this.streams.ffmpeg = this.convert2SOX();
+    } catch (err) {
+      this.onPlayingError('ffmpeg', err);
+      return debug('ERR: converting to SOX failed, reason:', err);
+    }
+
+    this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin);
     this.streams.opus = this.children.sox.stdout.pipe(
       new prism.opus.Encoder({
         channels: this.AUDIO_CHANNELS,
@@ -347,12 +337,14 @@ export class Voice extends EventEmitter {
       })
     );
     this.player = this.player || new Player(this);
+
+    
     this.streams.opus.pipe(this.player);
 
     this.streams.opus.on('end', () => this.player.onEnd());
 
-    this.streams.sox.on('error', (e: Error) => this.onError(e));
-    this.streams.opus.on('error', (e: Error) => this.onError(e));
+    this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e));
+    this.streams.opus.on('error', (e: Error) => this.onPlayingError('opus', e));
   }
 
   public playerKill() {
@@ -470,9 +462,6 @@ export class Voice extends EventEmitter {
 
     Object.values(this.children).forEach((c: ChildProcess) => c.kill());
     this.children = {};
-
-    if (!hasRestarted && this.tempPath)
-      fs.unlinkSync(this.tempPath), (this.tempPath = '');
   }
 
   public kill(removeVoice = true, clearQueue = true) {
