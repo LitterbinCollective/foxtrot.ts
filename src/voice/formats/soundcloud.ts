@@ -1,5 +1,6 @@
 import scdl from 'soundcloud-downloader';
 
+import { ExtendedReadable } from '..';
 import BaseFormat from '../foundation/BaseFormat';
 
 export default class SoundcloudFormat extends BaseFormat {
@@ -14,8 +15,12 @@ export default class SoundcloudFormat extends BaseFormat {
       return false;
     }
 
-    const stream = await scdl.download(matched);
-    stream.info = info;
+    const stream: ExtendedReadable = await scdl.download(matched);
+    stream.info = {
+      title: info.user.username + ' - ' + info.title,
+      image: info.artwork_url,
+      url: matched
+    };
     return stream;
   }
 }

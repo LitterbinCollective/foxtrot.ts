@@ -1,15 +1,32 @@
 import * as AudioMixer from 'audio-mixer';
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
+import {
+  spawn,
+  ChildProcessWithoutNullStreams
+} from 'child_process';
 import dbg from 'debug';
-import { Message } from 'detritus-client/lib/structures';
-import { Embed } from 'detritus-client/lib/utils';
-import { EventEmitter } from 'events';
+import {
+  Message
+} from 'detritus-client/lib/structures';
+import {
+  Embed
+} from 'detritus-client/lib/utils';
+import {
+  EventEmitter
+} from 'events';
 import GoogleAssistant from 'google-assistant';
 import prism from 'prism-media';
-import { Readable } from 'stream';
+import {
+  Readable
+} from 'stream';
 
-import { Voice } from '.';
-import { EMBED_COLORS, EMOJI_ICONS, GOOGLE_COLORS } from '../constants';
+import {
+  Voice
+} from '.';
+import {
+  EMBED_COLORS,
+  EMOJI_ICONS,
+  GOOGLE_COLORS
+} from '../constants';
 
 const debug = dbg('GoogleAssistant');
 
@@ -18,10 +35,10 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
   private config: IGoogleAssistantConfig;
   private complete: boolean = true;
   private conversation: any;
-  private decoders: Record<string, prism.opus.Decoder> = {};
+  private decoders: Record < string, prism.opus.Decoder > = {};
   private finalTranscription: string;
   private mixer: AudioMixer.InterleavedMixer;
-  private mixerInputs: Record<string, AudioMixer.Input> = {};
+  private mixerInputs: Record < string, AudioMixer.Input > = {};
   private responseMessage: Message | boolean;
   private transcriptEditedAt = 0;
   private transcriptMessage: Message | boolean;
@@ -54,7 +71,10 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     this.voice.googleAssistant = this;
   }
 
-  private receivePacket({ data, userId }: any) {
+  private receivePacket({
+    data,
+    userId
+  }: any) {
     if (!this.sox) {
       this.sox = spawn('sox', [
         '-t', 'raw',
@@ -128,7 +148,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     }
   }
 
-  private async onResponse(text?: string) {
+  private async onResponse(text ? : string) {
     if (!text) return;
     debug('Response:', text);
 
@@ -159,7 +179,13 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     });
   }
 
-  private async onTranscription({ transcription, done }: { transcription: string, done: boolean }) {
+  private async onTranscription({
+    transcription,
+    done
+  }: {
+    transcription: string,
+    done: boolean
+  }) {
     debug('Transcription:', transcription, '; Done?:', done);
     if (!done) {
       try {
@@ -170,22 +196,26 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
 
         if (!this.transcriptMessage)
           this.transcriptMessage = true,
-            this.transcriptMessage = await this.voice.logChannel.createMessage({ embed }),
-            this.emit('transcriptMessageCreated');
+          this.transcriptMessage = await this.voice.logChannel.createMessage({
+            embed
+          }),
+          this.emit('transcriptMessageCreated');
         else if (typeof this.transcriptMessage !== 'boolean' && Date.now() - this.transcriptEditedAt >= 250) {
           this.transcriptEditedAt = Date.now();
-          await this.transcriptMessage.edit({ embed });
+          await this.transcriptMessage.edit({
+            embed
+          });
         }
-      } catch (err) { }
+      } catch (err) {}
     } else {
       this.finalTranscription = transcription;
       this.voice.playFile('resources/googleAssistant/pingSuccess.wav');
       if (this.transcriptMessage) {
-        const getRidOfTranscriptMessage = async () => {
+        const getRidOfTranscriptMessage = async() => {
           if (!this.transcriptMessage) return;
           try {
             await (this.transcriptMessage as Message).delete(),
-            this.transcriptMessage = null;
+              this.transcriptMessage = null;
           } catch (err) {}
         };
 
@@ -199,12 +229,14 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       }
 
       if (this.responseMessage) {
-        const editResponseMessage = async () => {
+        const editResponseMessage = async() => {
           const message = this.responseMessage as Message;
           const embed = message.embeds.get(0);
           embed.title = EMOJI_ICONS.GOOGLE_ASSISTANT + ' `' + transcription + '`';
 
-          await message.edit({ embed });
+          await message.edit({
+            embed
+          });
           this.responseMessage = null;
         }
 
@@ -227,7 +259,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       .on('audio-data', (data: Buffer) => {
         if (!stream) {
           stream = new Readable({
-            read() { }
+            read() {}
           });
           this.voice.addToQueue(stream);
         }
@@ -243,7 +275,10 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       .on('end-of-utterance', () =>
         this.getRidOfVoiceReceiver()
       )
-      .on('transcription', async (data: { transcription: string, done: boolean }) =>
+      .on('transcription', async(data: {
+          transcription: string,
+          done: boolean
+        }) =>
         this.onTranscription(data)
       )
       .on('response', (text: string) =>
@@ -273,7 +308,9 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
 
   public startListening() {
     if (!this.complete)
-      return this.voice.logChannel.createMessage({ content: 'Already listening, please talk.' });
+      return this.voice.logChannel.createMessage({
+        content: 'Already listening, please talk.'
+      });
     this.complete = false;
     this.responseMessage = null;
     this.conversation = null;

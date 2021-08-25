@@ -1,0 +1,23 @@
+{
+  // Discord bot token.
+  "token": "",
+
+  // Google Assistant settings.
+  "googleAssistantSettings": {
+    // Google Assistant OAuth authentication.
+    "auth": {
+      // Full path to the Google Assistant credentials file.
+      "keyFilePath": "/home/wicopee/glowing-memory/googleAssistantCredentials.json", 
+      // Full path to the Google Assistant token storage file.
+      "savedTokensPath": "/home/wicopee/glowing-memory/googleAssistantTokens.json"
+    },
+
+    // Google Assistant Conversation settings.
+    "conversation": {
+      "lang": "en-US",              // GA Conversation language.
+      "screen": { "isOn": false }   // GA Conversation flag for screen data (recommended to keep it as is).
+    }
+  },
+
+  "formatCredentials": {}
+}

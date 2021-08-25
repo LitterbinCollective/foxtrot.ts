@@ -1,5 +1,6 @@
 import ytdl from 'ytdl-core';
 
+import { ExtendedReadable } from '..';
 import BaseFormat from '../foundation/BaseFormat';
 
 export default class YouTubeFormat extends BaseFormat {
@@ -14,8 +15,19 @@ export default class YouTubeFormat extends BaseFormat {
       return false;
     }
 
-    const stream: any = ytdl(matched);
-    stream.info = info;
+    let image = '';
+    let width = 0;
+    for (const thumbnail of info.videoDetails.thumbnails)
+      if (thumbnail.width > width)
+        image = thumbnail.url,
+        width = thumbnail.width
+
+    const stream: ExtendedReadable = ytdl(matched);
+    stream.info = {
+      title: info.videoDetails.title,
+      url: info.videoDetails.video_url,
+      image,
+    };
     return stream;
   }
 }
