@@ -1,3 +1,4 @@
+import { ClusterClient } from 'detritus-client';
 import { Context } from 'detritus-client/lib/command';
 
 import { CommandClientExtended } from '../../Application';
@@ -11,11 +12,13 @@ export default class PingCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
-    const start = Date.now();
-    const message = await ctx.reply('...');
+    const {
+      gateway,
+      rest
+    } = await (this.commandClient.client as ClusterClient).shards.get(ctx.shardId).ping();
 
-    message.edit(
-      'Pong! Took ' + (Date.now() - start) + 'ms to create a message.'
+    ctx.reply(
+      'Pong! REST: ' + rest + 'ms / Gateway: ' + gateway + 'ms. (shardId: ' + ctx.shardId + ')'
     );
   }
 }
