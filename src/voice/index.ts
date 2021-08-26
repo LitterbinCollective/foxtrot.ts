@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import dbg from 'debug';
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
-import { ChannelGuildVoice, ChannelTextType } from 'detritus-client/lib/structures';
+import { ChannelGuildVoice, ChannelTextType, Message } from 'detritus-client/lib/structures';
 import { RequestTypes } from 'detritus-client-rest';
 import { EventEmitter } from 'events';
 import fs from 'fs';
@@ -127,6 +127,8 @@ export class Voice extends EventEmitter {
   private currentlyPlaying: ExtendedReadable | string | false;
   private overlay: ExtendedReadable | false;
   private rewindable: Rewindable;
+  private doneWriting = false;
+  private waitingToWrite: Message;
 
   constructor(
     application: Application,
@@ -226,7 +228,8 @@ export class Voice extends EventEmitter {
     return ffmpeg.stdout;
   }
 
-  private onPlayingError(cause: string, err: Error) {
+  private onPlayingError(cause: string, err: any) {
+    if (cause === 'sox' && err.code === 'EPIPE' && this.children.ffmpeg.exitcode) return;
     debug('Error on one of the ' + cause + ' streams', err);
 
     this.error(
@@ -248,10 +251,17 @@ export class Voice extends EventEmitter {
     if (restarted)
       this.currentlyPlaying = this.rewindable.rewind();
 
-    this.streams = {};
-    this.rewindable = new Rewindable();
-    if (typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying !== false)
-      this.currentlyPlaying.pipe(this.rewindable);
+    if (!this.rewindable) {
+      this.rewindable = new Rewindable();
+      this.doneWriting = false;
+      if (typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying !== false) {
+        this.currentlyPlaying.pipe(this.rewindable);
+        this.currentlyPlaying.on('end', () => {
+          this.emit('rewindDone');
+          this.doneWriting = true;
+        });
+      }
+    }
 
     if (!restarted && this.currentlyPlaying !== false && typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying.info) {
       const {
@@ -302,13 +312,8 @@ export class Voice extends EventEmitter {
       ...effects,
     ]);
 
-    try {
-      this.streams.ffmpeg = this.convert2SOX();
-    } catch (err) {
-      this.onPlayingError('ffmpeg', err);
-      return debug('ERR: converting to SOX failed, reason:', err);
-    }
-
+    this.streams = {};
+    this.streams.ffmpeg = this.convert2SOX();
     this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin);
     this.streams.opus = this.children.sox.stdout.pipe(
       new prism.opus.Encoder({
@@ -329,6 +334,8 @@ export class Voice extends EventEmitter {
 
   public playerKill() {
     this.emit('playerKill');
+    this.rewindable = null;
+    this.doneWriting = true;
 
     if (this.overlay)
       this.overlay = false,
@@ -421,8 +428,26 @@ export class Voice extends EventEmitter {
     this.addToQueue(path);
   }
 
-  public restart() {
+  public async restart() {
     if (!this.player || !this.currentlyPlaying) return;
+    if (!this.doneWriting && !this.waitingToWrite) {
+      this.waitingToWrite = await this.logChannel.createMessage({
+        embed: {
+          title: 'Waiting...',
+          color: EMBED_COLORS.DEF,
+          footer: {
+            text: 'Might take a while, depending on how long the video is.'
+          }
+        }
+      });
+
+      this.once('rewindDone', () => {
+        this.restart();
+        this.waitingToWrite.delete();
+        this.waitingToWrite = null;
+      });
+      return;
+    }
 
     const ms = this.player.position;
     this.player.kill(true);

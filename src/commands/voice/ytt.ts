@@ -1,5 +1,4 @@
-import { Context, ParsedArgs } from 'detritus-client/lib/command';
-import { CommandArgumentTypes } from 'detritus-client/lib/constants';
+import { Context } from 'detritus-client/lib/command';
 
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
