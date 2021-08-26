@@ -1,10 +1,12 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
+import { Message } from 'detritus-client/lib/structures';
 import Table from 'cli-table';
 
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 import BaseEffect from '../../voice/foundation/BaseEffect';
+import { COLOR_REGEX, EMBED_COLORS, EMOJIS } from '../../constants';
 
 export default class EffectCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
@@ -13,19 +15,60 @@ export default class EffectCommand extends BaseCommand {
       aliases: ['e'],
       label: 'effect',
       type: CommandArgumentTypes.STRING,
-      args: [
-        { name: 'c', type: CommandArgumentTypes.STRING, consume: true },
-      ],
+      args: [{
+        name: 'c',
+        type: CommandArgumentTypes.STRING,
+        consume: true
+      }, {
+        name: 'enable',
+        type: CommandArgumentTypes.BOOL,
+        aliases: ['e']
+      }, {
+        name: 'disable',
+        type: CommandArgumentTypes.BOOL,
+        aliases: ['d']
+      }, {
+        name: 'list',
+        type: CommandArgumentTypes.BOOL,
+        aliases: ['l']
+      }, {
+        name: 'set',
+        type: CommandArgumentTypes.STRING,
+        aliases: ['s'],
+        consume: true
+      }, {
+        name: 'get',
+        type: CommandArgumentTypes.STRING,
+        aliases: ['g'],
+        consume: true
+      }],
       metadata: {
         usage: [
-          'mb!effect reverb -c enable',
-          'mb!effect reverb -c set:reverberance:100'
+          'mb!effect reverb -e',
+          'mb!effect reverb -s reverberance=100'
         ]
       }
     });
   }
 
-  public async run(ctx: Context, { effect, c }: ParsedArgs) {
+  public fancyReply(ctx: Context, title: string, description?: string) {
+    return ctx.reply({
+      embed: {
+        title,
+        description,
+        color: EMBED_COLORS.DEF
+      }
+    });
+  }
+
+  public async run(ctx: Context, {
+    effect,
+    enable,
+    disable,
+    list,
+    set,
+    get
+  }: ParsedArgs) {
     if (!ctx.member.voiceChannel)
       return ctx.reply('You are not in the voice channel.');
 
@@ -35,72 +78,79 @@ export default class EffectCommand extends BaseCommand {
       return ctx.reply('You are not in the correct voice channel.');
 
     const effectList = '```\n' + [...res.effects.keys()].join('\n') + '```';
-    if (!effect) return ctx.reply(effectList);
+    if (!effect) return this.fancyReply(ctx, 'List of available effects', effectList);
 
     const afx: BaseEffect = res.effects.get(effect);
     if (!afx)
-      return ctx.reply(
-        'That effect does not exist! Here is a list of available effects you can use:\n' + effectList
-      );
+      return this.fancyReply(ctx, 'That effect does not exist!', effectList);
 
-    if (!c)
-      return ctx.reply('Usage:\n' + this.metadata.usage.join('\n'));
-    let [ cmd, name, value ] = c.split(':');
-    if (!cmd) return ctx.reply('Usage:\n' + this.metadata.usage.join('\n'));
-
-    switch (cmd) {
-      case 'enable':
+    const commandsToExecute = {
+      ['e_' + enable]: () => {
         afx.enabled = true;
-        break;
-      case 'disable':
+        return true;
+      },
+      ['d_' + disable]: () => {
         afx.enabled = false;
-        break;
-      case 'set':
-        if (!name) return ctx.reply('No setting name specified!');
+        return true;
+      },
+      ['l_' + list]: () => {
+        const tbl = new Table({
+          head: ['Name', 'Current Value', 'Range']
+        });
+
+        for (const name in afx.options)
+          tbl.push([name, afx.options[name], afx.optionsRange[name] ? afx.optionsRange[name].join(' - ') : '']);
+        
+        this.fancyReply(ctx, null, '```\n' + tbl.toString().split(COLOR_REGEX).join('') + '```');
+        return false;
+      },
+      ['s_' + (typeof set !== 'undefined')]: () => {
+        let [name, value] = set.split('=').map((x: string) => x.trim());
         if (!afx.options[name]) return ctx.reply('Unknown setting!');
         if (!value) return ctx.reply('No value specified!');
 
-        switch (typeof afx.options[name]) {
+        const type = typeof afx.options[name];
+        switch (type) {
           case 'number':
-            value = Number(value)
+            value = Number(value);
             break;
           case 'boolean':
             value = value === 'true';
             break;
           default:
-            throw new Error('Unknown type of `options`! TODO: Add conversion method for `' + typeof afx.options[name] + '`.');
+            throw new Error('Unknown type of `options`! TODO: Add conversion method for `' + type + '`.');
         }
 
-        if (typeof afx.options[name] !== typeof value)
+        if (type !== typeof value)
           return ctx.reply(
             'The type of value is not equal to the type of a specified setting!'
           );
 
         if (typeof value === 'number' && afx.optionsRange[name]) {
           const [min, max] = afx.optionsRange[name];
-          if (!(value >= min && value <= max))
+          if (value < min && value > max)
             return ctx.reply(`Given value out of range (${min} - ${max})!`);
         }
-        afx.options[name] = value;
-        break;
-      case 'get':
-        if (!name) return ctx.reply('No setting name specified!');
-        const option = afx.options[name];
-        if (!option) return ctx.reply('Unknown setting!');
-        ctx.reply('`' + name + '`: `' + option + '`');
-        break;
-      case 'list':
-        const tbl = new Table({
-          head: ['Name', 'Current Value', 'Range']
-        });
-        for (const name in afx.options)
-          tbl.push([ name, afx.options[name], afx.optionsRange[name] ? afx.optionsRange[name].join(' - ') : '' ]);
-        ctx.reply('```\n' + tbl.toString().split(/\u001b\[(?:\d*;){0,5}\d*m/g).join('') + '```');
-        break;
-      default:
-        return ctx.reply('enable, disable, set, get, list');
-    }
 
-    res.restart();
+        afx.options[name] = value;
+        return true;
+      },
+      ['g_' + (typeof get !== 'undefined')]: () => {
+        const option = afx.options[get];
+        if (!option) return ctx.reply('Unknown setting!');
+
+        this.fancyReply(ctx, '`' + get + '`: `' + option + '`');
+        return false;
+      },
+    };
+
+    let restart: boolean | Message = false;
+    for (const command in commandsToExecute)
+      command.endsWith('true') && (restart = await commandsToExecute[command]());
+
+    if (restart === true) {
+      res.restart();
+      ctx.message.react(EMOJIS.OK);
+    }
   }
 }

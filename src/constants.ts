@@ -10,9 +10,14 @@ export const GOOGLE_COLORS = {
   RED: 0xBD4437
 };
 
+export const EMOJIS = {
+  OK: `👌`
+};
+
 export const YOUTUBE_APPLICATION_ID = '755600276941176913';
 export const EMBEDDED_APPLICATION = 2;
 export const FILENAME_REGEX = /\.[^/.]+$/;
+export const COLOR_REGEX = /\u001b\[(?:\d*;){0,5}\d*m/g;
 
 export const EMOJI_ICONS = {
   GOOGLE_MIC: '<:googlemicrophone:879221835370213406>',
