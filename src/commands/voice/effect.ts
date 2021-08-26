@@ -128,7 +128,7 @@ export default class EffectCommand extends BaseCommand {
 
         if (typeof value === 'number' && afx.optionsRange[name]) {
           const [min, max] = afx.optionsRange[name];
-          if (value < min && value > max)
+          if (!(value >= min && value <= max))
             return ctx.reply(`Given value out of range (${min} - ${max})!`);
         }
 

@@ -15,8 +15,11 @@ export class Rewindable extends Transform {
 
   rewind() {
     const stream = new PassThrough();
-    this.accumulator.forEach((chunk) => stream.write(chunk));
-    stream.end();
+    this.accumulator.forEach((chunk, i) => {
+      stream.write(chunk);
+      if (i === this.accumulator.length - 1)
+        stream.end();
+    });
     return stream;
   }
 }

@@ -212,7 +212,6 @@ export class Voice extends EventEmitter {
     if (!isFile) {
       const stream = streamOrFile as Stream;
       stream.pipe(ffmpeg.stdio[3] as Writable);
-      stream.pipe(this.rewindable);
       stream.on('error', onError);
     }
 
@@ -251,6 +250,8 @@ export class Voice extends EventEmitter {
 
     this.streams = {};
     this.rewindable = new Rewindable();
+    if (typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying !== false)
+      this.currentlyPlaying.pipe(this.rewindable);
 
     if (!restarted && this.currentlyPlaying !== false && typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying.info) {
       const {
