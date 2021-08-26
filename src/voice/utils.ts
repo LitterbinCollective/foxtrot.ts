@@ -1,25 +1,24 @@
-import { PassThrough, Transform } from 'stream';
+import { PassThrough, Transform } from 'stream'
 
 export class Rewindable extends Transform {
-  private accumulator = [];
+  private readonly accumulator = []
 
-  constructor() {
-    super();
-    this.accumulator = [];
+  constructor () {
+    super()
+    this.accumulator = []
   }
 
-  _transform(buf: any, _enc, cb) { 
-    this.accumulator.push(buf);
+  _transform (buf: any, _enc, cb) {
+    this.accumulator.push(buf)
     cb()
   }
 
-  rewind() {
-    const stream = new PassThrough();
+  rewind () {
+    const stream = new PassThrough()
     this.accumulator.forEach((chunk, i) => {
-      stream.write(chunk);
-      if (i === this.accumulator.length - 1)
-        stream.end();
-    });
-    return stream;
+      stream.write(chunk)
+      if (i === this.accumulator.length - 1) { stream.end() }
+    })
+    return stream
   }
 }
