@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node index.js"
   },
-  "author": "Litterbin Development",
+  "author": "Litterbin Collective",
   "license": "Apache-2.0",
   "dependencies": {
     "@discordjs/opus": "^0.5.3",
@@ -26,5 +26,13 @@
   "devDependencies": {
     "@types/cli-table": "^0.3.0",
     "debug": "^4.3.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NonagonNetwork/glowing-memory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NonagonNetwork/glowing-memory/issues"
+  },
+  "homepage": "https://github.com/NonagonNetwork/glowing-memory#readme"
 }

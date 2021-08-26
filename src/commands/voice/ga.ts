@@ -5,7 +5,7 @@ import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 import GoogleAssistantVoiceModule from '../../voice/googleAssistant';
 
-export default class JoinCommand extends BaseCommand {
+export default class GACommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'ga',

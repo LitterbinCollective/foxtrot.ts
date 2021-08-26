@@ -4,7 +4,7 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 
-export default class JoinCommand extends BaseCommand {
+export default class OverlayCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'overlay',

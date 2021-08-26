@@ -4,7 +4,7 @@ import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 import { EMBEDDED_APPLICATION, YOUTUBE_APPLICATION_ID } from '../../constants';
 
-export default class JoinCommand extends BaseCommand {
+export default class YTTCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'ytt',
