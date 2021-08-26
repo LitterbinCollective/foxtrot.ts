@@ -8,7 +8,7 @@
     "start": "node index.js"
   },
   "author": "Litterbin Development",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@discordjs/opus": "^0.5.3",
     "audio-mixer": "github:NonagonNetwork/Audio-Mixer",
