@@ -5,7 +5,7 @@ import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 import { Voice } from '../../voice';
 
-export default class JoinCommand extends BaseCommand {
+export default class PlayCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'play',

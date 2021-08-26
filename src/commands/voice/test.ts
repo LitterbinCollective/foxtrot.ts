@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 
-export default class JoinCommand extends BaseCommand {
+export default class TestCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'test',

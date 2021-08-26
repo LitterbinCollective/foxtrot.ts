@@ -3,7 +3,7 @@ import { Context } from 'detritus-client/lib/command';
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
 
-export default class JoinCommand extends BaseCommand {
+export default class SkipCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'skip',
