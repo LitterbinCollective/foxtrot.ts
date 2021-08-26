@@ -28,6 +28,6 @@ export default class JoinCommand extends BaseCommand {
       ctx.member.voiceChannel,
       ctx.channel
     );
-    return ctx.reply('Hi.');
+    return ctx.reply(Math.random() > .95 ? 'Oh hi Mark.' : 'Hi.');
   }
 }

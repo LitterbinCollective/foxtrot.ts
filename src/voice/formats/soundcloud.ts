@@ -5,7 +5,7 @@ import BaseFormat from '../foundation/BaseFormat';
 
 export default class SoundcloudFormat extends BaseFormat {
   public regex = /^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/g;
-  public printName = 'Soundcloud';
+  public printName = 'SoundCloud';
 
   public async onMatch(matched: string) {
     let info: any;

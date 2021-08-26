@@ -1,42 +1,21 @@
-import {
-  spawn,
-  ChildProcess
-} from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import dbg from 'debug';
-import {
-  VoiceConnection
-} from 'detritus-client/lib/media/voiceconnection';
-import {
-  ChannelGuildVoice,
-  ChannelTextType,
-} from 'detritus-client/lib/structures';
-import {
-  RequestTypes
-} from 'detritus-client-rest';
-import {
-  EventEmitter
-} from 'events';
+import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
+import { ChannelGuildVoice, ChannelTextType } from 'detritus-client/lib/structures';
+import { RequestTypes } from 'detritus-client-rest';
+import { EventEmitter } from 'events';
 import fs from 'fs';
 import * as prism from 'prism-media';
 import {
   Stream,
   Writable,
-  Readable,
-  Transform
+  Readable
 } from 'stream';
-import {
-  file
-} from 'tempy';
 
-import {
-  Application
-} from '../Application';
+import { Application } from '../Application';
 import BaseEffect from './foundation/BaseEffect';
 import BaseFormat from './foundation/BaseFormat';
-import {
-  EMBED_COLORS,
-  FILENAME_REGEX
-} from '../constants';
+import { EMBED_COLORS, FILENAME_REGEX } from '../constants';
 import GoogleAssistantVoiceModule from './googleAssistant';
 import { Rewindable } from './utils';
 
@@ -263,11 +242,12 @@ export class Voice extends EventEmitter {
 
   private async start(ss ? : number) {
     const restarted = typeof ss !== 'undefined';
-    this.killPrevious(restarted);
+    this.killPrevious();
 
-    if (!restarted && this.player) {
+    if (!restarted && this.player)
       this.player.ss = 0;
-    }
+    if (restarted)
+      this.currentlyPlaying = this.rewindable.rewind();
 
     this.streams = {};
     this.rewindable = new Rewindable();
@@ -338,7 +318,6 @@ export class Voice extends EventEmitter {
     );
     this.player = this.player || new Player(this);
 
-    
     this.streams.opus.pipe(this.player);
 
     this.streams.opus.on('end', () => this.player.onEnd());
@@ -395,6 +374,10 @@ export class Voice extends EventEmitter {
     }
 
     if (result !== false) this.addToQueue(result);
+    else {
+      const formats = this.formats.map(x => x.printName);
+      return this.error('Unrecognized format!', '```\n' + formats.join('\n') + '```');
+    }
   }
 
   private error(title = 'Unknown Error', description: string = null) {
@@ -414,7 +397,7 @@ export class Voice extends EventEmitter {
     if (!this.currentlyPlaying)
       return this.error('Nothing currently playing!');
     if (!this.queue[id])
-      return this.error('No such queue item ' + id);
+      return this.error('No such queue item ' + id + 1);
     if (typeof this.queue[id] === 'string')
       return this.error("You can't overlay local files!");
     let ms: number;
@@ -426,7 +409,6 @@ export class Voice extends EventEmitter {
 
     this.killPrevious();
     this.overlay = this.queue.splice(id, 1)[0];
-    this.currentlyPlaying = this.rewindable.rewind();
     this.restartTime = Date.now();
     debug('Starting to overlay, time:', ms, 'ms');
     this.start(ms / 1000);
@@ -457,7 +439,7 @@ export class Voice extends EventEmitter {
       this.queue.push(str);
   }
 
-  private killPrevious(hasRestarted: boolean = false) {
+  private killPrevious() {
     if (this.streams.opus) this.streams.opus.unpipe(this.player);
 
     Object.values(this.children).forEach((c: ChildProcess) => c.kill());
