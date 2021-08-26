@@ -229,14 +229,18 @@ export class Voice extends EventEmitter {
   }
 
   private onPlayingError(cause: string, err: any) {
-    if (cause === 'sox' && err.code === 'EPIPE' && this.children.ffmpeg.exitcode) return;
+    if (cause === 'sox' && err.code === 'EPIPE') return;
     debug('Error on one of the ' + cause + ' streams', err);
 
     this.error(
       'Error occurred while trying to play audio',
       err ? '```\n' + err.message + '```' : null
     );
+    
+    this.skip();
+  }
 
+  public skip() {
     if (this.player)
       this.player.kill()
     else this.playerKill();
