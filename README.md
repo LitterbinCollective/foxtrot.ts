@@ -3,7 +3,7 @@ An experimental Discord bot made with Detritus library.
 
 ## Requirements
 A list of required executables that need to be in *PATH*:
-- `ffmpeg` - responsible for converting media streams into *sox format*;
+- `ffmpeg` - responsible for converting media streams into *sox format* and overlaying two medias together;
 - `sox` - responsible for applying effects and converting *sox format* files into the supported by Discord RTC voice servers format.
 
 ## Configuration
