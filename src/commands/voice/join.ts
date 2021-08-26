@@ -28,5 +28,6 @@ export default class JoinCommand extends BaseCommand {
       ctx.member.voiceChannel,
       ctx.channel
     );
+    return ctx.reply('Hi.');
   }
 }
