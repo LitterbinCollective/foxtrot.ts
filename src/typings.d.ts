@@ -1,5 +1,6 @@
 declare interface IConfig {
   token: string;
+  sentryDSN: string;
   googleAssistantSettings: IGoogleAssistantConfig;
   formatCredentials: IConfigFormatCredentials;
 }

@@ -1,6 +1,8 @@
 import { Command } from 'detritus-client';
 import { ParsedArgs } from 'detritus-client/lib/command';
 import { Embed } from 'detritus-client/lib/utils';
+import * as Sentry from '@sentry/node';
+
 import { CommandClientExtended } from './Application';
 
 export default class BaseCommand extends Command.Command {
@@ -15,8 +17,9 @@ export default class BaseCommand extends Command.Command {
   public onRunError(
     ctx: Command.Context,
     _args: ParsedArgs,
-    { name, message, stack }: Error
+    error: Error
   ) {
+    const { name, message, stack } = error;
     const embed = new Embed({
       title: 'Runtime Error',
       description: `**${name}**: ${message}`,
@@ -24,6 +27,12 @@ export default class BaseCommand extends Command.Command {
     });
 
     console.error(stack);
+    Sentry.captureException(error, {
+      tags: {
+        command: this.metadata.name,
+        loc: 'command'
+      }
+    });
 
     ctx.reply({ embed });
   }

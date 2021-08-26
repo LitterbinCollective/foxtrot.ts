@@ -4,7 +4,9 @@ import {
   CommandClientOptions,
   ShardClient,
 } from 'detritus-client';
-import { ActivityTypes } from 'detritus-client/lib/constants';
+import { ActivityTypes, ClientEvents } from 'detritus-client/lib/constants';
+import * as Sentry from '@sentry/node';
+import { PackageJson } from 'type-fest';
 
 import { Voice } from './voice';
 
@@ -17,17 +19,19 @@ export class CommandClientExtended extends CommandClient {
     options?: CommandClientOptions
   ) {
     super(token, options);
-    this.application = application;
+    this.application = application;  
   }
 }
 
 export class Application {
   public config: IConfig;
+  public pkg: PackageJson;
   public voices: Map<string, Voice> = new Map();
   public readonly commandClient: CommandClient;
 
-  constructor(config: IConfig) {
+  constructor(config: IConfig, pkg: PackageJson) {
     this.config = config;
+    this.pkg = pkg;
 
     this.commandClient = new CommandClientExtended(this, this.config.token, {
       prefix: 'mb!',
@@ -45,6 +49,19 @@ export class Application {
       subdirectories: true,
     });
     this.commandClient.run().then(() => this.onCommandClientRun());
+
+    Sentry.init({
+      dsn: this.config.sentryDSN,
+    });
+
+    const client = this.commandClient.client as ClusterClient;
+    client.on(
+      ClientEvents.WARN,
+      ({ error }) =>
+        Sentry.captureException(error, { 
+          tags: { loc: 'root' } 
+        })
+    );
   }
 
   onCommandClientRun() {
