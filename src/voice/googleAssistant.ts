@@ -4,31 +4,23 @@ import {
   ChildProcessWithoutNullStreams
 } from 'child_process';
 import dbg from 'debug';
-import {
-  Message
-} from 'detritus-client/lib/structures';
-import {
-  Embed
-} from 'detritus-client/lib/utils';
-import {
-  EventEmitter
-} from 'events';
+import { Message } from 'detritus-client/lib/structures';
+import { Embed } from 'detritus-client/lib/utils';
+import { EventEmitter } from 'events';
 import GoogleAssistant from 'google-assistant';
 import prism from 'prism-media';
-import {
-  Readable
-} from 'stream';
+import * as Sentry from '@sentry/node';
+import { Readable } from 'stream';
 
-import {
-  Voice
-} from '.';
+import { Voice } from '.';
 import {
   EMBED_COLORS,
   EMOJI_ICONS,
   GOOGLE_COLORS
 } from '../constants';
 
-const debug = dbg('GoogleAssistant');
+const TAG = 'GoogleAssistant';
+const debug = dbg(TAG);
 
 export default class GoogleAssistantVoiceModule extends EventEmitter {
   public readonly stream: ReadableStream;
@@ -94,7 +86,13 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       this.sox.stdout.on('data', (data) =>
         this.conversation.write(data)
       );
-      this.sox.on('error', console.error);
+      this.sox.on('error', (err) => {
+        console.error(err);
+        
+        Sentry.captureException(err, {
+          tags: { loc: TAG }
+        });
+      });
       this.mixer.pipe(this.sox.stdin);
     }
 
@@ -169,6 +167,11 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
   private async onError(error: Error, endedConv: boolean) {
     this.getRidOfVoiceReceiver();
     console.error(error);
+
+    Sentry.captureException({
+      tags: { loc: TAG },
+      extra: { endedConv }
+    });
 
     await this.voice.logChannel.createMessage({
       embed: {

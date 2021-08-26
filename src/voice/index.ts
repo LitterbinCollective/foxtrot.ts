@@ -6,6 +6,7 @@ import { RequestTypes } from 'detritus-client-rest';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import * as prism from 'prism-media';
+import * as Sentry from '@sentry/node';
 import {
   Stream,
   Writable,
@@ -30,7 +31,8 @@ export class ExtendedReadable extends Readable {
   public info? : ExtendedReadableInfo;
 }
 
-const debug = dbg('Voice/Player');
+const TAG = 'Voice/Player';
+const debug = dbg(TAG);
 
 class Player extends Writable {
   public ss = 0;
@@ -232,6 +234,18 @@ export class Voice extends EventEmitter {
     if (cause === 'sox' && err.code === 'EPIPE') return;
     debug('Error on one of the ' + cause + ' streams', err);
 
+    Sentry.captureException(err, {
+      tags: {
+        stream: cause,
+        loc: TAG
+      },
+      extra: {
+        mediaMetadata: typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying ?
+          this.currentlyPlaying.info :
+          this.currentlyPlaying,
+      }
+    });
+
     this.error(
       'Error occurred while trying to play audio',
       err ? '```\n' + err.message + '```' : null
@@ -375,6 +389,13 @@ export class Voice extends EventEmitter {
         if (!streamOrFalse) continue;
       } catch (err) {
         dbg(`error on ${format.printName} format`);
+        Sentry.captureException(err, {
+          tags: {
+            format: format.printName,
+            loc: TAG
+          },
+          extra: { url }
+        });
         continue;
       }
 

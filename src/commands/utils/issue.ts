@@ -2,7 +2,6 @@ import { Context } from 'detritus-client/lib/command';
 
 import { CommandClientExtended } from '../../Application';
 import BaseCommand from '../../BaseCommand';
-import pkg from '../../../package.json';
 
 export default class IssueCommand extends BaseCommand {
   constructor(commandClient: CommandClientExtended) {
@@ -13,6 +12,8 @@ export default class IssueCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
-    ctx.reply(pkg.bugs.url);
+    const { bugs } = this.commandClient.application.pkg;
+    const url = (typeof bugs === 'object' && bugs.url) ? bugs.url : bugs;
+    ctx.reply(url.toString());
   }
 }

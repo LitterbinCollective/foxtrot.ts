@@ -11,6 +11,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@discordjs/opus": "^0.5.3",
+    "@sentry/node": "^6.11.0",
+    "@sentry/tracing": "^6.11.0",
     "audio-mixer": "github:NonagonNetwork/Audio-Mixer",
     "axios": "^0.21.1",
     "cli-table": "^0.3.6",
@@ -21,6 +23,7 @@
     "soundcloud-downloader": "^1.0.0",
     "tempy": "^1.0.1",
     "tweetnacl": "^1.0.3",
+    "type-fest": "^2.1.0",
     "ytdl-core": "^4.9.1"
   },
   "devDependencies": {
