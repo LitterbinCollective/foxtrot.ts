@@ -1,7 +1,14 @@
 node_modules/
 dist/
-addicti.mp3
 
+# Files with credentials
 config.json
 googleAssistantCredentials.json
 googleAssistantTokens.json
+
+# Files associated with Google Assistant SDK experimenting
+test_device.json
+device_model.json
+
+# Google Assistant usage audio logs
+galogs/*.raw

@@ -1,3 +1,6 @@
+// This component is purely made for fun and will be probably limited
+// in the future.
+
 import * as AudioMixer from 'audio-mixer'
 import {
   spawn,
@@ -7,6 +10,7 @@ import dbg from 'debug'
 import { Message } from 'detritus-client/lib/structures'
 import { Embed } from 'detritus-client/lib/utils'
 import { EventEmitter } from 'events'
+import fs from 'fs';
 import GoogleAssistant from 'google-assistant'
 import prism from 'prism-media'
 import * as Sentry from '@sentry/node'
@@ -35,6 +39,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
   private transcriptEditedAt = 0
   private transcriptMessage: Message | boolean
   private sox: ChildProcessWithoutNullStreams
+  private writeStream: fs.WriteStream
   private readonly packetEventFunc = (packet) => this.receivePacket(packet)
   private readonly googleAssistant: GoogleAssistant
   private readonly voice: Voice
@@ -86,6 +91,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       this.sox.stdout.on('data', (data) =>
         this.conversation.write(data)
       )
+      this.sox.stdout.pipe(this.writeStream)
       this.sox.on('error', (err) => {
         console.error(err)
 
@@ -101,6 +107,8 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
 
   private setupVoiceReceiver () {
     debug('Starting voice receiver...')
+
+    this.writeStream = fs.createWriteStream(`galogs/ga-${Date.now()}-${this.voice.channel.id}.raw`)
 
     const BIT_DEPTH = 16
     this.mixer = new AudioMixer.Mixer({
@@ -138,6 +146,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       this.mixer.removeInput(this.mixerInputs[id]),
       this.decoders[id].unpipe(this.mixerInputs[id])
     }
+    this.writeStream.close()
     this.decoders = {}
     this.mixerInputs = {}
     if (this.sox) {
@@ -168,7 +177,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     this.getRidOfVoiceReceiver()
     console.error(error)
 
-    Sentry.captureException({
+    Sentry.captureException(error, {
       tags: { loc: TAG },
       extra: { endedConv }
     })
