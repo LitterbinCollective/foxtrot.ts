@@ -207,7 +207,7 @@ export class Voice extends EventEmitter {
     })
 
     ffmpeg.on('close', (code: number) =>
-      code === 1 && this.onPlayingError('ffmpeg', new Error('Close code is 1, error?'))
+      code === 1 && this.onPlayingError('ffmpeg', new Error('FFMPEG unexpectedly closed with exit code 1'))
     )
 
     const onError = (err: any) => err.code !== 'ECONNRESET' && this.onPlayingError('ffmpeg', err)
@@ -456,7 +456,7 @@ export class Voice extends EventEmitter {
           title: 'Waiting...',
           color: EMBED_COLORS.DEF,
           footer: {
-            text: 'Might take a while, depending on how long the video is.'
+            text: 'Might take a while, depending on how long the sound is.'
           }
         }
       })

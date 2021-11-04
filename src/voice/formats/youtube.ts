@@ -24,7 +24,11 @@ export default class YouTubeFormat extends BaseFormat {
       }
     }
 
-    const stream: ExtendedReadable = ytdl(matched)
+    const stream: ExtendedReadable = ytdl(matched, {
+      quality: 'highestaudio',
+      filter: 'audioonly',
+      highWaterMark: 1 << 25,
+    })
     stream.info = {
       title: info.videoDetails.title,
       url: info.videoDetails.video_url,

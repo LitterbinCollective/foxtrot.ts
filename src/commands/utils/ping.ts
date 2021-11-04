@@ -16,9 +16,18 @@ export default class PingCommand extends BaseCommand {
       gateway,
       rest
     } = await (this.commandClient.client as ClusterClient).shards.get(ctx.shardId).ping()
+    const text: string[] = [
+      'REST: ' + rest + 'ms',
+      'Gateway: ' + gateway + 'ms'
+    ]
+    const res = this.commandClient.application.voices.get(ctx.guild.id)
+    if (res) {
+      let voice = await res.connection.gateway.ping()
+      text.push('Voice: ' + voice + 'ms')
+    }
 
     ctx.reply(
-      'Pong! REST: ' + rest + 'ms / Gateway: ' + gateway + 'ms. (shardId: ' + ctx.shardId + ')'
+      'Pong! ' + text.join(' / ') + '. (shardId: ' + ctx.shardId + ')'
     )
   }
 }

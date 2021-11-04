@@ -14,7 +14,7 @@ export const EMOJIS = {
   OK: '👌'
 }
 
-export const YOUTUBE_APPLICATION_ID = '755600276941176913'
+export const YOUTUBE_APPLICATION_ID = '880218394199220334'
 export const EMBEDDED_APPLICATION = 2
 export const FILENAME_REGEX = /\.[^/.]+$/
 export const COLOR_REGEX = /\u001b\[(?:\d*;){0,5}\d*m/g

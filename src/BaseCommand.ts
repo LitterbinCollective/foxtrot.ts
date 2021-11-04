@@ -14,27 +14,31 @@ export default class BaseCommand extends Command.Command {
   //  return ctx.user.isClientOwner;
   // }
 
-  public onRunError (
-    ctx: Command.Context,
-    _args: ParsedArgs,
-    error: Error
-  ) {
-    const { name, message, stack } = error
+  public errorNoHalt(ctx: Command.Context, error: Error) {
+    const { name, message } = error
     const embed = new Embed({
       title: 'Runtime Error',
       description: `**${name}**: ${message}`,
       color: this.ERROR_COLOR
     })
 
-    console.error(stack)
+    ctx.reply({ embed })
+  }
+
+  public onRunError (
+    ctx: Command.Context,
+    _args: ParsedArgs,
+    error: Error
+  ) {
+    this.errorNoHalt(ctx, error);
+
+    console.error(error)
     Sentry.captureException(error, {
       tags: {
         command: this.metadata.name,
         loc: 'command'
       }
     })
-
-    ctx.reply({ embed })
   }
 
   public onTypeError (ctx: Command.Context, _args: ParsedArgs, errors: any) {
