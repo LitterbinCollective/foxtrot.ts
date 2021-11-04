@@ -12,7 +12,7 @@
       // Full path to the Google Assistant credentials file.
       "keyFilePath": "/home/wicopee/glowing-memory/googleAssistantCredentials.json",
       // Full path to the Google Assistant token storage file.
-      "savedTokensPath": "/home/wicopee/glowing-memory/googleAssistantTokens.json",
+      "savedTokensPath": "/home/wicopee/glowing-memory/googleAssistantTokens.json"
     },
 
     // Google Assistant Conversation settings.
