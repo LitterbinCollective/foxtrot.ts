@@ -486,7 +486,7 @@ export class Voice extends EventEmitter {
   private killPrevious () {
     if (this.streams.opus) this.streams.opus.unpipe(this.player)
 
-    Object.values(this.children).forEach((c: ChildProcess) => c.kill())
+    Object.values(this.children).forEach((c: ChildProcess) => c.kill('SIGINT'))
     this.children = {}
   }
 
