@@ -150,7 +150,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     this.decoders = {}
     this.mixerInputs = {}
     if (this.sox) {
-      this.sox.kill(0)
+      this.sox.kill('SIGINT')
       this.sox = null
     }
   }
