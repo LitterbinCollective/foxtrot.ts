@@ -20,7 +20,7 @@
       "lang": "en-US",               // GA Conversation language.
       "screen": { "isOn": false },   // GA Conversation flag for screen data (recommended to keep it as is).
 
-      // USE THIS ONLY IN CASE IF YOU WENT THROUGH DEVICE REGISTRATION
+      // USE THIS ONLY IF YOU WENT THROUGH DEVICE REGISTRATION
       // PROCESS.
       "deviceModelId": "glowing-memory-device",
       "deviceId": "glowmem"

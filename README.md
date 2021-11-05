@@ -17,8 +17,6 @@ and paste the result code into the command line. This is only a one-time thing a
 config value.
 
 ## Running the application
-For testing and debugging please use another Discord bot user, as that prevents interference with the stable bot.
-
 ```bash
 # Install dependencies, including developer ones
 npm install
