@@ -40,7 +40,7 @@ export class Application {
         presence: {
           activity: {
             type: ActivityTypes.PLAYING,
-            name: 'sounds'
+            name: 'sounds / WIP, report issues with mb!issue'
           }
         }
       }

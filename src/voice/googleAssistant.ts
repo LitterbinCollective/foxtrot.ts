@@ -10,7 +10,7 @@ import dbg from 'debug'
 import { Message } from 'detritus-client/lib/structures'
 import { Embed } from 'detritus-client/lib/utils'
 import { EventEmitter } from 'events'
-import fs from 'fs';
+import fs from 'fs'
 import GoogleAssistant from 'google-assistant'
 import prism from 'prism-media'
 import * as Sentry from '@sentry/node'
@@ -110,18 +110,18 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
 
     this.writeStream = fs.createWriteStream(`galogs/ga-${Date.now()}-${this.voice.channel.id}.raw`)
 
-    const BIT_DEPTH = 16
+    const bitDepth = 16
     this.mixer = new AudioMixer.Mixer({
       sampleRate: this.voice.SAMPLE_RATE,
       channels: this.voice.AUDIO_CHANNELS,
-      bitDepth: BIT_DEPTH
+      bitDepth
     })
 
     this.voice.channel.members.forEach(member => {
       this.mixerInputs[member.id] = new AudioMixer.Input({
         sampleRate: this.voice.SAMPLE_RATE,
         channels: this.voice.AUDIO_CHANNELS,
-        bitDepth: BIT_DEPTH,
+        bitDepth,
         clearInterval: 250,
         volume: 200
       })
