@@ -10,8 +10,10 @@ import * as Sentry from '@sentry/node'
 import {
   Stream,
   Writable,
-  Readable
+  Readable,
+  Transform
 } from 'stream'
+import path from 'path';
 
 import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
@@ -65,20 +67,19 @@ class Player extends Writable {
     )
   }
 
-  public write (chunk: any) {
+  public _write (chunk: any, _enc: any, callback: any) {
     if (!this.voice.startTime) this.voice.startTime = Date.now()
 
     const ms = this.calcMs(this.count)
-    this.timeouts.push(
-      setTimeout(
-        () => (
-          this.voice.connection.sendAudio(chunk, {
-            isOpus: true
-          }),
-          (this.curPos = ms)
-        ),
-        ms
-      )
+    this.voice.connection.sendAudio(chunk, {
+      isOpus: true
+    })
+    setTimeout(
+      () => (
+        callback(null),
+        (this.curPos = ms)
+      ),
+      ms
     )
     this.count++
 
@@ -86,13 +87,13 @@ class Player extends Writable {
   }
 
   public onEnd () {
-    this.timeouts.push(setTimeout(() => this.kill(), this.calcMs(this.count)))
+    this.kill()
     debug('stream ends here')
   }
 
   public kill (notCritical = false) {
     for (const timeout of this.timeouts) clearTimeout(timeout)
-    this.voice.connection.sendAudioSilenceFrame()
+    // this.voice.connection.sendAudioSilenceFrame()
 
     this.count = 0
     this.curPos = 0
@@ -104,6 +105,59 @@ class Player extends Writable {
       this.ss = 0
     }
     debug('Player.kill() call')
+  }
+}
+
+class Mixer extends Transform {
+  public buffers: Buffer[] = []
+  public readonly FRAME_LENGTH = 20;
+  private voice: Voice;
+
+  constructor (voice: Voice, buffers?: Buffer[]) {
+    super();
+    this.voice = voice;
+    if (buffers)
+      this.buffers = buffers
+  }
+
+  public _write(chunk: any, enc: any, callback: any) {
+    const newbuf = Buffer.alloc(chunk.length);
+    const MIN_SAMPLE = -32768
+    const MAX_SAMPLE = 32767
+    const SAMPLE_BYTE_LEN = 2
+    for (let v = 0; v < chunk.length / SAMPLE_BYTE_LEN; v++) {
+      const pos = v * SAMPLE_BYTE_LEN;
+
+      let samples = chunk.readInt16LE(pos);
+      let count = 0;
+      for (let buffer of this.buffers) {
+        count++;
+        if (2 >= buffer.length) {
+          this.buffers.splice(count - 1, 1);
+          continue;
+        }
+        samples += buffer.readInt16LE(0);
+        this.buffers[count - 1] = buffer.slice(2, buffer.length);
+      }
+
+      if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
+        debug('clamping samples!! (' + samples + ')'),
+        samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE)
+
+      newbuf.writeInt16LE(samples, pos);
+    }
+
+    this.push(newbuf);
+
+    const sizePerStereoFrame = this.voice.AUDIO_CHANNELS * SAMPLE_BYTE_LEN
+    const frameSize = this.voice.FRAME_SIZE * sizePerStereoFrame
+    const wholeParts = chunk.length / frameSize
+    setTimeout(() => callback(), wholeParts * this.FRAME_LENGTH)
+    return true
+  }
+
+  public addBuffer(buf: Buffer) {
+    this.buffers.push(buf);
   }
 }
 
@@ -131,6 +185,8 @@ export class Voice extends EventEmitter {
   private rewindable: Rewindable
   private doneWriting = false
   private waitingToWrite: Message
+  private mixer: Mixer;
+  private idle: NodeJS.Timeout;
 
   constructor (
     application: Application,
@@ -170,6 +226,9 @@ export class Voice extends EventEmitter {
       this.effects.set(name, new Effect())
     }
 
+    this.setupConnections();
+    this.setupIdleInterval();
+
     this.connection = connection
     this.connection.setOpusEncoder()
     this.connection.setSpeaking({
@@ -177,6 +236,29 @@ export class Voice extends EventEmitter {
     })
     this.emit('initComplete')
     debug('Voice initialized')
+  }
+
+  private setupConnections() {
+    let buffers: Buffer[]
+    if (this.mixer) buffers = this.mixer.buffers
+    this.mixer = new Mixer(this, buffers);
+    this.streams.opus = this.mixer.pipe(
+      new prism.opus.Encoder({
+        channels: this.AUDIO_CHANNELS,
+        rate: this.SAMPLE_RATE,
+        frameSize: this.FRAME_SIZE
+      })
+    )
+    this.player = new Player(this)
+    this.streams.opus.pipe(this.player)
+  }
+
+  private setupIdleInterval() {
+    debug('starting idle interval')
+    this.idle = setInterval(
+      () => this.mixer.write(Buffer.alloc(this.FRAME_SIZE * this.AUDIO_CHANNELS * 2)),
+      this.mixer.FRAME_LENGTH
+    );
   }
 
   private convert2SOX (streamOrFile = this.currentlyPlaying) {
@@ -230,7 +312,7 @@ export class Voice extends EventEmitter {
   }
 
   private onPlayingError (cause: string, err: any) {
-    if (cause === 'sox' && err.code === 'EPIPE') return
+    if (err.code === 'EPIPE') return
     debug('Error on one of the ' + cause + ' streams', err)
 
     Sentry.captureException(err, {
@@ -329,24 +411,14 @@ export class Voice extends EventEmitter {
       ...effects
     ])
 
-    this.streams = {}
     this.streams.ffmpeg = this.convert2SOX()
     this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin)
-    this.streams.opus = this.children.sox.stdout.pipe(
-      new prism.opus.Encoder({
-        channels: this.AUDIO_CHANNELS,
-        rate: this.SAMPLE_RATE,
-        frameSize: this.FRAME_SIZE
-      })
-    )
-    this.player = this.player || new Player(this)
+    this.children.sox.stdout.pipe(this.mixer);
 
-    this.streams.opus.pipe(this.player)
-
-    this.streams.opus.on('end', () => this.player.onEnd())
+    this.streams.opus.once('end', () => this.player.onEnd())
 
     this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e))
-    this.streams.opus.on('error', (e: Error) => this.onPlayingError('opus', e))
+    this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
   }
 
   public playerKill () {
@@ -359,7 +431,12 @@ export class Voice extends EventEmitter {
       debug('Stopping to overlay...')
     }
 
-    if (this.queue.length === 0) { return (this.currentlyPlaying = false) }
+    this.setupConnections();
+    if (this.queue.length === 0) {
+      this.currentlyPlaying = false
+      this.setupIdleInterval()
+      return
+    }
 
     debug('Another stream available, playing')
     const stream = this.queue.shift()
@@ -410,6 +487,43 @@ export class Voice extends EventEmitter {
     else {
       const formats = this.formats.map(x => x.printName)
       return await this.error('Unrecognized format!', '```\n' + formats.join('\n') + '```')
+    }
+  }
+
+  public playSoundeffect(file: string) {
+    file = file.toLowerCase()
+    const prefix = 'resources/sfx/'
+    const regex = /([a-z0-9]+)#([1-9]+)/g // matches fuck#19
+    const sfx = fs.readdirSync(prefix)
+      .map(v => v.replace(/\.[^/.]+$/, ''))
+
+    let sortedSfx = {}
+    sfx.filter(v => v.match(regex))
+      .forEach(v => {
+        const matches = [...v.matchAll(regex)][0]
+        if (!sortedSfx[matches[1]])
+          sortedSfx[matches[1]] = []
+        sortedSfx[matches[1]][Number(matches[2]) - 1] = true
+      })
+
+    const split: any[] = file.split('#')
+    if (split[1]) split[1] = Number(split[1])
+    else if (sortedSfx[split[0]])
+      split[1] = Math.floor(Math.random() * sortedSfx[split[0]].length) + 1
+
+    const pathToSfx = prefix + split.join('#') + '.raw'
+    debug('parsed sfx', pathToSfx, split, sortedSfx)
+
+    if (path.relative(prefix, pathToSfx).startsWith('..'))
+      return this.error('I see what you did there.');
+
+    if (fs.existsSync(pathToSfx) && this.mixer)
+      this.mixer.addBuffer(fs.readFileSync(pathToSfx))
+    else {
+      const list = sfx
+        .filter(v => v !== 'README')
+        .join('\n')
+      this.error('No such soundeffect!', '```\n' + list + '```')
     }
   }
 
@@ -484,7 +598,9 @@ export class Voice extends EventEmitter {
   }
 
   private killPrevious () {
-    if (this.streams.opus) this.streams.opus.unpipe(this.player)
+    clearInterval(this.idle)
+    if (this.children.sox)
+      this.children.sox.stdout.unpipe(this.mixer)
 
     Object.values(this.children).forEach((c: ChildProcess) => c.kill(9))
     this.children = {}

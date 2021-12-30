@@ -7,7 +7,7 @@ export default class LeaveCommand extends BaseCommand {
   constructor (commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'leave',
-      aliases: ['l', 'gtfo']
+      aliases: ['l', 'gtfo', 'stop']
     })
   }
 
