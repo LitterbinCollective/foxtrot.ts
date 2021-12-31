@@ -61,8 +61,7 @@ class Player extends Writable {
     } = this.voice
     if (typeof startTime === 'boolean') return 0
     return (
-      this.FRAME_LENGTH +
-      (count - 1) * this.FRAME_LENGTH -
+      count * this.FRAME_LENGTH -
       (Date.now() - (restartTime || startTime) - pauseTime)
     )
   }
@@ -120,39 +119,39 @@ class Mixer extends Transform {
       this.buffers = buffers
   }
 
-  public _write(chunk: any, enc: any, callback: any) {
-    const newbuf = Buffer.alloc(chunk.length);
-    const MIN_SAMPLE = -32768
-    const MAX_SAMPLE = 32767
+  public _write(chunk: any, _enc: any, callback: any) {
     const SAMPLE_BYTE_LEN = 2
-    for (let v = 0; v < chunk.length / SAMPLE_BYTE_LEN; v++) {
-      const pos = v * SAMPLE_BYTE_LEN;
 
-      let samples = chunk.readInt16LE(pos);
-      let count = 0;
-      for (let buffer of this.buffers) {
-        count++;
-        if (2 >= buffer.length) {
-          this.buffers.splice(count - 1, 1);
-          continue;
+    let newbuf = chunk;
+    if (this.buffers.length > 0) {
+      newbuf = Buffer.alloc(chunk.length)
+      const MIN_SAMPLE = -32768
+      const MAX_SAMPLE = 32767
+      for (let v = 0; v < chunk.length / SAMPLE_BYTE_LEN; v++) {
+        const pos = v * SAMPLE_BYTE_LEN;
+
+        let samples = chunk.readInt16LE(pos);
+        let count = 0;
+        for (let buffer of this.buffers) {
+          count++;
+          if (2 >= buffer.length) {
+            this.buffers.splice(count - 1, 1);
+            continue;
+          }
+          samples += buffer.readInt16LE(0);
+          this.buffers[count - 1] = buffer.slice(2, buffer.length);
         }
-        samples += buffer.readInt16LE(0);
-        this.buffers[count - 1] = buffer.slice(2, buffer.length);
+
+        if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
+          debug('clamping samples!! (' + samples + ')'),
+          samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE)
+
+        newbuf.writeInt16LE(samples, pos);
       }
-
-      if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
-        debug('clamping samples!! (' + samples + ')'),
-        samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE)
-
-      newbuf.writeInt16LE(samples, pos);
     }
-
     this.push(newbuf);
 
-    const sizePerStereoFrame = this.voice.AUDIO_CHANNELS * SAMPLE_BYTE_LEN
-    const frameSize = this.voice.FRAME_SIZE * sizePerStereoFrame
-    const wholeParts = chunk.length / frameSize
-    setTimeout(() => callback(), wholeParts * this.FRAME_LENGTH)
+    callback();
     return true
   }
 
@@ -275,6 +274,7 @@ export class Voice extends EventEmitter {
     ]
 
     ffmpegArgs.unshift(
+      '-re',
       '-i',
       (isFile ? (streamOrFile as string) : 'pipe:3')
     )
