@@ -1,11 +1,17 @@
 declare interface IConfig {
   token: string
   sentryDSN: string
+  feedbackWebhook: IConfigFeedbackWebhook
   googleAssistantSettings: IGoogleAssistantConfig
   formatCredentials: IConfigFormatCredentials
 }
 
 declare interface IConfigFormatCredentials {}
+
+declare interface IConfigFeedbackWebhook {
+  id: string,
+  token: string
+}
 
 declare interface IGoogleAssistantConfigAuth {
   keyFilePath: string

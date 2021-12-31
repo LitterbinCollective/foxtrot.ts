@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import { CommandClientExtended } from '../../Application'
 import BaseCommand from '../../BaseCommand'
 
-export default class TestCommand extends BaseCommand {
+export default class SfxCommand extends BaseCommand {
   constructor (commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'sfx',
