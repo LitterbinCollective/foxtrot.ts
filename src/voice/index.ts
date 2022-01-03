@@ -238,18 +238,16 @@ export class Voice extends EventEmitter {
   }
 
   private setupConnections() {
-    let buffers: Buffer[]
-    if (this.mixer) buffers = this.mixer.buffers
-    this.mixer = new Mixer(this, buffers);
+    this.mixer = new Mixer(this);
     this.streams.opus = this.mixer.pipe(
       new prism.opus.Encoder({
         channels: this.AUDIO_CHANNELS,
         rate: this.SAMPLE_RATE,
         frameSize: this.FRAME_SIZE
-      })
+      }),
+      { end: false }
     )
-    this.player = new Player(this)
-    this.streams.opus.pipe(this.player)
+    this.player = this.streams.opus.pipe(new Player(this), { end: false })
   }
 
   private setupIdleInterval() {
@@ -389,7 +387,7 @@ export class Voice extends EventEmitter {
     const effects = Array.from(this.effects, ([_, effect]) => {
       if (typeof effect.args === 'boolean') return []
       return [effect.name, ...effect.args]
-    }).reduce((pV, cV) => pV.concat(cV), [])
+    }).reduce((global, local) => global.concat(local), [])
     if (ss) effects.push('trim', ss.toString())
     debug('afx: ', effects)
 
@@ -413,15 +411,18 @@ export class Voice extends EventEmitter {
 
     this.streams.ffmpeg = this.convert2SOX()
     this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin)
-    this.children.sox.stdout.pipe(this.mixer);
+    this.children.sox.stdout.pipe(this.mixer, { end: false });
 
-    this.streams.opus.once('end', () => this.player.onEnd())
+    let playerKilled = false;
+    this.once('playerKill', () => (playerKilled = true));
+    this.children.sox.stdout.once('end', () => !playerKilled && this.player.onEnd())
 
     this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e))
     this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
   }
 
   public playerKill () {
+    this.killPrevious()
     this.emit('playerKill')
     this.rewindable = null
     this.doneWriting = true
@@ -431,7 +432,6 @@ export class Voice extends EventEmitter {
       debug('Stopping to overlay...')
     }
 
-    this.setupConnections();
     if (this.queue.length === 0) {
       this.currentlyPlaying = false
       this.setupIdleInterval()
