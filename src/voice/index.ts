@@ -37,8 +37,8 @@ const TAG = 'Voice/Player'
 const debug = dbg(TAG)
 
 class Player extends Writable {
+  public count = 0
   public ss = 0
-  private count = 0
   private curPos = 0
   private readonly FRAME_LENGTH = 20
   private readonly voice: Voice
@@ -69,16 +69,15 @@ class Player extends Writable {
   public _write (chunk: any, _enc: any, callback: any) {
     if (!this.voice.startTime) this.voice.startTime = Date.now()
 
-    const ms = this.calcMs(this.count)
     this.voice.connection.sendAudio(chunk, {
       isOpus: true
     })
     setTimeout(
       () => (
         callback(null),
-        (this.curPos = ms)
+        (this.curPos = this.count * this.FRAME_LENGTH)
       ),
-      ms
+      this.calcMs(this.count)
     )
     this.count++
 
@@ -91,18 +90,15 @@ class Player extends Writable {
   }
 
   public kill (notCritical = false) {
-    for (const timeout of this.timeouts) clearTimeout(timeout)
     // this.voice.connection.sendAudioSilenceFrame()
-
-    this.count = 0
-    this.curPos = 0
-
     if (!notCritical) {
       this.voice.playerKill()
       this.voice.startTime = false
       this.voice.restartTime = null
-      this.ss = 0
     }
+
+    this.ss = 0
+    this.curPos = 0
     debug('Player.kill() call')
   }
 }
@@ -258,7 +254,7 @@ export class Voice extends EventEmitter {
     );
   }
 
-  private convert2SOX (streamOrFile = this.currentlyPlaying) {
+  private convert2SOX (streamOrFile = this.currentlyPlaying, ss?: number) {
     const isFile = typeof streamOrFile === 'string'
 
     const ffmpegArgs: string[] = [
@@ -277,6 +273,7 @@ export class Voice extends EventEmitter {
       (isFile ? (streamOrFile as string) : 'pipe:3')
     )
 
+    if (ss) ffmpegArgs.unshift('-ss', ss.toString())
     if (this.overlay) { ffmpegArgs.splice(2, 0, '-i', 'pipe:4', '-filter_complex', 'amix=inputs=2') }
 
     const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', ffmpegArgs, {
@@ -340,17 +337,19 @@ export class Voice extends EventEmitter {
   private async start (ss?: number) {
     const restarted = typeof ss !== 'undefined'
     this.killPrevious()
+    let input = this.currentlyPlaying;
 
     if (!restarted && this.player) this.player.ss = 0
-    if (restarted) this.currentlyPlaying = this.rewindable.rewind()
+    if (restarted) input = this.currentlyPlaying = this.rewindable.rewind()
 
     if (!this.rewindable) {
       this.rewindable = new Rewindable()
       this.doneWriting = false
       if (typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying !== false) {
-        this.currentlyPlaying.pipe(this.rewindable)
+        input = this.currentlyPlaying.pipe(this.rewindable)
         this.currentlyPlaying.on('end', () => {
           this.emit('rewindDone')
+          debug('rewind done')
           this.doneWriting = true
         })
       }
@@ -388,7 +387,6 @@ export class Voice extends EventEmitter {
       if (typeof effect.args === 'boolean') return []
       return [effect.name, ...effect.args]
     }).reduce((global, local) => global.concat(local), [])
-    if (ss) effects.push('trim', ss.toString())
     debug('afx: ', effects)
 
     this.children.sox = spawn('sox', [
@@ -409,13 +407,13 @@ export class Voice extends EventEmitter {
       ...effects
     ])
 
-    this.streams.ffmpeg = this.convert2SOX()
+    this.streams.ffmpeg = this.convert2SOX(input, ss)
     this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin)
     this.children.sox.stdout.pipe(this.mixer, { end: false });
 
-    let playerKilled = false;
-    this.once('playerKill', () => (playerKilled = true));
-    this.children.sox.stdout.once('end', () => !playerKilled && this.player.onEnd())
+    let killedPrevious = false;
+    this.once('killPrevious', () => (killedPrevious = true));
+    this.children.sox.stdout.once('end', () => !killedPrevious && this.player.onEnd())
 
     this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e))
     this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
@@ -423,7 +421,7 @@ export class Voice extends EventEmitter {
 
   public playerKill () {
     this.killPrevious()
-    this.emit('playerKill')
+    debug('Voice.playerKill() call')
     this.rewindable = null
     this.doneWriting = true
 
@@ -565,6 +563,13 @@ export class Voice extends EventEmitter {
   public async restart () {
     if (!this.player || !this.currentlyPlaying) return
     if (!this.doneWriting && !this.waitingToWrite) {
+      this.once('rewindDone', () => {
+        this.restart()
+        if (!this.waitingToWrite) return;
+        this.waitingToWrite.delete()
+        this.waitingToWrite = null
+      })
+
       this.waitingToWrite = await this.logChannel.createMessage({
         embed: {
           title: 'Waiting...',
@@ -574,16 +579,13 @@ export class Voice extends EventEmitter {
           }
         }
       })
-
-      this.once('rewindDone', () => {
-        this.restart()
-        this.waitingToWrite.delete()
-        this.waitingToWrite = null
-      })
       return
     }
 
     const ms = this.player.position
+    debug('since when the time was this fucked, i mean look at the Player and it\'s position',
+      ms,
+      this.player)
     this.player.kill(true)
     this.player.ss = ms
     this.restartTime = Date.now()
@@ -598,7 +600,10 @@ export class Voice extends EventEmitter {
   }
 
   private killPrevious () {
+    this.emit('killPrevious')
+    debug('Voice.killPrevious() call')
     clearInterval(this.idle)
+    this.player.count = 0
     if (this.children.sox)
       this.children.sox.stdout.unpipe(this.mixer)
 
