@@ -583,9 +583,6 @@ export class Voice extends EventEmitter {
     }
 
     const ms = this.player.position
-    debug('since when the time was this fucked, i mean look at the Player and it\'s position',
-      ms,
-      this.player)
     this.player.kill(true)
     this.player.ss = ms
     this.restartTime = Date.now()
