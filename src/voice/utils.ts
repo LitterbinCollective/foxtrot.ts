@@ -10,6 +10,7 @@ export class Rewindable extends Transform {
 
   _transform (buf: any, _enc, cb) {
     this.accumulator.push(buf)
+    this.push(buf)
     cb()
   }
 
