@@ -6,7 +6,14 @@ declare interface IConfig {
   formatCredentials: IConfigFormatCredentials
 }
 
-declare interface IConfigFormatCredentials {}
+declare interface IConfigFormatCredentials {
+  spotify: IConfigSpotifyFormatCredentials
+}
+
+declare interface IConfigSpotifyFormatCredentials {
+  clientId: string,
+  clientSecret: string
+}
 
 declare interface IConfigFeedbackWebhook {
   id: string,
