@@ -32,17 +32,17 @@ export default class HelpCommand extends BaseCommand {
     if (!/^https?:\/\//.test(url)) url = 'http://' + url;
 
     const parsedURL = new URL(url);
-    if (!parsedURL) return this.errorNoHalt(ctx, new Error('Invalid URL'));
+    if (!parsedURL) return ctx.reply('Invalid URL');
 
     let resolved: any;
     try {
       resolved = await this.lookup(parsedURL.host);
     } catch (err) {
-      return this.errorNoHalt(ctx, new Error('Could not resolve hostname'));
+      return ctx.reply('Could not resolve hostname');
     }
 
     if (this.bogonAddresses.indexOf(resolved.address) !== -1)
-      return this.errorNoHalt(ctx, new Error('Hostname resolved to a bogon address'))
+      return ctx.reply('Hostname resolved to a bogon address')
 
     const startedAt = Date.now()
     const browser = await puppeteer.launch({

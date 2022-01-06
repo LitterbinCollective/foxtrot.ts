@@ -1,6 +1,7 @@
 export const EMBED_COLORS = {
   DEF: 0x15ed5a,
-  ERR: 0xbd2626
+  ERR: 0xbd2626,
+  WAR: 0xeaab35
 }
 
 export const GOOGLE_COLORS = {

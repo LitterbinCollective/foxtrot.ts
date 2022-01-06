@@ -50,6 +50,15 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
     super()
     this.voice = voice
 
+    this.voice.logChannel.createMessage({
+      embed: {
+        title: EMOJI_ICONS.GOOGLE_ASSISTANT + ' Warning',
+        description: 'As per Google Assistant SDK Terms of Service, we need to inform you that ' +
+          'we are logging and monitoring the usage of this feature. [Read more](https://developers.google.com/assistant/sdk/terms-of-service).',
+        color: EMBED_COLORS.WAR
+      }
+    })
+
     this.config = voice.application.config.googleAssistantSettings
     this.config.conversation.audio = {
       encodingIn: 'LINEAR16',
@@ -146,7 +155,8 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       this.mixer.removeInput(this.mixerInputs[id]),
       this.decoders[id].unpipe(this.mixerInputs[id])
     }
-    this.writeStream.close()
+    if (this.writeStream)
+      this.writeStream.close()
     this.decoders = {}
     this.mixerInputs = {}
     if (this.sox) {

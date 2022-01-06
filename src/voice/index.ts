@@ -613,11 +613,11 @@ export class Voice extends EventEmitter {
     this.overlay = false
 
     let ms: number
+    this.killPrevious()
     if (this.player) {
       ms = this.player.position
       this.player.kill()
     }
-    this.killPrevious()
     if (removeVoice) {
       this.connection.kill(),
       this.application.voices.delete(this.channel.guildId)
