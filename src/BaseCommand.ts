@@ -17,7 +17,7 @@ export default class BaseCommand extends Command.Command {
   public errorNoHalt(ctx: Command.Context, error: Error) {
     const { name, message } = error
     const embed = new Embed({
-      title: 'Runtime Error',
+      title: ':bomb: Runtime Error',
       description: `**${name}**: ${message}`,
       color: this.ERROR_COLOR
     })
