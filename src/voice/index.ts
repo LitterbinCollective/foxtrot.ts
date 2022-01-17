@@ -422,6 +422,7 @@ export class Voice extends EventEmitter {
   public playerKill () {
     this.killPrevious()
     debug('Voice.playerKill() call')
+    this.emit('playerKill')
     this.rewindable = null
     this.doneWriting = true
 
