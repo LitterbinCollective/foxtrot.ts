@@ -164,6 +164,7 @@ export class Voice extends EventEmitter {
   public pauseTime = 0
   public restartTime?: number
   public denyOnAudioSubmission = false
+  public initialized = false
   public googleAssistant?: GoogleAssistantVoiceModule
   public readonly SAMPLE_RATE = 48000
   public readonly AUDIO_CHANNELS = 2
@@ -230,6 +231,7 @@ export class Voice extends EventEmitter {
       voice: true
     })
     this.emit('initComplete')
+    this.initialized = true
     debug('Voice initialized')
   }
 
@@ -489,6 +491,12 @@ export class Voice extends EventEmitter {
     }
   }
 
+  public playInternalSoundeffect(file: string) {
+    const path = 'resources/sounds/' + file + '.raw'
+    if (fs.existsSync(path))
+      this.mixer.addBuffer(fs.readFileSync(path))
+  }
+
   public playSoundeffect(file: string) {
     file = file.toLowerCase()
     const prefix = 'resources/sfx/'
@@ -601,7 +609,8 @@ export class Voice extends EventEmitter {
     this.emit('killPrevious')
     debug('Voice.killPrevious() call')
     clearInterval(this.idle)
-    this.player.count = 0
+    if (this.player)
+      this.player.count = 0
     if (this.children.sox)
       this.children.sox.stdout.unpipe(this.mixer)
 

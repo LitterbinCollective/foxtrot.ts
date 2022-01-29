@@ -33,8 +33,10 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
   private conversation: any
   private decoders: Record < string, prism.opus.Decoder > = {}
   private finalTranscription: string
+  private idle: NodeJS.Timeout
   private mixer: AudioMixer.InterleavedMixer
   private mixerInputs: Record < string, AudioMixer.Input > = {}
+  private mixerEmptyInput: AudioMixer.Input;
   private responseMessage: Message | boolean
   private transcriptEditedAt = 0
   private transcriptMessage: Message | boolean
@@ -43,6 +45,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
   private readonly packetEventFunc = (packet) => this.receivePacket(packet)
   private readonly googleAssistant: GoogleAssistant
   private readonly voice: Voice
+  private readonly RECEIVER_FRAME_LENGTH = 20;
   private readonly SAMPLE_RATE = 24000
   private readonly AUDIO_CHANNELS = 1
 
@@ -74,7 +77,14 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
 
     this.voice.denyOnAudioSubmission = true
     this.voice.kill(false)
+    this.voice.playInternalSoundeffect('ga')
     this.voice.googleAssistant = this
+
+    this.idle = setInterval(
+      () =>
+        this.mixerEmptyInput && this.mixerEmptyInput.write(Buffer.alloc(this.voice.FRAME_SIZE * this.voice.AUDIO_CHANNELS * 2)),
+      this.RECEIVER_FRAME_LENGTH
+    )
   }
 
   private receivePacket ({
@@ -144,6 +154,13 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       this.mixer.addInput(this.mixerInputs[member.id])
     })
 
+    this.mixerEmptyInput = new AudioMixer.Input({
+      sampleRate: this.voice.SAMPLE_RATE,
+      channels: this.voice.AUDIO_CHANNELS,
+      bitDepth,
+      clearInterval: 250
+    })
+
     this.voice.connection.sendAudioSilenceFrame()
     this.voice.connection.on('packet', this.packetEventFunc)
   }
@@ -159,6 +176,7 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
       this.writeStream.close()
     this.decoders = {}
     this.mixerInputs = {}
+    this.mixerEmptyInput = null
     if (this.sox) {
       this.sox.kill(9)
       this.sox = null
@@ -341,9 +359,11 @@ export default class GoogleAssistantVoiceModule extends EventEmitter {
 
   public destroy () {
     if (!this.complete) { return false }
+    clearInterval(this.idle)
     debug('Destroying self...')
     this.voice.kill(false)
     this.getRidOfVoiceReceiver()
+    this.voice.playInternalSoundeffect('ga-stop');
     this.voice.denyOnAudioSubmission = false
     this.voice.googleAssistant = null
     return true

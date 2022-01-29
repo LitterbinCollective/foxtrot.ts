@@ -35,6 +35,8 @@ export default class PlayCommand extends BaseCommand {
       })
     }
     if (res.channel !== ctx.member.voiceChannel) { return await ctx.reply('You are not in the voice channel this bot is currently in.') }
+    if (!res.initialized)
+      return await ctx.reply('Voice not yet initialized!')
 
     try {
       res.playURL(url)
