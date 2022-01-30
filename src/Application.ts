@@ -26,6 +26,7 @@ export class CommandClientExtended extends CommandClient {
 export class Application {
   public config: IConfig
   public pkg: PackageJson
+  public startAt: number;
   public voices: Map<string, Voice> = new Map()
   public readonly commandClient: CommandClient
 
@@ -49,6 +50,7 @@ export class Application {
       subdirectories: true
     })
     this.commandClient.run().then(() => this.onCommandClientRun())
+    this.startAt = Date.now()
 
     Sentry.init({
       dsn: this.config.sentryDSN

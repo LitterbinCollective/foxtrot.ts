@@ -7,6 +7,7 @@ import { promisify } from 'util';
 
 import { CommandClientExtended } from '../../Application'
 import BaseCommand from '../../BaseCommand'
+import { EMOJIS } from '../../constants';
 
 export default class HelpCommand extends BaseCommand {
   private bogonAddresses: string[];
@@ -65,7 +66,7 @@ export default class HelpCommand extends BaseCommand {
       let embed = new Embed();
       embed.setAuthor(url, null, url);
       embed.setImage('attachment://ss.png')
-      embed.setFooter(`⏰ Took: ${prettyMilliseconds(Date.now() - startedAt)}`)
+      embed.setFooter(`${EMOJIS.STOPWATCH} Took: ${prettyMilliseconds(Date.now() - startedAt)}`)
 
       ctx.reply({
         embed,

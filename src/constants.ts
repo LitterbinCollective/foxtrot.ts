@@ -12,7 +12,8 @@ export const GOOGLE_COLORS = {
 }
 
 export const EMOJIS = {
-  OK: '👌'
+  OK: '👌',
+  STOPWATCH: '⏱️'
 }
 
 export const YOUTUBE_APPLICATION_ID = '880218394199220334'
