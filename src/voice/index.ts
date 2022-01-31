@@ -498,11 +498,21 @@ export class Voice extends EventEmitter {
   }
 
   public playSoundeffect(file: string) {
-    file = file.toLowerCase()
+    const parsed = file.toLowerCase().split(';')
     const prefix = 'resources/sfx/'
     const regex = /([a-z0-9]+)#([1-9]+)/g // matches fuck#19
     const sfx = fs.readdirSync(prefix)
       .map(v => v.replace(/\.[^/.]+$/, ''))
+
+    let failed = false
+    const fail = () => {
+      if (failed) return
+      const list = sfx
+        .filter(v => v !== 'README')
+        .join('\n')
+      failed = true
+      this.error('No such soundeffect!', '```\n' + list + '```')
+    }
 
     let sortedSfx = {}
     sfx.filter(v => v.match(regex))
@@ -513,25 +523,35 @@ export class Voice extends EventEmitter {
         sortedSfx[matches[1]][Number(matches[2]) - 1] = true
       })
 
-    const split: any[] = file.split('#')
-    if (split[1]) split[1] = Number(split[1])
-    else if (sortedSfx[split[0]])
-      split[1] = Math.floor(Math.random() * sortedSfx[split[0]].length) + 1
+    const combined = parsed.map(file => {
+      file = file.trim()
+      const split: any[] = file.split('#')
+      if (split[1]) split[1] = Number(split[1])
+      else if (sortedSfx[split[0]])
+        split[1] = Math.floor(Math.random() * sortedSfx[split[0]].length) + 1
 
-    const pathToSfx = prefix + split.join('#') + '.raw'
-    debug('parsed sfx', pathToSfx, split, sortedSfx)
+      const pathToSfx = prefix + split.join('#') + '.raw'
+      debug('parsed sfx', pathToSfx, split, sortedSfx)
 
-    if (path.relative(prefix, pathToSfx).startsWith('..'))
-      return this.error('I see what you did there.');
+      if (path.relative(prefix, pathToSfx).startsWith('..'))
+        return this.error('I see what you did there.')
+      if (!fs.existsSync(pathToSfx))
+        return fail()
+      return fs.readFileSync(pathToSfx)
+    }).reduce(
+      (pV, cV) =>
+        (pV === undefined || cV === undefined) ? undefined : Buffer.concat([(pV as Buffer), (cV as Buffer)]),
+      Buffer.alloc(0)
+    );
 
-    if (fs.existsSync(pathToSfx) && this.mixer)
+    if (combined !== undefined)
+      this.mixer.addBuffer(combined as Buffer);
+
+    /*if ( && this.mixer)
       this.mixer.addBuffer(fs.readFileSync(pathToSfx))
     else {
-      const list = sfx
-        .filter(v => v !== 'README')
-        .join('\n')
-      this.error('No such soundeffect!', '```\n' + list + '```')
-    }
+      
+    }*/
   }
 
   private async error (title = 'Unknown Error', description: string = null) {
