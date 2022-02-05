@@ -17,6 +17,7 @@
     "axios": "^0.21.2",
     "cli-table": "^0.3.6",
     "detritus-client": "^0.16.1",
+    "did-you-mean": "^0.0.1",
     "google-assistant": "github:NonagonNetwork/google-assistant",
     "node-fetch": "^2.6.1",
     "pretty-ms": "^7.0.1",

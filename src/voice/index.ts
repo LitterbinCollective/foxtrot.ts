@@ -1,8 +1,10 @@
+import axios from 'axios'
 import { spawn, ChildProcess } from 'child_process'
 import dbg from 'debug'
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
 import { ChannelGuildVoice, ChannelTextType, Message } from 'detritus-client/lib/structures'
 import { RequestTypes } from 'detritus-client-rest'
+import Matcher from 'did-you-mean';
 import { EventEmitter } from 'events'
 import fs from 'fs'
 import * as prism from 'prism-media'
@@ -20,7 +22,6 @@ import BaseFormat from './foundation/BaseFormat'
 import { EMBED_COLORS, FILENAME_REGEX } from '../constants'
 import GoogleAssistantVoiceModule from './googleAssistant'
 import { Rewindable } from './utils'
-import axios from 'axios'
 
 interface ExtendedReadableInfo {
   title: string
@@ -175,6 +176,7 @@ export class Voice extends EventEmitter {
   private readonly formats: BaseFormat[] = []
   private streams: Record < string, any > = {}
   private soundeffects: Record < string, string[] > = {}
+  private soundeffectsMatcher: Matcher;
   private children: Record < string, any > = {}
   private player: Player
   private currentlyPlaying: ExtendedReadable | string | false
@@ -249,13 +251,15 @@ export class Voice extends EventEmitter {
       const staticUrlPrefix = 'https://raw.githubusercontent.com/' + repo + '/' + responseFromGh.data.sha + '/';
 
       for (const fileData of responseFromGh.data.tree) {
-        if (!fileData.path.endsWith('.ogg')) continue;
-        const name = fileData.path.substring(fileData.path.lastIndexOf('/') + 1, fileData.path.lastIndexOf('.ogg'));
+        if (!fileData.path.endsWith('.ogg')) continue
+        const name = fileData.path.substring(fileData.path.lastIndexOf('/') + 1, fileData.path.lastIndexOf('.ogg'))
         if (!this.soundeffects[name])
-          this.soundeffects[name] = [];
-        this.soundeffects[name].push(staticUrlPrefix + fileData.path);
+          this.soundeffects[name] = []
+        this.soundeffects[name].push(staticUrlPrefix + fileData.path)
       }
     }
+
+    this.soundeffectsMatcher = new Matcher(Object.keys(this.soundeffects))
   }
 
   private setupConnections() {
@@ -554,10 +558,11 @@ export class Voice extends EventEmitter {
     const parsed = file.toLowerCase().split(';')
 
     let failed = false
-    const fail = () => {
+    const fail = (file: string) => {
       if (failed) return
       failed = true
-      this.error('No such soundeffect!')
+      const matches = this.soundeffectsMatcher && this.soundeffectsMatcher.list(file).map(x => x.value).join('\n')
+      this.error('No such soundeffect!', matches && 'Did you mean: ```\n' + matches + '```')
     }
 
     const combined = (await Promise.all(
@@ -572,7 +577,7 @@ export class Voice extends EventEmitter {
         debug('parsed sfx', pathToSfx, split)
 
         if (!this.soundeffects[split[0]])
-          return fail()
+          return fail(split[0])
         return await this.fetchChatsound(pathToSfx[split[1]])
       })
     )).reduce(
