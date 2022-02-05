@@ -13,7 +13,6 @@ import {
   Readable,
   Transform
 } from 'stream'
-import path from 'path';
 
 import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
@@ -523,6 +522,11 @@ export class Voice extends EventEmitter {
 
   private fetchChatsound(url: string) {
     return new Promise(async (res) => {
+      const regex = /http(?:s?):\/\/raw\.githubusercontent\.com\/([\w-_\d]*)\/([\w-_\d]*)\/([0-f]*)\//g
+      const fileName = url.replaceAll(regex, '').replaceAll('/', '_')
+      if (fs.existsSync('cache/' + fileName + '.raw'))
+        return res(fs.readFileSync('cache/' + fileName + '.raw'))
+
       const { data } = await axios({
         method: 'get',
         url,
@@ -537,9 +541,12 @@ export class Voice extends EventEmitter {
         buffers.push(data)
       )
 
-      stream.stdout.on('end', () =>
-        res(Buffer.concat(buffers))
-      )
+      stream.stdout.on('end', () => {
+        const buffer = Buffer.concat(buffers)
+        res(buffer)
+        if (!fs.existsSync('cache/')) fs.mkdirSync('cache/')
+        fs.writeFileSync('cache/' + fileName + '.raw', buffer)
+      })
     })
   }
 
@@ -553,20 +560,22 @@ export class Voice extends EventEmitter {
       this.error('No such soundeffect!')
     }
 
-    const combined = (await Promise.all(parsed.map(async (file) => {
-      file = file.trim()
-      const split: any[] = file.split('#')
-      if (split[1]) split[1] = Number(split[1])
-      else if (this.soundeffects[split[0]])
-        split[1] = Math.floor(Math.random() * this.soundeffects[split[0]].length)
+    const combined = (await Promise.all(
+      parsed.map(async (file) => {
+        file = file.trim()
+        const split: any[] = file.split('#')
+        if (split[1]) split[1] = Number(split[1])
+        else if (this.soundeffects[split[0]])
+          split[1] = Math.floor(Math.random() * this.soundeffects[split[0]].length)
 
-      const pathToSfx = this.soundeffects[split[0]]
-      debug('parsed sfx', pathToSfx, split)
+        const pathToSfx = this.soundeffects[split[0]]
+        debug('parsed sfx', pathToSfx, split)
 
-      if (!this.soundeffects[split[0]])
-        return fail()
-      return await this.fetchChatsound(pathToSfx[split[1]])
-    }))).reduce(
+        if (!this.soundeffects[split[0]])
+          return fail()
+        return await this.fetchChatsound(pathToSfx[split[1]])
+      })
+    )).reduce(
       (pV, cV) =>
         (pV === undefined || cV === undefined) ? undefined : Buffer.concat([(pV as Buffer), (cV as Buffer)]),
       Buffer.alloc(0)
