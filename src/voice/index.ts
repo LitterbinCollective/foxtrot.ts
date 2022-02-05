@@ -21,6 +21,7 @@ import BaseFormat from './foundation/BaseFormat'
 import { EMBED_COLORS, FILENAME_REGEX } from '../constants'
 import GoogleAssistantVoiceModule from './googleAssistant'
 import { Rewindable } from './utils'
+import axios from 'axios'
 
 interface ExtendedReadableInfo {
   title: string
@@ -174,6 +175,7 @@ export class Voice extends EventEmitter {
   public readonly logChannel: ChannelTextType
   private readonly formats: BaseFormat[] = []
   private streams: Record < string, any > = {}
+  private soundeffects: Record < string, string[] > = {}
   private children: Record < string, any > = {}
   private player: Player
   private currentlyPlaying: ExtendedReadable | string | false
@@ -222,6 +224,7 @@ export class Voice extends EventEmitter {
       this.effects.set(name, new Effect())
     }
 
+    this.fetchSoundeffects();
     this.setupConnections();
     this.setupIdleInterval();
 
@@ -233,6 +236,27 @@ export class Voice extends EventEmitter {
     this.emit('initComplete')
     this.initialized = true
     debug('Voice initialized')
+  }
+
+  private async fetchSoundeffects() {
+    const lists = [
+      'PAC3-Server/chatsounds-valve-games',
+      'Metastruct/garrysmod-chatsounds',
+      'PAC3-Server/chatsounds',
+    ];
+
+    for (const repo of lists) {
+      const responseFromGh = await axios(`https://api.github.com/repos/${repo}/git/trees/master?recursive=1`);
+      const staticUrlPrefix = 'https://raw.githubusercontent.com/' + repo + '/' + responseFromGh.data.sha + '/';
+
+      for (const fileData of responseFromGh.data.tree) {
+        if (!fileData.path.endsWith('.ogg')) continue;
+        const name = fileData.path.substring(fileData.path.lastIndexOf('/') + 1, fileData.path.lastIndexOf('.ogg'));
+        if (!this.soundeffects[name])
+          this.soundeffects[name] = [];
+        this.soundeffects[name].push(staticUrlPrefix + fileData.path);
+      }
+    }
   }
 
   private setupConnections() {
@@ -497,48 +521,52 @@ export class Voice extends EventEmitter {
       this.mixer.addBuffer(fs.readFileSync(path))
   }
 
-  public playSoundeffect(file: string) {
+  private fetchChatsound(url: string) {
+    return new Promise(async (res) => {
+      const { data } = await axios({
+        method: 'get',
+        url,
+        responseType: 'stream'
+      });
+
+      const stream = spawn('ffmpeg', [ '-i', '-', '-ac', '2', '-ar', '48000', '-f', 's16le', '-'])
+      data.pipe(stream.stdin)
+
+      const buffers = []
+      stream.stdout.on('data', (data: any) =>
+        buffers.push(data)
+      )
+
+      stream.stdout.on('end', () =>
+        res(Buffer.concat(buffers))
+      )
+    })
+  }
+
+  public async playSoundeffect(file: string) {
     const parsed = file.toLowerCase().split(';')
-    const prefix = 'resources/sfx/'
-    const regex = /([a-z0-9]+)#([1-9]+)/g // matches fuck#19
-    const sfx = fs.readdirSync(prefix)
-      .map(v => v.replace(/\.[^/.]+$/, ''))
 
     let failed = false
     const fail = () => {
       if (failed) return
-      const list = sfx
-        .filter(v => v !== 'README')
-        .join('\n')
       failed = true
-      this.error('No such soundeffect!', '```\n' + list + '```')
+      this.error('No such soundeffect!')
     }
 
-    let sortedSfx = {}
-    sfx.filter(v => v.match(regex))
-      .forEach(v => {
-        const matches = [...v.matchAll(regex)][0]
-        if (!sortedSfx[matches[1]])
-          sortedSfx[matches[1]] = []
-        sortedSfx[matches[1]][Number(matches[2]) - 1] = true
-      })
-
-    const combined = parsed.map(file => {
+    const combined = (await Promise.all(parsed.map(async (file) => {
       file = file.trim()
       const split: any[] = file.split('#')
       if (split[1]) split[1] = Number(split[1])
-      else if (sortedSfx[split[0]])
-        split[1] = Math.floor(Math.random() * sortedSfx[split[0]].length) + 1
+      else if (this.soundeffects[split[0]])
+        split[1] = Math.floor(Math.random() * this.soundeffects[split[0]].length)
 
-      const pathToSfx = prefix + split.join('#') + '.raw'
-      debug('parsed sfx', pathToSfx, split, sortedSfx)
+      const pathToSfx = this.soundeffects[split[0]]
+      debug('parsed sfx', pathToSfx, split)
 
-      if (path.relative(prefix, pathToSfx).startsWith('..'))
-        return this.error('I see what you did there.')
-      if (!fs.existsSync(pathToSfx))
+      if (!this.soundeffects[split[0]])
         return fail()
-      return fs.readFileSync(pathToSfx)
-    }).reduce(
+      return await this.fetchChatsound(pathToSfx[split[1]])
+    }))).reduce(
       (pV, cV) =>
         (pV === undefined || cV === undefined) ? undefined : Buffer.concat([(pV as Buffer), (cV as Buffer)]),
       Buffer.alloc(0)
@@ -546,12 +574,6 @@ export class Voice extends EventEmitter {
 
     if (combined !== undefined)
       this.mixer.addBuffer(combined as Buffer);
-
-    /*if ( && this.mixer)
-      this.mixer.addBuffer(fs.readFileSync(pathToSfx))
-    else {
-      
-    }*/
   }
 
   private async error (title = 'Unknown Error', description: string = null) {
