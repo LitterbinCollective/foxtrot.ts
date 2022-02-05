@@ -12,3 +12,5 @@ device_model.json
 
 # Google Assistant usage audio logs
 galogs/*.raw
+
+cache/

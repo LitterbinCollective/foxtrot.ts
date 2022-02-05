@@ -2,7 +2,7 @@
   "include": ["src", "index.temp.ts"],
   "compilerOptions": {
     "outDir": "dist/",
-    "target": "es2020",
+    "target": "es2021",
     "moduleResolution": "node",
     "module": "commonjs",
     "esModuleInterop": true,
