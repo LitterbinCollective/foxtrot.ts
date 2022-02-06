@@ -4,11 +4,11 @@ import { Embed } from 'detritus-client/lib/utils'
 import * as Sentry from '@sentry/node'
 
 import { CommandClientExtended } from './Application'
+import { EMBED_COLORS } from './constants'
 
 export default class BaseCommand extends Command.Command {
   public readonly commandClient: CommandClientExtended
   public readonly disableDm = true
-  public readonly ERROR_COLOR = 0xaa0000
 
   // public onBeforeRun(ctx: Command.Context, _args: any) {
   //  return ctx.user.isClientOwner;
@@ -19,7 +19,7 @@ export default class BaseCommand extends Command.Command {
     const embed = new Embed({
       title: ':bomb: Runtime Error',
       description: `**${name}**: ${message}`,
-      color: this.ERROR_COLOR
+      color: EMBED_COLORS.ERR
     })
 
     ctx.reply({ embed })
@@ -44,7 +44,7 @@ export default class BaseCommand extends Command.Command {
   public onTypeError (ctx: Command.Context, _args: ParsedArgs, errors: any) {
     const embed = new Embed({
       title: 'Argument Error',
-      color: this.ERROR_COLOR
+      color: EMBED_COLORS.ERR
     })
 
     const description: string[] = []
