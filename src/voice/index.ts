@@ -576,6 +576,11 @@ export class Voice extends EventEmitter {
         const pathToSfx = this.soundeffects[split[0]]
         debug('parsed sfx', pathToSfx, split)
 
+        if (file === 'sh') {
+          this.mixer.buffers = []
+          return Buffer.alloc(0)
+        }
+
         if (!this.soundeffects[split[0]])
           return fail(split[0])
         return await this.fetchChatsound(pathToSfx[split[1]])
