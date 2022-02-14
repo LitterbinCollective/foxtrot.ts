@@ -625,7 +625,7 @@ export class Voice extends EventEmitter {
         const split: any[] = file.split('#')
         if (split[1]) split[1] = Number(split[1])
         else if (this.soundeffects[split[0]])
-          split[1] = Math.floor(Math.random() * this.soundeffects[split[0]].length)
+          split[1] = Math.floor(Math.random() * (this.soundeffects[split[0]].length - 1))
 
         const pathToSfx = this.soundeffects[split[0]]
         debug('parsed sfx', pathToSfx, split)
@@ -635,9 +635,9 @@ export class Voice extends EventEmitter {
           return Buffer.alloc(0)
         }
 
-        if (!this.soundeffects[split[0]])
+        if (!this.soundeffects[split[0]] || !this.soundeffects[split[0]][split[1]])
           return fail(split[0])
-        return await this.fetchChatsound(pathToSfx[split[1]])
+        return await this.fetchChatsound(pathToSfx[split[1] + 1])
       })
     )).reduce(
       (pV, cV) =>
