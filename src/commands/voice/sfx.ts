@@ -9,6 +9,7 @@ export default class SfxCommand extends BaseCommand {
   constructor (commandClient: CommandClientExtended) {
     super(commandClient, {
       name: 'sfx',
+      aliases: [ 'saysound' ],
       type: CommandArgumentTypes.STRING,
       required: true
     })

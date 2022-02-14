@@ -291,7 +291,7 @@ export class Voice extends EventEmitter {
   private async fetchSoundeffects() {
     const lists = {
       'PAC3-Server/chatsounds-valve-games': {
-        bases: [ 'tf2', 'portal', 'l4d2', 'l4d', 'hl2', 'hl1', 'ep2', 'ep1', 'css', 'csgo' ],
+        bases: [ 'csgo', 'css', 'ep1', 'ep2', 'hl1', 'hl2', 'l4d', 'l4d2', 'portal', 'tf2' ],
         useMsgPack: true
       },
       'Metastruct/garrysmod-chatsounds': {
