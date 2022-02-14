@@ -15,6 +15,7 @@ import {
   Readable,
   Transform
 } from 'stream'
+import { decodeArrayStream } from '@msgpack/msgpack'
 
 import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
@@ -239,24 +240,77 @@ export class Voice extends EventEmitter {
     debug('Voice initialized')
   }
 
-  private async fetchSoundeffects() {
-    const lists = [
-      'PAC3-Server/chatsounds-valve-games',
-      'Metastruct/garrysmod-chatsounds',
-      'PAC3-Server/chatsounds',
-    ];
+  // Source: https://github.com/Metastruct/Chatsounds-X/blob/master/app/src/ChatsoundsFetcher.ts
+  private async sfxBuildFromGitHub(repo: string, usesMsgPack: boolean, base?: string) {
+    if (!base) base = 'sounds/chatsounds'
 
-    for (const repo of lists) {
+    const baseUrl = `https://raw.githubusercontent.com/${repo}/master/${base}/`;
+    const sounds: Array<Array<string>> = [];
+
+    if (usesMsgPack) {
+      const resp = await axios.get(baseUrl + 'list.msgpack', { responseType: 'stream' });
+      const generator: any = decodeArrayStream(resp.data);
+			for await (const sound of generator)
+        sounds.push(sound);
+    } else {
       const responseFromGh = await axios(`https://api.github.com/repos/${repo}/git/trees/master?recursive=1`);
-      const staticUrlPrefix = 'https://raw.githubusercontent.com/' + repo + '/' + responseFromGh.data.sha + '/';
+      const body: string = JSON.stringify(responseFromGh.data);
+			let i: number = 0;
+			for (const match of body.matchAll(/"path":\s*"([\w\/\s\.]+)"(?:\n|,|})/g)) {
+				let path: string = match[1];
+				if (!path || path.length === 0) continue;
+				if (!path.startsWith(base) || !path.endsWith('.ogg')) continue;
 
-      for (const fileData of responseFromGh.data.tree) {
-        if (!fileData.path.endsWith('.ogg')) continue
-        const name = fileData.path.substring(fileData.path.lastIndexOf('/') + 1, fileData.path.lastIndexOf('.ogg'))
-        if (!this.soundeffects[name])
-          this.soundeffects[name] = []
-        this.soundeffects[name].push(staticUrlPrefix + fileData.path)
+				path = path.substring(base.length + 1);
+				const chunks: Array<string> = path.split('/');
+				const realm: string = chunks[0];
+				let trigger: string = chunks[1];
+
+				if (!chunks[2]) {
+					trigger = trigger.substring(0, trigger.length - '.ogg'.length);
+				}
+
+				sounds[i] = [realm, trigger, path];
+
+				if (trigger.startsWith('-')) {
+					sounds[i][1] = sounds[i][1].substring(1);
+					sounds[i][3] = `${realm}/${trigger}.txt`;
+				}
+
+				i++;
+			}
+    }
+
+    for (const [ _realm, name, file ] of sounds) {
+      if (!this.soundeffects[name])
+        this.soundeffects[name] = [];
+      this.soundeffects[name].push(baseUrl + file);
+    }
+  }
+
+  private async fetchSoundeffects() {
+    const lists = {
+      'PAC3-Server/chatsounds-valve-games': {
+        bases: [ 'tf2', 'portal', 'l4d2', 'l4d', 'hl2', 'hl1', 'ep2', 'ep1', 'css', 'csgo' ],
+        useMsgPack: true
+      },
+      'Metastruct/garrysmod-chatsounds': {
+        bases: [ 'sound/chatsounds/autoadd' ],
+        useMsgPack: false
+      },
+      'PAC3-Server/chatsounds': {
+        bases: false,
+        useMsgPack: false
       }
+    };
+
+    for (const repo in lists) {
+      const cfg = lists[repo];
+      if (cfg.bases)
+        for (const base of cfg.bases)
+          await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack, base)
+      else
+        await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack);
     }
 
     this.soundeffectsMatcher = new Matcher(Object.keys(this.soundeffects))
