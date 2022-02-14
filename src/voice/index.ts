@@ -241,6 +241,7 @@ export class Voice extends EventEmitter {
   }
 
   // Source: https://github.com/Metastruct/Chatsounds-X/blob/master/app/src/ChatsoundsFetcher.ts
+  // TODO: Store responses locally.
   private async sfxBuildFromGitHub(repo: string, usesMsgPack: boolean, base?: string) {
     if (!base) base = 'sounds/chatsounds'
 
@@ -625,7 +626,7 @@ export class Voice extends EventEmitter {
         const split: any[] = file.split('#')
         if (split[1]) split[1] = Number(split[1])
         else if (this.soundeffects[split[0]])
-          split[1] = Math.floor(Math.random() * (this.soundeffects[split[0]].length - 1))
+          split[1] = 1 + Math.floor(Math.random() * (this.soundeffects[split[0]].length - 1))
 
         const pathToSfx = this.soundeffects[split[0]]
         debug('parsed sfx', pathToSfx, split)
@@ -637,7 +638,7 @@ export class Voice extends EventEmitter {
 
         if (!this.soundeffects[split[0]] || !this.soundeffects[split[0]][split[1]])
           return fail(split[0])
-        return await this.fetchChatsound(pathToSfx[split[1] + 1])
+        return await this.fetchChatsound(pathToSfx[split[1] - 1])
       })
     )).reduce(
       (pV, cV) =>
