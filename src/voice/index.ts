@@ -250,35 +250,35 @@ export class Voice extends EventEmitter {
     if (usesMsgPack) {
       const resp = await axios.get(baseUrl + 'list.msgpack', { responseType: 'stream' });
       const generator: any = decodeArrayStream(resp.data);
-			for await (const sound of generator)
+      for await (const sound of generator)
         sounds.push(sound);
     } else {
       const responseFromGh = await axios(`https://api.github.com/repos/${repo}/git/trees/master?recursive=1`);
       const body: string = JSON.stringify(responseFromGh.data);
-			let i: number = 0;
-			for (const match of body.matchAll(/"path":\s*"([\w\/\s\.]+)"(?:\n|,|})/g)) {
-				let path: string = match[1];
-				if (!path || path.length === 0) continue;
-				if (!path.startsWith(base) || !path.endsWith('.ogg')) continue;
+      let i: number = 0;
+      for (const match of body.matchAll(/"path":\s*"([\w\/\s\.]+)"(?:\n|,|})/g)) {
+        let path: string = match[1];
+        if (!path || path.length === 0) continue;
+        if (!path.startsWith(base) || !path.endsWith('.ogg')) continue;
 
-				path = path.substring(base.length + 1);
-				const chunks: Array<string> = path.split('/');
-				const realm: string = chunks[0];
-				let trigger: string = chunks[1];
+        path = path.substring(base.length + 1);
+        const chunks: Array<string> = path.split('/');
+        const realm: string = chunks[0];
+        let trigger: string = chunks[1];
 
-				if (!chunks[2]) {
-					trigger = trigger.substring(0, trigger.length - '.ogg'.length);
-				}
+        if (!chunks[2]) {
+          trigger = trigger.substring(0, trigger.length - '.ogg'.length);
+        }
 
-				sounds[i] = [realm, trigger, path];
+        sounds[i] = [realm, trigger, path];
 
-				if (trigger.startsWith('-')) {
-					sounds[i][1] = sounds[i][1].substring(1);
-					sounds[i][3] = `${realm}/${trigger}.txt`;
-				}
+        if (trigger.startsWith('-')) {
+          sounds[i][1] = sounds[i][1].substring(1);
+          sounds[i][3] = `${realm}/${trigger}.txt`;
+        }
 
-				i++;
-			}
+        i++;
+      }
     }
 
     for (const [ _realm, name, file ] of sounds) {
