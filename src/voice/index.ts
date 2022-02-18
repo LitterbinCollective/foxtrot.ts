@@ -254,7 +254,7 @@ export class Voice extends EventEmitter {
       for await (const sound of generator)
         sounds.push(sound);
     } else {
-      const responseFromGh = await axios(`https://api.github.com/repos/${repo}/git/trees/master?recursive=1`);
+      const responseFromGh = await axios.get(`https://api.github.com/repos/${repo}/git/trees/master?recursive=1`);
       const body: string = JSON.stringify(responseFromGh.data);
       let i: number = 0;
       for (const match of body.matchAll(/"path":\s*"([\w\/\s\.]+)"(?:\n|,|})/g)) {
@@ -305,13 +305,23 @@ export class Voice extends EventEmitter {
       }
     };
 
-    for (const repo in lists) {
-      const cfg = lists[repo];
-      if (cfg.bases)
-        for (const base of cfg.bases)
-          await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack, base)
-      else
-        await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack);
+    const msg = await this.logChannel.createMessage(`Loading soundeffects... [0/${Object.entries(lists).length}]`);
+    let i = 0;
+    try {
+      for (const repo in lists) {
+        i++;
+        const cfg = lists[repo];
+        if (cfg.bases)
+          for (const base of cfg.bases)
+            await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack, base)
+        else
+          await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack);
+        await msg.edit(`Loading soundeffects... [${i}/${Object.entries(lists).length}]`);
+      }
+
+      msg.delete();
+    } catch (err) {
+      await msg.edit(`Something went wrong while loading soundeffects! [${i}/${Object.entries(lists).length}]`);
     }
 
     this.soundeffectsMatcher = new Matcher(Object.keys(this.soundeffects))
