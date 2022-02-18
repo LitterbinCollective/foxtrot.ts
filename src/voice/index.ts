@@ -4,7 +4,6 @@ import dbg from 'debug'
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
 import { ChannelGuildVoice, ChannelTextType, Message } from 'detritus-client/lib/structures'
 import { RequestTypes } from 'detritus-client-rest'
-import Matcher from 'did-you-mean';
 import { EventEmitter } from 'events'
 import fs from 'fs'
 import * as prism from 'prism-media'
@@ -15,7 +14,6 @@ import {
   Readable,
   Transform
 } from 'stream'
-import { decodeArrayStream } from '@msgpack/msgpack'
 
 import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
@@ -176,8 +174,6 @@ export class Voice extends EventEmitter {
   public readonly logChannel: ChannelTextType
   private readonly formats: BaseFormat[] = []
   private streams: Record < string, any > = {}
-  private soundeffects: Record < string, string[] > = {}
-  private soundeffectsMatcher: Matcher;
   private children: Record < string, any > = {}
   private player: Player
   private currentlyPlaying: ExtendedReadable | string | false
@@ -226,7 +222,6 @@ export class Voice extends EventEmitter {
       this.effects.set(name, new Effect())
     }
 
-    this.fetchSoundeffects();
     this.setupConnections();
     this.setupIdleInterval();
 
@@ -238,93 +233,6 @@ export class Voice extends EventEmitter {
     this.emit('initComplete')
     this.initialized = true
     debug('Voice initialized')
-  }
-
-  // Source: https://github.com/Metastruct/Chatsounds-X/blob/master/app/src/ChatsoundsFetcher.ts
-  // TODO: Store responses locally.
-  private async sfxBuildFromGitHub(repo: string, usesMsgPack: boolean, base?: string) {
-    if (!base) base = 'sounds/chatsounds'
-
-    const baseUrl = `https://raw.githubusercontent.com/${repo}/master/${base}/`;
-    const sounds: Array<Array<string>> = [];
-
-    if (usesMsgPack) {
-      const resp = await axios.get(baseUrl + 'list.msgpack', { responseType: 'stream' });
-      const generator: any = decodeArrayStream(resp.data);
-      for await (const sound of generator)
-        sounds.push(sound);
-    } else {
-      const responseFromGh = await axios.get(`https://api.github.com/repos/${repo}/git/trees/master?recursive=1`);
-      const body: string = JSON.stringify(responseFromGh.data);
-      let i: number = 0;
-      for (const match of body.matchAll(/"path":\s*"([\w\/\s\.]+)"(?:\n|,|})/g)) {
-        let path: string = match[1];
-        if (!path || path.length === 0) continue;
-        if (!path.startsWith(base) || !path.endsWith('.ogg')) continue;
-
-        path = path.substring(base.length + 1);
-        const chunks: Array<string> = path.split('/');
-        const realm: string = chunks[0];
-        let trigger: string = chunks[1];
-
-        if (!chunks[2]) {
-          trigger = trigger.substring(0, trigger.length - '.ogg'.length);
-        }
-
-        sounds[i] = [realm, trigger, path];
-
-        if (trigger.startsWith('-')) {
-          sounds[i][1] = sounds[i][1].substring(1);
-          sounds[i][3] = `${realm}/${trigger}.txt`;
-        }
-
-        i++;
-      }
-    }
-
-    for (const [ _realm, name, file ] of sounds) {
-      if (!this.soundeffects[name])
-        this.soundeffects[name] = [];
-      this.soundeffects[name].push(baseUrl + file);
-    }
-  }
-
-  private async fetchSoundeffects() {
-    const lists = {
-      'PAC3-Server/chatsounds-valve-games': {
-        bases: [ 'csgo', 'css', 'ep1', 'ep2', 'hl1', 'hl2', 'l4d', 'l4d2', 'portal', 'tf2' ],
-        useMsgPack: true
-      },
-      'Metastruct/garrysmod-chatsounds': {
-        bases: [ 'sound/chatsounds/autoadd' ],
-        useMsgPack: false
-      },
-      'PAC3-Server/chatsounds': {
-        bases: false,
-        useMsgPack: false
-      }
-    };
-
-    const msg = await this.logChannel.createMessage(`Loading soundeffects... [0/${Object.entries(lists).length}]`);
-    let i = 0;
-    try {
-      for (const repo in lists) {
-        i++;
-        const cfg = lists[repo];
-        if (cfg.bases)
-          for (const base of cfg.bases)
-            await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack, base)
-        else
-          await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack);
-        await msg.edit(`Loading soundeffects... [${i}/${Object.entries(lists).length}]`);
-      }
-
-      msg.delete();
-    } catch (err) {
-      await msg.edit(`Something went wrong while loading soundeffects! [${i}/${Object.entries(lists).length}]`);
-    }
-
-    this.soundeffectsMatcher = new Matcher(Object.keys(this.soundeffects))
   }
 
   private setupConnections() {
@@ -626,7 +534,8 @@ export class Voice extends EventEmitter {
     const fail = (file: string) => {
       if (failed) return
       failed = true
-      const matches = this.soundeffectsMatcher && this.soundeffectsMatcher.list(file).map(x => x.value).join('\n')
+      const matches = this.application.soundeffectsMatcher &&
+        this.application.soundeffectsMatcher.list(file).map(x => x.value).join('\n')
       this.error('No such soundeffect!', matches && 'Did you mean: ```\n' + matches + '```')
     }
 
@@ -635,11 +544,11 @@ export class Voice extends EventEmitter {
         file = file.trim()
         const split: any[] = file.split('#')
         if (split[1]) split[1] = Number(split[1])
-        else if (this.soundeffects[split[0]])
-          split[1] = 1 + Math.floor(Math.random() * (this.soundeffects[split[0]].length - 1))
+        else if (this.application.soundeffects[split[0]])
+          split[1] = 1 + Math.floor(Math.random() * (this.application.soundeffects[split[0]].length - 1))
         split[1]--;
 
-        const pathToSfx = this.soundeffects[split[0]]
+        const pathToSfx = this.application.soundeffects[split[0]]
         debug('parsed sfx', pathToSfx, split)
 
         if (file === 'sh') {
@@ -647,7 +556,7 @@ export class Voice extends EventEmitter {
           return Buffer.alloc(0)
         }
 
-        if (!this.soundeffects[split[0]] || !this.soundeffects[split[0]][split[1]])
+        if (!this.application.soundeffects[split[0]] || !this.application.soundeffects[split[0]][split[1]])
           return fail(split[0])
         return await this.fetchChatsound(pathToSfx[split[1]])
       })
