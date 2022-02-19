@@ -28,7 +28,7 @@
     "tempy": "^1.0.1",
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
-    "ytdl-core": "^4.9.1"
+    "ytdl-core": "^4.10.1"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",
