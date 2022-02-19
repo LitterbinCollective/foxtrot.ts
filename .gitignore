@@ -11,7 +11,7 @@ test_device.json
 device_model.json
 
 # Google Assistant usage audio logs
-galogs/*.raw
+galogs/*.raw 
 
 cache/
 .shat
