@@ -178,9 +178,6 @@ export class Voice extends EventEmitter {
   private player: Player
   private currentlyPlaying: ExtendedReadable | string | false
   private overlay: ExtendedReadable | false
-  private rewindable: Rewindable
-  private doneWriting = false
-  private waitingToWrite: Message
   private mixer: Mixer;
   private idle: NodeJS.Timeout;
 
@@ -256,7 +253,7 @@ export class Voice extends EventEmitter {
     );
   }
 
-  private convert2SOX (streamOrFile = this.currentlyPlaying, ss?: number) {
+  private convert2PCM (streamOrFile = this.currentlyPlaying, ss?: number) {
     const isFile = typeof streamOrFile === 'string'
 
     const ffmpegArgs: string[] = [
@@ -265,7 +262,7 @@ export class Voice extends EventEmitter {
       '-ac',
       this.AUDIO_CHANNELS.toString(),
       '-f',
-      'sox',
+      's16le',
       'pipe:1'
     ]
 
@@ -338,24 +335,10 @@ export class Voice extends EventEmitter {
 
   private async start (ss?: number) {
     const restarted = typeof ss !== 'undefined'
-    this.killPrevious()
+    this.killPrevious(restarted)
     let input = this.currentlyPlaying;
 
-    if (!restarted && this.player) this.player.ss = 0
-    if (restarted) input = this.currentlyPlaying = this.rewindable.rewind()
-
-    if (!this.rewindable) {
-      this.rewindable = new Rewindable()
-      this.doneWriting = false
-      if (typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying !== false) {
-        input = this.currentlyPlaying.pipe(this.rewindable)
-        this.currentlyPlaying.on('end', () => {
-          this.emit('rewindDone')
-          debug('rewind done')
-          this.doneWriting = true
-        })
-      }
-    }
+    if (!restarted && this.player) this.player.ss = 0;
 
     const postPlayingMessage = !restarted && this.currentlyPlaying !== false &&
       typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying.info
@@ -392,8 +375,16 @@ export class Voice extends EventEmitter {
     debug('afx: ', effects)
 
     this.children.sox = spawn('sox', [
+      '-r',
+      this.SAMPLE_RATE.toString(),
+      '-c',
+      this.AUDIO_CHANNELS.toString(),
       '-t',
-      'sox',
+      'raw',
+      '-b',
+      '16',
+      '-e',
+      'signed-integer',
       '-',
       '-r',
       this.SAMPLE_RATE.toString(),
@@ -409,8 +400,9 @@ export class Voice extends EventEmitter {
       ...effects
     ])
 
-    this.streams.ffmpeg = this.convert2SOX(input, ss)
-    this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin)
+    if (!restarted)
+      this.streams.ffmpeg = this.convert2PCM(input, ss);
+    this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin, { end: false })
     this.children.sox.stdout.pipe(this.mixer, { end: false });
 
     let killedPrevious = false;
@@ -425,8 +417,6 @@ export class Voice extends EventEmitter {
     this.killPrevious()
     debug('Voice.playerKill() call')
     this.emit('playerKill')
-    this.rewindable = null
-    this.doneWriting = true
 
     if (this.overlay) {
       this.overlay = false,
@@ -593,7 +583,7 @@ export class Voice extends EventEmitter {
       this.player.kill(true)
     }
 
-    this.killPrevious()
+    this.killPrevious(true)
     this.overlay = this.queue.splice(id, 1)[0]
     this.restartTime = Date.now()
     debug('Starting to overlay, time:', ms, 'ms')
@@ -607,25 +597,6 @@ export class Voice extends EventEmitter {
 
   public async restart () {
     if (!this.player || !this.currentlyPlaying) return
-    if (!this.doneWriting && !this.waitingToWrite) {
-      this.once('rewindDone', () => {
-        this.restart()
-        if (!this.waitingToWrite) return;
-        this.waitingToWrite.delete()
-        this.waitingToWrite = null
-      })
-
-      this.waitingToWrite = await this.logChannel.createMessage({
-        embed: {
-          title: 'Waiting...',
-          color: EMBED_COLORS.DEF,
-          footer: {
-            text: 'Might take a while, depending on how long the sound is.'
-          }
-        }
-      })
-      return
-    }
 
     const ms = this.player.position
     this.player.kill(true)
@@ -641,7 +612,7 @@ export class Voice extends EventEmitter {
     if (typeof str !== 'string') this.queue.push(str)
   }
 
-  private killPrevious () {
+  private killPrevious (ignoreFFMpeg = false) {
     this.emit('killPrevious')
     debug('Voice.killPrevious() call')
     clearInterval(this.idle)
@@ -649,8 +620,13 @@ export class Voice extends EventEmitter {
       this.player.count = 0
     if (this.children.sox)
       this.children.sox.stdout.unpipe(this.mixer)
+    if (this.streams.ffmpeg)
+      this.streams.ffmpeg.unpipe(this.streams.sox);
 
-    Object.values(this.children).forEach((c: ChildProcess) => c.kill(9))
+    Object.entries(this.children).forEach((c: [string, any]) => {
+      if (ignoreFFMpeg && c[0] === 'ffmpeg') return;
+      return c[1].kill(9)
+    });
     this.children = {}
   }
 
