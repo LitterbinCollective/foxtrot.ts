@@ -283,7 +283,7 @@ export class Voice extends EventEmitter {
     })
 
     ffmpeg.on('close', (code: number) =>
-      code === 1 && this.onPlayingError('ffmpeg', new Error('FFMPEG unexpectedly closed with exit code 1'))
+      (this.player.onEnd(), code === 1 && this.onPlayingError('ffmpeg', new Error('FFMPEG unexpectedly closed with exit code 1')))
     )
 
     const onError = (err: any) => err.code !== 'ECONNRESET' && this.onPlayingError('ffmpeg', err)
@@ -407,7 +407,6 @@ export class Voice extends EventEmitter {
 
     let killedPrevious = false;
     this.once('killPrevious', () => (killedPrevious = true));
-    this.children.sox.stdout.once('end', () => !killedPrevious && this.player.onEnd())
 
     this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e))
     this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
