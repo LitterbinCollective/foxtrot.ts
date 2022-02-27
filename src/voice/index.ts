@@ -1,8 +1,8 @@
 import axios from 'axios'
-import { spawn, ChildProcess } from 'child_process'
+import { spawn } from 'child_process'
 import dbg from 'debug'
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
-import { ChannelGuildVoice, ChannelTextType, Message } from 'detritus-client/lib/structures'
+import { ChannelGuildVoice, ChannelTextType } from 'detritus-client/lib/structures'
 import { RequestTypes } from 'detritus-client-rest'
 import { EventEmitter } from 'events'
 import fs from 'fs'
@@ -14,13 +14,13 @@ import {
   Readable,
   Transform
 } from 'stream'
+import * as yt from 'youtube-search-without-api-key' // I'm too lazy to code my own.
 
 import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
 import BaseFormat from './foundation/BaseFormat'
 import { EMBED_COLORS, FILENAME_REGEX } from '../constants'
 import GoogleAssistantVoiceModule from './googleAssistant'
-import { Rewindable } from './utils'
 
 interface ExtendedReadableInfo {
   title: string
@@ -514,8 +514,12 @@ export class Voice extends EventEmitter {
 
     if (result !== false) this.addToQueue(result)
     else {
-      const formats = this.formats.map(x => x.printName)
-      return await this.error('Unrecognized format!', '```\n' + formats.join('\n') + '```')
+      const search = await yt.search(url);
+      if (search.length === 0) {
+        const formats = this.formats.map(x => x.printName)
+        return await this.error('Query not found or unrecognizable URL!', 'Available formats:\n```\n' + formats.join('\n') + '```')
+      } else
+        return this.playURL('https://youtu.be/' + search[0].id.videoId);
     }
   }
 

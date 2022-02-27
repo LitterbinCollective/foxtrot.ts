@@ -28,6 +28,7 @@
     "tempy": "^1.0.1",
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
+    "youtube-search-without-api-key": "^1.0.7",
     "ytdl-core": "^4.10.1"
   },
   "devDependencies": {
