@@ -402,7 +402,46 @@ export class Voice extends EventEmitter {
 
     if (!restarted)
       this.streams.ffmpeg = this.convert2PCM(input, ss);
-    this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin, { end: false })
+    if (this.overlay) {
+      if (!this.streams.ffmpeg2_out) {
+        this.children.ffmpeg2 = spawn('ffmpeg', [
+          '-re',
+          '-f',
+          's16le',
+          '-ar',
+          this.SAMPLE_RATE.toString(),
+          '-ac',
+          this.AUDIO_CHANNELS.toString(),
+          '-i',
+          'pipe:3',
+          '-ss',
+          ss.toString(),
+          '-i',
+          'pipe:4',
+          '-filter_complex',
+          'amix=inputs=2',
+          '-ar',
+          this.SAMPLE_RATE.toString(),
+          '-ac',
+          this.AUDIO_CHANNELS.toString(),
+          '-f',
+          's16le',
+          'pipe:1'
+        ], {
+          stdio: [
+            'inherit', 'pipe', 'inherit',
+            'pipe', 'pipe'
+          ]
+        });
+
+        this.streams.ffmpeg2_1 = this.streams.ffmpeg.pipe(this.children.ffmpeg2.stdio[3] as Writable);
+        this.streams.ffmpeg2_2 = this.overlay.pipe(this.children.ffmpeg2.stdio[4] as Writable);
+        this.streams.ffmpeg2_out = this.children.ffmpeg2.stdout;
+      }
+
+      this.streams.sox = this.streams.ffmpeg2_out.pipe(this.children.sox.stdin, { end: false });
+    } else
+      this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin, { end: false })
     this.children.sox.stdout.pipe(this.mixer, { end: false });
 
     let killedPrevious = false;
@@ -619,11 +658,15 @@ export class Voice extends EventEmitter {
       this.player.count = 0
     if (this.children.sox)
       this.children.sox.stdout.unpipe(this.mixer)
-    if (this.streams.ffmpeg)
-      this.streams.ffmpeg.unpipe(this.streams.sox);
+    if (this.streams.ffmpeg) {
+      if (this.streams.ffmpeg2_out)
+        this.streams.ffmpeg2_out.unpipe(this.streams.sox)
+      else
+        this.streams.ffmpeg.unpipe(this.streams.sox);
+    }
 
     Object.entries(this.children).forEach((c: [string, any]) => {
-      if (ignoreFFMpeg && c[0] === 'ffmpeg') return;
+      if (ignoreFFMpeg && c[0].startsWith('ffmpeg')) return;
       return c[1].kill(9)
     });
     this.children = {}
