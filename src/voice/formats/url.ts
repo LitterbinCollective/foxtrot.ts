@@ -1,6 +1,6 @@
+import axios from 'axios';
 import { URL } from 'url'
 import { lookup } from 'dns'
-import fetch from 'node-fetch'
 
 import BaseFormat from '../foundation/BaseFormat'
 import { ExtendedReadable } from '..'
@@ -23,14 +23,18 @@ export default class URLFormat extends BaseFormat {
 
     let resp: any
     try {
-      resp = await fetch(matched)
-      const contentType = resp.headers.get('content-type')
+      resp = await axios({
+        method: 'get',
+        url: matched,
+        responseType: 'stream'
+      });
+      const contentType = resp.headers['content-type']
       if (!contentType.startsWith('audio/') && !contentType.startsWith('video/')) return false
     } catch (err) {
       return false
     }
 
-    const readable: ExtendedReadable = resp.body
+    const readable: ExtendedReadable = resp.data
     readable.info = {
       title: new URL(matched).pathname.split('/').pop(),
       url: matched
