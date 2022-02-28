@@ -97,14 +97,15 @@ export default class EffectCommand extends BaseCommand {
           head: ['Name', 'Current Value', 'Range']
         })
 
-        for (const name in afx.options) { tbl.push([name, afx.options[name], afx.optionsRange[name] ? afx.optionsRange[name].join(' - ') : '']) }
+        for (const name in afx.options)
+          tbl.push([name, afx.options[name], afx.optionsRange[name] ? afx.optionsRange[name].join(' - ') : '']);
 
         this.fancyReply(ctx, null, '```\n' + tbl.toString().split(COLOR_REGEX).join('') + '```')
         return false
       },
       ['s_' + (typeof set !== 'undefined')]: () => {
         let [name, value] = set.split('=').map((x: string) => x.trim())
-        if (!afx.options[name]) return ctx.reply('Unknown setting!')
+        if (afx.options[name] === undefined) return ctx.reply('Unknown setting!')
         if (!value) return ctx.reply('No value specified!')
 
         const type = typeof afx.options[name]
@@ -135,7 +136,7 @@ export default class EffectCommand extends BaseCommand {
       },
       ['g_' + (typeof get !== 'undefined')]: () => {
         const option = afx.options[get]
-        if (!option) return ctx.reply('Unknown setting!')
+        if (option === undefined) return ctx.reply('Unknown setting!')
 
         this.fancyReply(ctx, '`' + get + '`: `' + option + '`')
         return false
