@@ -105,6 +105,7 @@ class Player extends Writable {
 
 class Mixer extends Transform {
   public buffers: Buffer[] = []
+  public volume = 1;
   public readonly FRAME_LENGTH = 20;
   private voice: Voice;
 
@@ -118,32 +119,30 @@ class Mixer extends Transform {
   public _write(chunk: any, _enc: any, callback: any) {
     const SAMPLE_BYTE_LEN = 2
 
-    let newbuf = chunk;
-    if (this.buffers.length > 0) {
-      newbuf = Buffer.alloc(chunk.length)
-      const MIN_SAMPLE = -32768
-      const MAX_SAMPLE = 32767
-      for (let v = 0; v < chunk.length / SAMPLE_BYTE_LEN; v++) {
-        const pos = v * SAMPLE_BYTE_LEN;
+    let newbuf = Buffer.alloc(chunk.length)
+    const MIN_SAMPLE = -32768
+    const MAX_SAMPLE = 32767
+    for (let v = 0; v < chunk.length / SAMPLE_BYTE_LEN; v++) {
+      const pos = v * SAMPLE_BYTE_LEN;
 
-        let samples = chunk.readInt16LE(pos);
-        let count = 0;
-        for (let buffer of this.buffers) {
-          count++;
-          if (2 >= buffer.length) {
-            this.buffers.splice(count - 1, 1);
-            continue;
-          }
-          samples += buffer.readInt16LE(0);
-          this.buffers[count - 1] = buffer.slice(2, buffer.length);
+      let samples = chunk.readInt16LE(pos);
+      let count = 0;
+      for (let buffer of this.buffers) {
+        count++;
+        if (2 >= buffer.length) {
+          this.buffers.splice(count - 1, 1);
+          continue;
         }
-
-        if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
-          debug('clamping samples!! (' + samples + ')'),
-          samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE)
-
-        newbuf.writeInt16LE(samples, pos);
+        samples += buffer.readInt16LE(0);
+        this.buffers[count - 1] = buffer.slice(2, buffer.length);
       }
+
+      samples = Math.floor(samples * this.volume);
+      if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
+        debug('clamping samples!! (' + samples + ')'),
+        samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE)
+
+      newbuf.writeInt16LE(samples, pos);
     }
     this.push(newbuf);
 
@@ -557,6 +556,12 @@ export class Voice extends EventEmitter {
         fs.writeFileSync('cache/' + fileName + '.raw', buffer)
       })
     })
+  }
+
+  public setVolume(volume: number) {
+    if (isNaN(volume) || !isFinite(volume))
+      return;
+    this.mixer.volume = volume;
   }
 
   public async playSoundeffect(file: string) {
