@@ -5,6 +5,12 @@
   // Sentry DSN URL for catching errors.
   "sentryDSN": "",
 
+  // Feedback Discord webhook.
+  "feedbackWebhook": {
+    "id": "",
+    "token": ""
+  },
+
   // Google Assistant settings.
   "googleAssistantSettings": {
     // Google Assistant OAuth authentication.
@@ -23,9 +29,22 @@
       // USE THIS ONLY IF YOU WENT THROUGH DEVICE REGISTRATION
       // PROCESS.
       "deviceModelId": "glowing-memory-device",
-      "deviceId": "glowmem"
+      "deviceId": "glowmem",
+
+      // Device location.
+      "deviceLocation": {
+        "coordinates": {
+          "latitude": 37.422070403830226,
+          "longitude": -122.08408713606059
+        }
+      }
     }
   },
 
-  "formatCredentials": {}
+  "formatCredentials": {
+    "youtube": {
+      // IPv6 Block
+      "ipv6": ""
+    }
+  }
 }
