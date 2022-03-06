@@ -1,3 +1,4 @@
+import fs from 'fs'
 import ytdl from 'ytdl-core'
 
 import { ExtendedReadable } from '..'
@@ -7,10 +8,35 @@ export default class YouTubeFormat extends BaseFormat {
   public regex = /http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g
   public printName = 'YouTube'
 
+  private get cookies() {
+    const cookie = fs.readFileSync('youtube.cookies').toString();
+    let result = '';
+
+    for (const line of cookie) {
+      if (line.trim() === '' || line.startsWith('#'))
+        continue;
+
+      const [ domain, _include, path, secure, _expiry, key, value ] = line.split('\t');
+      if (!(domain.startsWith('.') || domain.startsWith('www')) || secure.toLowerCase() !== 'true' ||
+        path !== '/')
+        continue;
+      result += `${key}=${value};`;
+    }
+
+    return result;
+  }
+
   public async onMatch (matched: string) {
     let info: ytdl.videoInfo
     try {
-      info = await ytdl.getBasicInfo(matched)
+      info = await ytdl.getBasicInfo(matched, {
+        /*requestOptions: {
+          headers: {
+            cookies: this.cookies
+          }
+        },*/
+        IPv6Block: this.formatCredentials.youtube.ipv6,
+      } as any)
     } catch (err) {
       return false
     }
@@ -28,6 +54,12 @@ export default class YouTubeFormat extends BaseFormat {
       quality: 'highestaudio',
       filter: 'audioonly',
       highWaterMark: 1 << 25,
+      /*requestOptions: {
+        headers: {
+          cookies: this.cookies
+        }
+      },*/
+      IPv6Block: this.formatCredentials.youtube.ipv6,
     })
     stream.info = {
       title: info.videoDetails.title,

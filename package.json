@@ -26,7 +26,7 @@
     "soundcloud-downloader": "^1.0.0",
     "type-fest": "^2.1.0",
     "youtube-search-without-api-key": "^1.0.7",
-    "ytdl-core": "^4.10.1"
+    "ytdl-core": "^4.11.0"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",
