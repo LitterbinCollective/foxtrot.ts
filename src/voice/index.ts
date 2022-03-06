@@ -208,7 +208,7 @@ export class Voice extends EventEmitter {
           './formats/' + formatFileName.replace(FILENAME_REGEX, '')
         )
       ).default
-      this.formats.push(new Format())
+      this.formats.push(new Format(this.application.config.formatCredentials))
     }
 
     for (const effectFileName of fs.readdirSync(__dirname + '/effects/')) {

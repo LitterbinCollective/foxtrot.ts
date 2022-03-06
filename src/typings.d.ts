@@ -8,6 +8,11 @@ declare interface IConfig {
 
 declare interface IConfigFormatCredentials {
   spotify: IConfigSpotifyFormatCredentials
+  youtube: IConfigYouTubeFormatCredentials
+}
+
+declare interface IConfigYouTubeFormatCredentials {
+  ipv6: string
 }
 
 declare interface IConfigSpotifyFormatCredentials {
