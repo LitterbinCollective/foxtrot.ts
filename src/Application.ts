@@ -11,6 +11,7 @@ import fs from 'fs';
 import { decodeArrayStream } from '@msgpack/msgpack'
 import * as Sentry from '@sentry/node'
 import { PackageJson } from 'type-fest'
+import Sh from 'sh';
 
 import { Voice } from './voice'
 
@@ -31,6 +32,7 @@ export class Application {
   public config: IConfig
   public pkg: PackageJson
   public startAt: number;
+  public sh: Sh;
   public voices: Map<string, Voice> = new Map()
   public readonly commandClient: CommandClient
   public soundeffects: Record < string, string[] > = {}
@@ -76,6 +78,7 @@ export class Application {
 
   private async initialize() {
     await this.fetchSoundeffects();
+    this.sh = new Sh(this.soundeffects);
     await this.commandClient.run();
     console.log('Bot online!');
   }
