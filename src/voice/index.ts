@@ -12,7 +12,8 @@ import {
   Stream,
   Writable,
   Readable,
-  Transform
+  Transform,
+  PassThrough
 } from 'stream'
 import * as yt from 'youtube-search-without-api-key' // I'm too lazy to code my own.
 
@@ -31,6 +32,10 @@ interface ExtendedReadableInfo {
 
 export class ExtendedReadable extends Readable {
   public info?: ExtendedReadableInfo
+}
+
+class ExtendedPassThrough extends PassThrough {
+  public counter: number = 0;
 }
 
 const TAG = 'Voice/Player'
@@ -105,6 +110,7 @@ class Player extends Writable {
 
 class Mixer extends Transform {
   public buffers: Buffer[] = []
+  public streams: ExtendedPassThrough[] = [];
   public volume = 1;
   public readonly FRAME_LENGTH = 20;
   private voice: Voice;
@@ -137,6 +143,20 @@ class Mixer extends Transform {
         this.buffers[count - 1] = buffer.slice(2, buffer.length);
       }
 
+      count = 0;
+      for (const stream of this.streams) {
+        count++;
+        const buffer = stream.read(SAMPLE_BYTE_LEN);
+        if (buffer)
+          samples += buffer.readInt16LE(0),
+          stream.counter = 0
+        else {
+          stream.counter++;
+          if (stream.counter >= SAMPLE_BYTE_LEN * 2 * 48000)
+            this.streams.splice(count - 1, 1);
+        }
+      }
+
       samples = Math.floor(samples * this.volume);
       if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
         debug('clamping samples!! (' + samples + ')'),
@@ -152,6 +172,12 @@ class Mixer extends Transform {
 
   public addBuffer(buf: Buffer) {
     this.buffers.push(buf);
+  }
+
+  public addReadable(stream: Readable) {
+    const pt = new ExtendedPassThrough();
+    stream.pipe(pt, { end: false });
+    this.streams.push(pt);
   }
 }
 
@@ -565,46 +591,16 @@ export class Voice extends EventEmitter {
   }
 
   public async playSoundeffect(file: string) {
-    const parsed = file.toLowerCase().split(';')
-
-    let failed = false
-    const fail = (file: string) => {
-      if (failed) return
-      failed = true
-      const matches = this.application.soundeffectsMatcher &&
-        this.application.soundeffectsMatcher.list(file).map(x => x.value).join('\n')
-      this.error('No such soundeffect!', matches && 'Did you mean: ```\n' + matches + '```')
-    }
-
-    const combined = (await Promise.all(
-      parsed.map(async (file) => {
-        file = file.trim()
-        const split: any[] = file.split('#')
-        if (split[1]) split[1] = Number(split[1])
-        else if (this.application.soundeffects[split[0]])
-          split[1] = 1 + Math.floor(Math.random() * (this.application.soundeffects[split[0]].length - 1))
-        split[1]--;
-
-        const pathToSfx = this.application.soundeffects[split[0]]
-        debug('parsed sfx', pathToSfx, split)
-
-        if (file === 'sh') {
-          this.mixer.buffers = []
-          return Buffer.alloc(0)
-        }
-
-        if (!this.application.soundeffects[split[0]] || !this.application.soundeffects[split[0]][split[1]])
-          return fail(split[0])
-        return await this.fetchChatsound(pathToSfx[split[1]])
-      })
-    )).reduce(
-      (pV, cV) =>
-        (pV === undefined || cV === undefined) ? undefined : Buffer.concat([(pV as Buffer), (cV as Buffer)]),
-      Buffer.alloc(0)
-    );
-
-    if (combined !== undefined)
-      this.mixer.addBuffer(combined as Buffer);
+    file = file.toLowerCase();
+    for (const word of file.split(' '))
+      if (word.split(':')[0].split('#')[0] === 'sh') {
+        for (let i = 0; i < this.mixer.streams.length; i++)
+          this.mixer.buffers.splice(i, 1);
+        this.mixer.streams = [];
+      }
+    const script = this.application.sh.Parser.parse(file);
+    const stream = await this.application.sh.Audio.run(script);
+    this.mixer.addReadable(stream);
   }
 
   private async error (title = 'Unknown Error', description: string = null) {
