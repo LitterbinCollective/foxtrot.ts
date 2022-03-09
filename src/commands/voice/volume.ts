@@ -3,7 +3,6 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 
 import { CommandClientExtended } from '../../Application'
 import BaseCommand from '../../BaseCommand'
-import GoogleAssistantVoiceModule from '../../voice/googleAssistant'
 
 export default class VolumeCommand extends BaseCommand {
   constructor (commandClient: CommandClientExtended) {
