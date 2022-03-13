@@ -228,19 +228,15 @@ export class Voice extends EventEmitter {
     })
 
     for (const formatFileName of fs.readdirSync(__dirname + '/formats/')) {
-      const Format: any = (
-        await
-        import (
+      const Format: any = require (
           './formats/' + formatFileName.replace(FILENAME_REGEX, '')
-        )
-      ).default
+        ).default;
       this.formats.push(new Format(this.application.config.formatCredentials))
     }
 
     for (const effectFileName of fs.readdirSync(__dirname + '/effects/')) {
       const name = effectFileName.replace(FILENAME_REGEX, '')
-      const Effect: any = (await
-      import ('./effects/' + name)).default
+      const Effect: any = require ('./effects/' + name).default
       this.effects.set(name, new Effect())
     }
 
@@ -552,36 +548,6 @@ export class Voice extends EventEmitter {
     const path = 'resources/sounds/' + file + '.raw'
     if (fs.existsSync(path))
       this.mixer.addBuffer(fs.readFileSync(path))
-  }
-
-  private fetchChatsound(url: string) {
-    return new Promise(async (res) => {
-      const regex = /http(?:s?):\/\/raw\.githubusercontent\.com\/([\w-_\d]*)\/([\w-_\d]*)\/([0-f]*)\//g
-      const fileName = url.replaceAll(regex, '').replaceAll('/', '_')
-      if (fs.existsSync('cache/' + fileName + '.raw'))
-        return res(fs.readFileSync('cache/' + fileName + '.raw'))
-
-      const { data } = await axios({
-        method: 'get',
-        url,
-        responseType: 'stream'
-      });
-
-      const stream = spawn('ffmpeg', [ '-i', '-', '-ac', '2', '-ar', '48000', '-f', 's16le', '-'])
-      data.pipe(stream.stdin)
-
-      const buffers = []
-      stream.stdout.on('data', (data: any) =>
-        buffers.push(data)
-      )
-
-      stream.stdout.on('end', () => {
-        const buffer = Buffer.concat(buffers)
-        res(buffer)
-        if (!fs.existsSync('cache/')) fs.mkdirSync('cache/')
-        fs.writeFileSync('cache/' + fileName + '.raw', buffer)
-      })
-    })
   }
 
   public setVolume(volume: number) {
