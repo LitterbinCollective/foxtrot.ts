@@ -102,6 +102,8 @@ export default class GoogleAssistantVoiceModule extends BaseModule {
         '-',
         'vol', '12', 'dB'
       ])
+      this.sox.stdout.on('error', (err: any) => err.code !== 'EPIPE' && console.error(err));
+      this.sox.stdin.on('error', (err: any) => err.code !== 'EPIPE' && console.error(err));
       this.sox.stdout.on('data', (data) =>
         this.conversation.write(data)
       )

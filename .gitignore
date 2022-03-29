@@ -1,4 +1,7 @@
+# NPM modules
 node_modules/
+
+# Directory with compiled files
 dist/
 
 # Files with credentials
@@ -14,5 +17,9 @@ device_model.json
 # Google Assistant usage audio logs
 galogs/*.raw
 
+# Performance tester
+.clinic/
+
+# Cache
 cache/
 .shat

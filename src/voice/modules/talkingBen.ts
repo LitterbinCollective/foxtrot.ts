@@ -12,15 +12,16 @@ const debug = dbg(TAG)
 
 export default class TalkingBenVoiceModule extends BaseModule {
   private decoders: Record < string, prism.opus.Decoder > = {}
-  private sox: ChildProcessWithoutNullStreams
-  private startedAt = 0
   private hasBeenSilentSince?: number
   private heard: boolean = false
   private heardCounter = 0
+  private kill = false
   private idle: NodeJS.Timeout
   private mixer: AudioMixer.Mixer
   private mixerInputs: Record < string, AudioMixer.Input > = {}
   private mixerEmptyInput: AudioMixer.Input
+  private sox?: ChildProcessWithoutNullStreams
+  private startedAt = 0
   private readonly packetEventFunc = (packet) => this.receivePacket(packet)
   private readonly RECEIVER_FRAME_LENGTH = 20
   private readonly MAX_WAIT_TIME_SILENCE = 5000
@@ -81,7 +82,7 @@ export default class TalkingBenVoiceModule extends BaseModule {
 
     this.playSound(chosen, response)
     this.voice.once('playerKill', () =>
-      this.startListening()
+      !this.kill && this.startListening()
     )
   }
 
@@ -100,6 +101,10 @@ export default class TalkingBenVoiceModule extends BaseModule {
   }
 
   private stopListening () {
+    if (this.sox) {
+      this.sox.kill(9)
+      this.sox = null
+    }
     for (const id in this.mixerInputs) {
       this.mixer.removeInput(this.mixerInputs[id]),
       this.decoders[id].unpipe(this.mixerInputs[id])
@@ -212,7 +217,8 @@ export default class TalkingBenVoiceModule extends BaseModule {
 
   public destroy () {
     this.stopListening()
-    this.sox.kill(9)
+    this.kill = true
+    clearInterval(this.idle)
     this.voice.kill(false)
     this.voice.addToQueue('resources/talkingBen/tbend.wav')
     this.voice.denyOnAudioSubmission = false
