@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { spawn } from 'child_process'
 import dbg from 'debug'
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
@@ -21,7 +20,7 @@ import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
 import BaseFormat from './foundation/BaseFormat'
 import { EMBED_COLORS, FILENAME_REGEX } from '../constants'
-import GoogleAssistantVoiceModule from './googleAssistant'
+import BaseModule from './foundation/BaseModule'
 
 interface ExtendedReadableInfo {
   title: string
@@ -184,13 +183,14 @@ class Mixer extends Transform {
 export class Voice extends EventEmitter {
   public effects: Map < string, BaseEffect > = new Map()
   public connection: VoiceConnection
+  public currentlyPlaying: ExtendedReadable | string | false
   public queue: ExtendedReadable[] = []
   public startTime: number | boolean
   public pauseTime = 0
   public restartTime?: number
   public denyOnAudioSubmission = false
   public initialized = false
-  public googleAssistant?: GoogleAssistantVoiceModule
+  public module?: BaseModule
   public readonly SAMPLE_RATE = 48000
   public readonly AUDIO_CHANNELS = 2
   public readonly FRAME_SIZE = 960
@@ -201,7 +201,6 @@ export class Voice extends EventEmitter {
   private streams: Record < string, any > = {}
   private children: Record < string, any > = {}
   private player: Player
-  private currentlyPlaying: ExtendedReadable | string | false
   private overlay: ExtendedReadable | false
   private mixer: Mixer;
   private idle: NodeJS.Timeout;
@@ -475,8 +474,6 @@ export class Voice extends EventEmitter {
   public playerKill () {
     this.killPrevious()
     debug('Voice.playerKill() call')
-    this.emit('playerKill')
-
     if (this.overlay) {
       this.overlay = false,
       debug('Stopping to overlay...')
@@ -485,8 +482,11 @@ export class Voice extends EventEmitter {
     if (this.queue.length === 0) {
       this.currentlyPlaying = false
       this.setupIdleInterval()
-      return
     }
+
+    this.emit('playerKill')
+    if (this.queue.length === 0)
+      return
 
     debug('Another stream available, playing')
     const stream = this.queue.shift()
