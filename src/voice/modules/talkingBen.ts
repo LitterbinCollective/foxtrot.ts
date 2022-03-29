@@ -13,17 +13,19 @@ const debug = dbg(TAG)
 export default class TalkingBenVoiceModule extends BaseModule {
   private decoders: Record < string, prism.opus.Decoder > = {}
   private sox: ChildProcessWithoutNullStreams
+  private startedAt = 0
   private hasBeenSilentSince?: number
   private heard: boolean = false
-  private heardCounter = 0;
+  private heardCounter = 0
   private idle: NodeJS.Timeout
   private mixer: AudioMixer.Mixer
   private mixerInputs: Record < string, AudioMixer.Input > = {}
   private mixerEmptyInput: AudioMixer.Input
   private readonly packetEventFunc = (packet) => this.receivePacket(packet)
   private readonly RECEIVER_FRAME_LENGTH = 20
+  private readonly MAX_WAIT_TIME_SILENCE = 5000
   private readonly MAX_WAIT_TIME = 500
-  private readonly MIN_HEARD_COUNT = 6
+  private readonly MIN_HEARD_COUNT = 4
   private readonly MIN_VOLUME = 0.05
 
   constructor (voice: Voice) {
@@ -40,7 +42,7 @@ export default class TalkingBenVoiceModule extends BaseModule {
     this.voice.addToQueue('resources/talkingBen/tbstart.wav')
     const playerKillEvent = () => {
       debug('playerKill event received, assuming that it will play the next sound')
-      this.playSound('ben', 'Ben?');
+      this.playSound('ben', 'Ben?')
       this.voice.once('playerKill', () =>
         this.startListening()
       )
@@ -49,7 +51,8 @@ export default class TalkingBenVoiceModule extends BaseModule {
   }
 
   private respond() {
-    this.heard = false;
+    this.heard = false
+    this.startedAt = Date.now()
     this.stopListening()
     const responses = [
       'disgust',
@@ -107,6 +110,7 @@ export default class TalkingBenVoiceModule extends BaseModule {
 
   private startListening () {
     debug('Starting voice receiver...')
+    this.startedAt = Date.now();
     this.heard = false
     this.hasBeenSilentSince = Date.now()
 
@@ -131,7 +135,7 @@ export default class TalkingBenVoiceModule extends BaseModule {
         '-b', '16',
         '-e', 'signed-integer',
         '-',
-        'vol', '6', 'dB'
+        'vol', '24', 'dB'
       ])
       this.sox.stderr.on('data', (c) => console.log(c.toString()));
       this.sox.stdout.on('error', (error: any) => error.code !== 'EPIPE' && console.error(error.code));
@@ -152,8 +156,14 @@ export default class TalkingBenVoiceModule extends BaseModule {
           this.hasBeenSilentSince = this.hasBeenSilentSince || Date.now()
           this.heardCounter = 0;
           debug('silence, hasBeenSilentSince =', this.hasBeenSilentSince)
-          if (this.heard && Date.now() - this.hasBeenSilentSince >= this.MAX_WAIT_TIME)
-            this.respond()
+          if (this.heard) {
+            if (Date.now() - this.hasBeenSilentSince >= this.MAX_WAIT_TIME)
+              this.respond()
+          } else if (Date.now() - this.startedAt >= this.MAX_WAIT_TIME_SILENCE) {
+            this.startedAt = Date.now()
+            this.destroy()
+            this.voice.logChannel.createMessage('*[Ben has hang up the phone.]*')
+          }
         } else
           this.hasBeenSilentSince = null,
           this.heardCounter++,
@@ -201,9 +211,10 @@ export default class TalkingBenVoiceModule extends BaseModule {
   }
 
   public destroy () {
-    this.stopListening();
+    this.stopListening()
+    this.sox.kill(9)
     this.voice.kill(false)
-    this.voice.addToQueue('resources/talkingBen/tbend.wav');
+    this.voice.addToQueue('resources/talkingBen/tbend.wav')
     this.voice.denyOnAudioSubmission = false
     this.voice.module = null
     return true
