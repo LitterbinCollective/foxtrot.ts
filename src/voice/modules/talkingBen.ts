@@ -105,6 +105,7 @@ export default class TalkingBenVoiceModule extends BaseModule {
       this.sox.kill(9)
       this.sox = null
     }
+    this.voice.connection.off('packet', this.packetEventFunc)
     for (const id in this.mixerInputs) {
       this.mixer.removeInput(this.mixerInputs[id]),
       this.decoders[id].unpipe(this.mixerInputs[id])
