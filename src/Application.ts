@@ -50,7 +50,7 @@ export class Application {
         presence: {
           activity: {
             type: ActivityTypes.PLAYING,
-            name: 'sounds / WIP, report issues with mb!issue'
+            name: 'send us your beautiful glowmem art with mb!fb' // sounds / WIP, report issues with mb!issue
           }
         }
       }
