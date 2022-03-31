@@ -27,7 +27,7 @@ export default class RestartCommand extends BaseCommand {
 
     setTimeout(
       () => (this.commandClient.application.voices.forEach(x => x.kill()), process.exit(0)),
-      3000
+      25500
     );
   }
 }
