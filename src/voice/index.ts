@@ -250,6 +250,19 @@ export class Voice extends EventEmitter {
     this.emit('initComplete')
     this.initialized = true
     debug('Voice initialized')
+
+    /*const haaugh = (dNP?: boolean) => {
+      const pitch = 0.75 + +(0.75 * Math.random()).toFixed(2);
+      if (!dNP)
+        this.playSoundeffect('haaugh:pitch(' + pitch + ')')
+      setTimeout(
+        () =>
+          haaugh(),
+        Math.round(30000 + 120000 * Math.random())
+      )
+    }
+
+    haaugh(true)*/
   }
 
   private setupConnections() {
