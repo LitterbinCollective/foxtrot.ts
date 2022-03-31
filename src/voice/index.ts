@@ -204,6 +204,7 @@ export class Voice extends EventEmitter {
   private overlay: ExtendedReadable | false
   private mixer: Mixer;
   private idle: NodeJS.Timeout;
+  private haaugh: NodeJS.Timeout;
 
   constructor (
     application: Application,
@@ -255,7 +256,7 @@ export class Voice extends EventEmitter {
       const pitch = 0.75 + +(0.75 * Math.random()).toFixed(2);
       if (!dNP)
         this.playSoundeffect('haaugh:pitch(' + pitch + ')')
-      setTimeout(
+      this.haaugh = setTimeout(
         () =>
           haaugh(),
         Math.round(30000 + 120000 * Math.random())
@@ -669,6 +670,7 @@ export class Voice extends EventEmitter {
     if (removeVoice) {
       this.connection.kill(),
       this.application.voices.delete(this.channel.guildId)
+      clearTimeout(this.haaugh);
     }
     return ms
   }
