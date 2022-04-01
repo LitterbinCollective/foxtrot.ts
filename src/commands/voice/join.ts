@@ -26,13 +26,6 @@ export default class JoinCommand extends BaseCommand {
       ctx.member.voiceChannel,
       ctx.channel
     )
-    res.once('initComplete', () => {
-      try {
-        res.addToQueue('resources/aotl.mp3')
-      } catch (err) {
-        console.log(err)
-      }
-    })
     return await ctx.reply(Math.random() > 0.95 ? 'Oh hi Mark.' : 'Hi.')
   }
 }
