@@ -648,7 +648,7 @@ export class Voice extends EventEmitter {
         } else
           this.currentlyPlaying = str
       }
-      this.start()
+      return this.start()
     }
     if (typeof str !== 'string') {
       if (Array.isArray(str))
