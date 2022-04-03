@@ -38,6 +38,6 @@ export default class BandcampFormat extends BaseFormat {
       return readable
     }));
 
-    return array as any
+    return array as ExtendedReadable[]
   }
 }
