@@ -9,7 +9,8 @@ export default class BaseFormat {
     this.formatCredentials = formatCredentials;
   }
 
-  public onMatch (_matched: string): Promise<ExtendedReadable | false> | ExtendedReadable | false {
+  public onMatch (_matched: string): Promise<(() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false>
+    | (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false {
     return false
   }
 }
