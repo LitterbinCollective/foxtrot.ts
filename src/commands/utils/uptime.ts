@@ -2,7 +2,7 @@ import { Context } from 'detritus-client/lib/command'
 import prettyMilliseconds from 'pretty-ms';
 
 import { CommandClientExtended } from '../../Application'
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import { EMBED_COLORS, EMOJIS } from '../../constants'
 
 export default class UptimeCommand extends BaseCommand {

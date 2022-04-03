@@ -4,7 +4,7 @@ import { Message } from 'detritus-client/lib/structures'
 import Table from 'cli-table'
 
 import { CommandClientExtended } from '../../Application'
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import BaseEffect from '../../voice/foundation/BaseEffect'
 import { COLOR_REGEX, EMBED_COLORS, EMOJIS } from '../../constants'
 
