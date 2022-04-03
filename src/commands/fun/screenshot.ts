@@ -6,7 +6,7 @@ import puppeteer from 'puppeteer';
 import { promisify } from 'util';
 
 import { CommandClientExtended } from '../../Application'
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import { EMOJIS } from '../../constants';
 
 export default class HelpCommand extends BaseCommand {

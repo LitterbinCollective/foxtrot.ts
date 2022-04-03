@@ -4,7 +4,7 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 import { RequestTypes } from 'detritus-client-rest'
 
 import { CommandClientExtended } from '../../Application'
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import { EMBED_COLORS } from '../../constants';
 
 export default class IssueCommand extends BaseCommand {

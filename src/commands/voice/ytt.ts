@@ -1,7 +1,7 @@
 import { Context } from 'detritus-client/lib/command'
 
 import { CommandClientExtended } from '../../Application'
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import { EMBEDDED_APPLICATION, YOUTUBE_APPLICATION_ID } from '../../constants'
 
 export default class YTTCommand extends BaseCommand {

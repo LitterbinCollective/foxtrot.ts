@@ -3,6 +3,8 @@ import {
   ClusterClient,
   CommandClient,
   CommandClientOptions,
+  InteractionCommandClient,
+  InteractionCommandClientOptions,
   ShardClient
 } from 'detritus-client'
 import { ActivityTypes, ClientEvents } from 'detritus-client/lib/constants'
@@ -28,44 +30,47 @@ export class CommandClientExtended extends CommandClient {
   }
 }
 
+export class InteractionCommandClientExtended extends InteractionCommandClient {
+  public readonly application: Application
+
+  constructor (
+    application: Application,
+    token: string | ClusterClient | ShardClient,
+    options?: InteractionCommandClientOptions
+  ) {
+    super(token, options)
+    this.application = application
+  }
+}
+
 export class Application {
   public config: IConfig
   public pkg: PackageJson
-  public startAt: number;
   public sh: Sh;
-  public voices: Map<string, Voice> = new Map()
-  public readonly commandClient: CommandClient
   public soundeffects: Record < string, string[] > = {}
   public soundeffectsMatcher: Matcher;
+  public startAt: number;
+  public voices: Map<string, Voice> = new Map()
+  public readonly commandClient: CommandClientExtended
+  public readonly clusterClient: ClusterClient
+  public readonly interactionCommandClient: InteractionCommandClientExtended
 
   constructor (config: IConfig, pkg: PackageJson) {
     this.config = config
     this.pkg = pkg
 
-    this.commandClient = new CommandClientExtended(this, this.config.token, {
-      prefix: 'mb!',
-      useClusterClient: true,
-      activateOnEdits: true,
+    this.clusterClient = new ClusterClient(this.config.token, {
       gateway: {
         presence: {
           activity: {
             type: ActivityTypes.PLAYING,
-            name: 'sounds / WIP, report issues with mb!issue'
+            name: 'sounds / WIP, report issues with ~issue'
           }
         }
       }
     })
-    this.commandClient.addMultipleIn('dist/commands/', {
-      subdirectories: true
-    })
-    this.startAt = Date.now()
 
-    Sentry.init({
-      dsn: this.config.sentryDSN
-    })
-
-    const client = this.commandClient.client as ClusterClient
-    client.on(
+    this.clusterClient.on(
       ClientEvents.WARN,
       ({ error }) =>
         Sentry.captureException(error, {
@@ -73,14 +78,39 @@ export class Application {
         })
     )
 
+    {
+      this.commandClient = new CommandClientExtended(this, this.clusterClient, {
+        prefix: '~',
+        activateOnEdits: true,
+      })
+      this.commandClient.addMultipleIn('dist/commands/', {
+        subdirectories: true
+      })
+    }
+
+    {
+      this.interactionCommandClient = new InteractionCommandClientExtended(this, this.clusterClient)
+      this.interactionCommandClient.addMultipleIn('dist/interactionCommands/')
+    }
+
+    this.startAt = Date.now()
+
+    Sentry.init({
+      dsn: this.config.sentryDSN
+    })
+
     this.initialize();
   }
 
   private async initialize() {
-    await this.fetchSoundeffects();
-    this.sh = new Sh(this.soundeffects);
-    await this.commandClient.run();
-    console.log('Bot online!');
+    await this.fetchSoundeffects()
+    this.sh = new Sh(this.soundeffects)
+    await this.clusterClient.run()
+    await this.commandClient.run()
+    await this.interactionCommandClient.run()
+
+    console.log('Bot online!')
+    console.log(`Loaded shards #(${this.clusterClient.shards.map((shard) => shard.shardId).join(', ')})`);
   }
 
   // Source: https://github.com/Metastruct/Chatsounds-X/blob/master/app/src/ChatsoundsFetcher.ts

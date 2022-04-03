@@ -6,7 +6,7 @@ import {
 import { Markup, regex } from 'detritus-client/lib/utils'
 import axios from 'axios'
 
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import { CommandClientExtended } from '../../Application'
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor

@@ -2,7 +2,7 @@ import { Context, ParsedArgs } from 'detritus-client/lib/command'
 import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 
 import { CommandClientExtended } from '../../Application'
-import BaseCommand from '../../BaseCommand'
+import { BaseCommand } from '../../BaseCommand'
 import TalkingBenVoiceModule from '../../voice/modules/talkingBen'
 
 export default class TBCommand extends BaseCommand {
