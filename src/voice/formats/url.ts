@@ -34,11 +34,13 @@ export default class URLFormat extends BaseFormat {
       return false
     }
 
-    const readable: ExtendedReadable = resp.data
-    readable.info = {
-      title: new URL(matched).pathname.split('/').pop(),
-      url: matched
+    return () => {
+      const readable: ExtendedReadable = resp.data
+      readable.info = {
+        title: new URL(matched).pathname.split('/').pop(),
+        url: matched
+      }
+      return readable
     }
-    return readable
   }
 }

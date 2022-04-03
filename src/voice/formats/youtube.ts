@@ -5,7 +5,7 @@ import { ExtendedReadable } from '..'
 import BaseFormat from '../foundation/BaseFormat'
 
 export default class YouTubeFormat extends BaseFormat {
-  public regex = /http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g
+  public regex = /https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g
   public printName = 'YouTube'
 
   private get cookies() {
@@ -50,22 +50,24 @@ export default class YouTubeFormat extends BaseFormat {
       }
     }
 
-    const stream: ExtendedReadable = ytdl(matched, {
-      quality: 'highestaudio',
-      filter: 'audioonly',
-      highWaterMark: 1 << 25,
-      /*requestOptions: {
-        headers: {
-          cookies: this.cookies
-        }
-      },*/
-      IPv6Block: this.formatCredentials.youtube.ipv6,
-    })
-    stream.info = {
-      title: info.videoDetails.title,
-      url: info.videoDetails.video_url,
-      image
+    return () => {
+      const stream: ExtendedReadable = ytdl(matched, {
+        quality: 'highestaudio',
+        filter: 'audioonly',
+        highWaterMark: 1 << 25,
+        /*requestOptions: {
+          headers: {
+            cookies: this.cookies
+          }
+        },*/
+        IPv6Block: this.formatCredentials.youtube.ipv6,
+      })
+      stream.info = {
+        title: info.videoDetails.title,
+        url: info.videoDetails.video_url,
+        image
+      }
+      return stream;
     }
-    return stream
   }
 }

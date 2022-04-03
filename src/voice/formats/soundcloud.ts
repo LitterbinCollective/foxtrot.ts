@@ -15,12 +15,14 @@ export default class SoundcloudFormat extends BaseFormat {
       return false
     }
 
-    const stream: ExtendedReadable = await scdl.download(matched)
-    stream.info = {
-      title: info.user.username + ' - ' + info.title,
-      image: info.artwork_url,
-      url: matched
+    return async () => {
+      const stream: ExtendedReadable = await scdl.download(matched)
+      stream.info = {
+        title: info.user.username + ' - ' + info.title,
+        image: info.artwork_url,
+        url: matched
+      }
+      return stream
     }
-    return stream
   }
 }

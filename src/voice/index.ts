@@ -184,7 +184,7 @@ export class Voice extends EventEmitter {
   public effects: Map < string, BaseEffect > = new Map()
   public connection: VoiceConnection
   public currentlyPlaying: ExtendedReadable | string | false
-  public queue: ExtendedReadable[] = []
+  public queue: ((() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable)[] = []
   public startTime: number | boolean
   public pauseTime = 0
   public restartTime?: number
@@ -240,8 +240,8 @@ export class Voice extends EventEmitter {
       this.effects.set(name, new Effect())
     }
 
-    this.setupConnections();
-    this.setupIdleInterval();
+    this.setupConnections()
+    this.setupIdleInterval()
 
     this.connection = connection
     this.connection.setOpusEncoder()
@@ -304,7 +304,7 @@ export class Voice extends EventEmitter {
     })
 
     ffmpeg.on('close', (code: number) =>
-      (this.player.onEnd(), code === 1 && this.onPlayingError('ffmpeg', new Error('FFMPEG unexpectedly closed with exit code 1')))
+      (!ffmpeg.killed && (this.player.onEnd(), code === 1 && this.onPlayingError('ffmpeg', new Error('FFMPEG unexpectedly closed with exit code 1'))))
     )
 
     const onError = (err: any) => err.code !== 'ECONNRESET' && this.onPlayingError('ffmpeg', err)
@@ -472,7 +472,7 @@ export class Voice extends EventEmitter {
     this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
   }
 
-  public playerKill () {
+  public async playerKill () {
     this.killPrevious()
     debug('Voice.playerKill() call')
     if (this.overlay) {
@@ -491,7 +491,11 @@ export class Voice extends EventEmitter {
 
     debug('Another stream available, playing')
     const stream = this.queue.shift()
-    this.currentlyPlaying = stream
+    if (typeof stream === 'function')
+      this.currentlyPlaying = await stream(),
+      this.currentlyPlaying.info.platform = (stream.constructor as any).platform
+    else
+      this.currentlyPlaying = stream
     this.start()
   }
 
@@ -505,18 +509,21 @@ export class Voice extends EventEmitter {
       })
     }
 
-    let result: ExtendedReadable | boolean = false
+    let result: (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false = false
 
     for (const format of this.formats) {
       const res = url.match(format.regex)
       if (!res || res.length === 0) continue
 
-      let streamOrFalse: ExtendedReadable | false
+      let streamOrFalse: (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false
       try {
         streamOrFalse = await format.onMatch(url)
-        if (!streamOrFalse) continue
+        if (!streamOrFalse) {
+          debug(format.printName + ' did not match, continuing')
+          continue
+        }
       } catch (err) {
-        dbg(`error on ${format.printName} format`)
+        debug(`error on ${format.printName} format:`, err)
         Sentry.captureException(err, {
           tags: {
             format: format.printName,
@@ -529,19 +536,26 @@ export class Voice extends EventEmitter {
 
       debug(`submitted url matched to ${format.printName} format, yay!`)
       result = streamOrFalse
-      result.info.platform = format.printName
+
+      if (typeof result === 'function')
+        (result.constructor as any).platform = format.printName
+      else if (Array.isArray(result))
+        result = result.map(x => { x.info.platform = format.printName; return x })
+      else
+        (result as ExtendedReadable).info.platform = format.printName
 
       break
     }
 
     if (result !== false) this.addToQueue(result)
     else {
-      const search = await yt.search(url);
+      debug('nothing was matched, searching on yt instead...')
+      const search = await yt.search(url)
       if (search.length === 0) {
         const formats = this.formats.map(x => x.printName)
         return await this.error('Query not found or unrecognizable URL!', 'Available formats:\n```\n' + formats.join('\n') + '```')
       } else
-        return this.playURL('https://youtu.be/' + search[0].id.videoId);
+        return this.playURL('https://youtu.be/' + search[0].id.videoId)
     }
   }
 
@@ -594,7 +608,12 @@ export class Voice extends EventEmitter {
     }
 
     this.killPrevious(true)
-    this.overlay = this.queue.splice(id, 1)[0]
+    const str = this.queue.splice(id, 1)[0]
+    if (typeof str === 'function')
+      this.overlay = await str(),
+      this.overlay.info.platform = (str.constructor as any).platform
+    else
+      this.overlay = str
     this.restartTime = Date.now()
     debug('Starting to overlay, time:', ms, 'ms')
     this.start(ms / 1000)
@@ -617,9 +636,26 @@ export class Voice extends EventEmitter {
     if (this.currentlyPlaying) this.start(ms / 1000)
   }
 
-  public async addToQueue (str: ExtendedReadable | string) {
-    if (this.queue.length === 0 && !this.currentlyPlaying) return (this.currentlyPlaying = str), this.start()
-    if (typeof str !== 'string') this.queue.push(str)
+  public async addToQueue (str: (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | string) {
+    if (this.queue.length === 0 && !this.currentlyPlaying) {
+      if (typeof str === 'function')
+        this.currentlyPlaying = await str(),
+        this.currentlyPlaying.info.platform = (str.constructor as any).platform
+      else {
+        if (Array.isArray(str)) {
+          this.currentlyPlaying = str.shift()
+          this.queue = str
+        } else
+          this.currentlyPlaying = str
+      }
+      this.start()
+    }
+    if (typeof str !== 'string') {
+      if (Array.isArray(str))
+        this.queue = this.queue.concat(str)
+      else
+        this.queue.push(str)
+    }
   }
 
   private killPrevious (ignoreFFMpeg = false) {
