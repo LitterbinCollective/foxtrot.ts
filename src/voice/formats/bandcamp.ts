@@ -6,7 +6,7 @@ import BaseFormat from '../foundation/BaseFormat'
 export default class BandcampFormat extends BaseFormat {
   public regex = /^https?:\/\/(.*).bandcamp.com\/(track|album)\/(.*)$/g
   public printName = 'Bandcamp'
-  private tralbumRegex = /<script (.*) src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-(.*)\.js" (.*) data-tralbum="(.*?)" (.*)><\/script>/g;
+  private tralbumRegex = /<script (.*)src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-(.*)\.js"(.*)data-tralbum="(.*?)"(.*)><\/script>/g;
   private readonly CHARS = {quot: '"', amp: '&'};
 
   private decodeHTML(str: string) {
