@@ -1,7 +1,7 @@
 import { spawn } from 'child_process'
 import dbg from 'debug'
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
-import { ChannelGuildVoice, ChannelTextType } from 'detritus-client/lib/structures'
+import { ChannelGuildVoice, ChannelTextType, User } from 'detritus-client/lib/structures'
 import { RequestTypes } from 'detritus-client-rest'
 import { EventEmitter } from 'events'
 import fs from 'fs'
@@ -27,6 +27,8 @@ interface ExtendedReadableInfo {
   image?: string
   url: string
   platform?: string
+  submittee?: User
+  duration?: number
 };
 
 export class ExtendedReadable extends Readable {
@@ -354,6 +356,17 @@ export class Voice extends EventEmitter {
     if (this.player) { this.player.kill() } else this.playerKill()
   }
 
+  private durationInStr(seconds: number) {
+    const result = [
+      ~~(seconds / 60) % 60,
+      ~~seconds % 60
+    ]
+    let hours: number;
+    if ((hours = ~~(seconds / 3600)) !== 0)
+      result.unshift(hours);
+    return result.map(n => n < 9 ? '0' + n.toString() : n.toString()).join(':');
+  }
+
   private async start (ss?: number) {
     const restarted = typeof ss !== 'undefined'
     this.killPrevious(restarted)
@@ -368,16 +381,35 @@ export class Voice extends EventEmitter {
         title,
         image,
         url,
-        platform
+        platform,
+        duration,
+        submittee
       } = (this.currentlyPlaying as ExtendedReadable).info
+
       const embed: RequestTypes.CreateChannelMessageEmbed = {
         title: 'Now playing: ' + title,
         url,
         color: EMBED_COLORS.DEF,
+        fields: [
+          {
+            name: 'Submitted by',
+            value: submittee.mention,
+            inline: true
+          }
+        ],
         footer: {
           text: 'Fetched from ' + platform
         }
       }
+
+      if (duration) {
+        embed.fields.push({
+          name: 'Duration',
+          value: this.durationInStr(duration),
+          inline: true
+        })
+      }
+
       if (url) {
         embed.thumbnail = {
           url: image
@@ -493,13 +525,14 @@ export class Voice extends EventEmitter {
     const stream = this.queue.shift()
     if (typeof stream === 'function')
       this.currentlyPlaying = await stream(),
-      this.currentlyPlaying.info.platform = (stream.constructor as any).platform
+      this.currentlyPlaying.info.platform = (stream.constructor as any).platform,
+      this.currentlyPlaying.info.submittee = (stream.constructor as any).submittee
     else
       this.currentlyPlaying = stream
     this.start()
   }
 
-  public async playURL (url: string) {
+  public async playURL (url: string, submittee: User) {
     if (this.denyOnAudioSubmission) {
       return await this.logChannel.createMessage({
         embed: {
@@ -538,11 +571,13 @@ export class Voice extends EventEmitter {
       result = streamOrFalse
 
       if (typeof result === 'function')
-        (result.constructor as any).platform = format.printName
+        (result.constructor as any).platform = format.printName,
+        (result.constructor as any).submittee = submittee
       else if (Array.isArray(result))
-        result = result.map(x => { x.info.platform = format.printName; return x })
+        result = result.map(x => { x.info.platform = format.printName; x.info.submittee = submittee; return x })
       else
-        (result as ExtendedReadable).info.platform = format.printName
+        (result as ExtendedReadable).info.platform = format.printName,
+        (result as ExtendedReadable).info.submittee = submittee
 
       break
     }
@@ -555,7 +590,7 @@ export class Voice extends EventEmitter {
         const formats = this.formats.map(x => x.printName)
         return await this.error('Query not found or unrecognizable URL!', 'Available formats:\n```\n' + formats.join('\n') + '```')
       } else
-        return this.playURL('https://youtu.be/' + search[0].id.videoId)
+        return this.playURL('https://youtu.be/' + search[0].id.videoId, submittee)
     }
   }
 
@@ -611,7 +646,8 @@ export class Voice extends EventEmitter {
     const str = this.queue.splice(id, 1)[0]
     if (typeof str === 'function')
       this.overlay = await str(),
-      this.overlay.info.platform = (str.constructor as any).platform
+      this.overlay.info.platform = (str.constructor as any).platform,
+      this.overlay.info.submittee = (str.constructor as any).submittee;
     else
       this.overlay = str
     this.restartTime = Date.now()
@@ -640,7 +676,8 @@ export class Voice extends EventEmitter {
     if (this.queue.length === 0 && !this.currentlyPlaying) {
       if (typeof str === 'function')
         this.currentlyPlaying = await str(),
-        this.currentlyPlaying.info.platform = (str.constructor as any).platform
+        this.currentlyPlaying.info.platform = (str.constructor as any).platform,
+        this.currentlyPlaying.info.submittee = (str.constructor as any).submittee
       else {
         if (Array.isArray(str)) {
           this.currentlyPlaying = str.shift()

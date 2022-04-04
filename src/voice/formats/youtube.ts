@@ -65,6 +65,7 @@ export default class YouTubeFormat extends BaseFormat {
       stream.info = {
         title: info.videoDetails.title,
         url: info.videoDetails.video_url,
+        duration: Number(info.videoDetails.lengthSeconds),
         image
       }
       return stream;

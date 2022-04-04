@@ -32,7 +32,8 @@ export default class BandcampFormat extends BaseFormat {
       readable.info = {
         title: track.title,
         image: `https://f4.bcbits.com/img/a${info.art_id}_1.jpg`,
-        url: info.url
+        url: info.url,
+        duration: track.duration
       }
 
       return readable

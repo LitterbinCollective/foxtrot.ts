@@ -20,7 +20,8 @@ export default class SoundcloudFormat extends BaseFormat {
       stream.info = {
         title: info.user.username + ' - ' + info.title,
         image: info.artwork_url,
-        url: matched
+        url: matched,
+        duration: info.full_duration / 1000
       }
       return stream
     }
