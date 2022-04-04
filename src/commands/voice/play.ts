@@ -28,7 +28,7 @@ export default class PlayCommand extends BaseCommand {
       )
       return res.once('initComplete', () => {
         try {
-          res.playURL(url)
+          res.playURL(url, ctx.user)
         } catch (err) {
           console.log(err)
         }
@@ -39,7 +39,7 @@ export default class PlayCommand extends BaseCommand {
       return await ctx.reply('Voice not yet initialized!')
 
     try {
-      res.playURL(url)
+      res.playURL(url, ctx.user)
     } catch (err) {
       console.log(err)
     }
