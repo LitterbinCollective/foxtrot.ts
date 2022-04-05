@@ -224,11 +224,18 @@ export class Voice extends EventEmitter {
   }
 
   private async initialize () {
-    const {
-      connection
-    } = await this.channel.join({
-      receive: true
-    })
+    let connection: VoiceConnection
+    try {
+      connection = (await this.channel.join({
+        receive: true
+      })).connection
+    } catch (err) {
+      this.logChannel.createMessage(
+        "Something went wrong while creating a voice connection! This can occur if you're " +
+        'inviting me over to a voice channel that I cannot join. Try in a different one.'
+      )
+      return this.kill()
+    }
 
     for (const formatFileName of fs.readdirSync(__dirname + '/formats/')) {
       const Format: any = require (
@@ -733,9 +740,9 @@ export class Voice extends EventEmitter {
       this.player.kill()
     }
     if (removeVoice) {
-      this.connection.kill(),
+      if (this.connection)
+        this.connection.kill();
       this.application.voices.delete(this.channel.guildId)
-      clearTimeout(this.haaugh);
     }
     return ms
   }
