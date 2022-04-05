@@ -14,7 +14,7 @@ import {
   Transform,
   PassThrough
 } from 'stream'
-import * as yt from 'youtube-search-without-api-key' // I'm too lazy to code my own.
+import * as yt from 'youtube-search-without-api-key' // i'm too lazy to code my own. todo: diy you lazy fuck.
 
 import { Application } from '../Application'
 import BaseEffect from './foundation/BaseEffect'
@@ -33,6 +33,7 @@ interface ExtendedReadableInfo {
 
 export class ExtendedReadable extends Readable {
   public info?: ExtendedReadableInfo
+  public cleanup?: () => any
 }
 
 class ExtendedPassThrough extends PassThrough {
@@ -505,8 +506,11 @@ export class Voice extends EventEmitter {
   }
 
   public async playerKill () {
-    this.killPrevious()
     debug('Voice.playerKill() call')
+    this.killPrevious()
+    if (typeof this.currentlyPlaying === 'object' && this.currentlyPlaying.cleanup)
+      debug(`cleaning up this.currentlyPlaying (platform ${this.currentlyPlaying.info.platform})`),
+      this.currentlyPlaying.cleanup()
     if (this.overlay) {
       this.overlay = false,
       debug('Stopping to overlay...')
@@ -695,7 +699,7 @@ export class Voice extends EventEmitter {
     }
   }
 
-  private killPrevious (ignoreFFMpeg = false) {
+  private killPrevious (notFullCleanup = false) {
     this.emit('killPrevious')
     debug('Voice.killPrevious() call')
     clearInterval(this.idle)
@@ -711,9 +715,10 @@ export class Voice extends EventEmitter {
     }
 
     Object.entries(this.children).forEach((c: [string, any]) => {
-      if (ignoreFFMpeg && c[0].startsWith('ffmpeg')) return;
+      if (notFullCleanup && c[0].startsWith('ffmpeg')) return
       return c[1].kill(9)
     });
+
     this.children = {}
   }
 
