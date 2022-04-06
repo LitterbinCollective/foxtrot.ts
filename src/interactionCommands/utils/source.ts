@@ -2,7 +2,7 @@ import { BaseInteractionCommand, InteractionContextExtended } from '../../BaseCo
 
 export default class SourceCommand extends BaseInteractionCommand {
   public name = 'source'
-  public description = 'source code for glowmem.'
+  public description = 'Source code for glowmem.'
 
   public async run (ctx: InteractionContextExtended) {
     const { homepage } = ctx.interactionCommandClient.application.pkg
