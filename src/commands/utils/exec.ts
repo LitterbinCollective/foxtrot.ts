@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec } from 'child_process'
 import { Context, ParsedArgs } from 'detritus-client/lib/command'
 import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 import { RequestTypes } from 'detritus-client-rest'
