@@ -207,7 +207,6 @@ export class Voice extends EventEmitter {
   private overlay: ExtendedReadable | false
   private mixer: Mixer;
   private idle: NodeJS.Timeout;
-  private haaugh: NodeJS.Timeout;
 
   constructor (
     application: Application,
