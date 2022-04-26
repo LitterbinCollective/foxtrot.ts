@@ -34,6 +34,7 @@ interface ExtendedReadableInfo {
 export class ExtendedReadable extends Readable {
   public info?: ExtendedReadableInfo
   public cleanup?: () => any
+  public reconnect?: () => any
 }
 
 class ExtendedPassThrough extends PassThrough {
@@ -49,7 +50,6 @@ class Player extends Writable {
   private curPos = 0
   private readonly FRAME_LENGTH = 20
   private readonly voice: Voice
-  private readonly timeouts: NodeJS.Timeout[] = []
 
   constructor (voice: Voice) {
     super()
@@ -371,7 +371,7 @@ export class Voice extends EventEmitter {
     let hours: number;
     if ((hours = ~~(seconds / 3600)) !== 0)
       result.unshift(hours);
-    return result.map(n => n < 9 ? '0' + n.toString() : n.toString()).join(':');
+    return result.map(n => n < 10 ? '0' + n.toString() : n.toString()).join(':');
   }
 
   private async start (ss?: number) {
@@ -503,9 +503,6 @@ export class Voice extends EventEmitter {
     } else
       this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin, { end: false })
     this.children.sox.stdout.pipe(this.mixer, { end: false });
-
-    let killedPrevious = false;
-    this.once('killPrevious', () => (killedPrevious = true));
 
     this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e))
     this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
