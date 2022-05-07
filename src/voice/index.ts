@@ -2,6 +2,7 @@ import { spawn } from 'child_process'
 import dbg from 'debug'
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
 import { ChannelGuildVoice, ChannelTextType, User } from 'detritus-client/lib/structures'
+import { Markup } from 'detritus-client/lib/utils'
 import { RequestTypes } from 'detritus-client-rest'
 import { EventEmitter } from 'events'
 import fs from 'fs'
@@ -353,7 +354,7 @@ export class Voice extends EventEmitter {
 
     this.error(
       'Error occurred while trying to play audio',
-      err ? '```\n' + err.message + '```' : null
+      err ? Markup.codeblock(err.message) : null
     )
 
     this.skip()
@@ -595,7 +596,7 @@ export class Voice extends EventEmitter {
       const search = await yt.search(url)
       if (search.length === 0) {
         const formats = this.formats.map(x => x.printName)
-        return await this.error('Query not found or unrecognizable URL!', 'Available formats:\n```\n' + formats.join('\n') + '```')
+        return await this.error('Query not found or unrecognizable URL!', 'Available formats:\n' + Markup.codeblock(formats.join('\n')))
       } else
         return this.playURL('https://youtu.be/' + search[0].id.videoId, submittee)
     }
