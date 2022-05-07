@@ -1,6 +1,7 @@
 import { exec } from 'child_process'
 import { Context, ParsedArgs } from 'detritus-client/lib/command'
 import { CommandArgumentTypes } from 'detritus-client/lib/constants'
+import { Markup } from 'detritus-client/lib/utils'
 import { RequestTypes } from 'detritus-client-rest'
 
 import { CommandClientExtended } from '../../Application'
@@ -36,7 +37,7 @@ export default class IssueCommand extends BaseCommand {
         } else
           message.embed = {
             title: 'Error occurred while running',
-            description: '```' + str + '```',
+            description: Markup.codeblock(str),
             color: EMBED_COLORS.ERR
           }
       } else {
@@ -50,7 +51,7 @@ export default class IssueCommand extends BaseCommand {
         } else
           message.embed = {
             title: 'Result',
-            description: '```' + str + '```',
+            description: Markup.codeblock(str),
             color: EMBED_COLORS.DEF
           }
       }

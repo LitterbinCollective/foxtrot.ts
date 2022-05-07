@@ -2,6 +2,7 @@ import { exec } from 'child_process'
 import { ParsedArgs } from 'detritus-client/lib/command'
 import { ApplicationCommandOptionTypes, MessageFlags } from 'detritus-client/lib/constants'
 import { InteractionEditOrRespond } from 'detritus-client/lib/structures'
+import { Markup } from 'detritus-client/lib/utils'
 
 import { BaseInteractionCommand, InteractionContextExtended } from '../../BaseCommand'
 import { EMBED_COLORS } from '../../constants';
@@ -47,7 +48,7 @@ export default class ExecCommand extends BaseInteractionCommand {
         } else
           message.embed = {
             title: 'Error occurred while running',
-            description: '```' + str + '```',
+            description: Markup.codeblock(str),
             color: EMBED_COLORS.ERR
           }
       } else {
@@ -61,7 +62,7 @@ export default class ExecCommand extends BaseInteractionCommand {
         } else
           message.embed = {
             title: 'Result',
-            description: '```' + str + '```',
+            description: Markup.codeblock(str),
             color: EMBED_COLORS.DEF
           }
       }
