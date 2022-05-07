@@ -1,5 +1,6 @@
 declare interface IConfig {
   token: string
+  prefix: string
   sentryDSN: string
   feedbackWebhook: IConfigFeedbackWebhook
   googleAssistantSettings: IGoogleAssistantConfig

@@ -80,7 +80,7 @@ export class Application {
 
     {
       this.commandClient = new CommandClientExtended(this, this.clusterClient, {
-        prefix: '~',
+        prefix: this.config.prefix || '~',
         activateOnEdits: true,
       })
       this.commandClient.addMultipleIn('dist/commands/', {
@@ -201,7 +201,8 @@ export class Application {
         console.log('Done! Writing...');
         fs.writeFileSync('.shat', JSON.stringify(this.soundeffects));
       } catch (err) {
-        console.log(`Something went wrong while loading soundeffects! Halting loading... [${i}/${Object.entries(lists).length}]`);
+        console.error(`Something went wrong while loading soundeffects! Halting loading... [${i}/${Object.entries(lists).length}]`);
+        console.error(err);
 
         if (exists) {
           console.log('The file does exist, using it instead...');
