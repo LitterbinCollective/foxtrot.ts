@@ -13,7 +13,7 @@ export default class LeaveCommand extends BaseCommand {
 
   public async run (ctx: Context) {
     const res = this.commandClient.application.voices.get(ctx.guild.id)
-    if (!res) { return await ctx.reply('From where do I leave?') }
+    if (!res) { return await ctx.reply('Already gone.') }
     if (res.channel !== ctx.member.voiceChannel && res.channel.members.size !== 1) {
       return await ctx.reply('You are not in the voice channel this bot is currently in.')
     }
