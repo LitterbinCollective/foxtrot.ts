@@ -1,4 +1,4 @@
-import { Context } from 'detritus-client/lib/command'
+import { Context, ParsedArgs } from 'detritus-client/lib/command'
 import {
   CommandArgumentTypes,
   DiscordRegexNames
@@ -28,14 +28,11 @@ export default class EvalCommand extends BaseCommand {
     })
   }
 
-  public onBeforeRun (ctx: Context, _args: any) {
+  public onBeforeRun (ctx: Context, _: ParsedArgs) {
     return ctx.user.isClientOwner
   }
 
-  public async run (
-    ctx: Context,
-    { code, async, url }: { code: string, async: boolean, url?: string }
-  ) {
+  public async run (ctx: Context, { code, async, url }: ParsedArgs) {
     if (url) code = (await axios(url)).data
 
     let message = ''
