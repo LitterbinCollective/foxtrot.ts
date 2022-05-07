@@ -1,6 +1,7 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command'
 import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 import { Message } from 'detritus-client/lib/structures'
+import { Markup } from 'detritus-client/lib/utils'
 import Table from 'cli-table'
 
 import { CommandClientExtended } from '../../Application'
@@ -67,7 +68,7 @@ export default class EffectCommand extends BaseCommand {
     if (!res.initialized)
       return await ctx.reply('Voice not yet initialized!')
 
-    const effectList = '```\n' + [...res.effects.keys()].join('\n') + '```'
+    const effectList = Markup.codeblock([...res.effects.keys()].join('\n'));
     if (!effect) return await this.fancyReply(ctx, 'List of available effects', effectList)
 
     const afx: BaseEffect = res.effects.get(effect)
@@ -90,7 +91,7 @@ export default class EffectCommand extends BaseCommand {
         for (const name in afx.options)
           tbl.push([name, afx.options[name], afx.optionsRange[name] ? afx.optionsRange[name].join(' - ') : '']);
 
-        this.fancyReply(ctx, null, '```\n' + tbl.toString().split(COLOR_REGEX).join('') + '```')
+        this.fancyReply(ctx, null, Markup.codeblock(tbl.toString().split(COLOR_REGEX).join('')))
         return false
       },
       ['s_' + (typeof set !== 'undefined')]: () => {
@@ -107,7 +108,7 @@ export default class EffectCommand extends BaseCommand {
             value = value === 'true'
             break
           default:
-            throw new Error('Unknown type of `options`! TODO: Add conversion method for `' + type + '`.')
+            throw new Error('Could not convert given value to needed type! TODO: Add conversion method for ' + Markup.codestring(type) + '.')
         }
 
         if (type !== typeof value) {
@@ -128,7 +129,7 @@ export default class EffectCommand extends BaseCommand {
         const option = afx.options[get]
         if (option === undefined) return ctx.reply('Unknown setting!')
 
-        this.fancyReply(ctx, '`' + get + '`: `' + option + '`')
+        this.fancyReply(ctx, Markup.codestring(get) + ': ' + Markup.codestring(option))
         return false
       }
     }
