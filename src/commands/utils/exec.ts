@@ -17,7 +17,7 @@ export default class IssueCommand extends BaseCommand {
     })
   }
 
-  public onBeforeRun(ctx: Context, _args: any) {
+  public onBeforeRun(ctx: Context, _: ParsedArgs) {
     return ctx.user.isClientOwner;
   }
 

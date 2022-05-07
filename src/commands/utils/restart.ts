@@ -1,4 +1,4 @@
-import { Context } from 'detritus-client/lib/command'
+import { Context, ParsedArgs } from 'detritus-client/lib/command'
 
 import { CommandClientExtended } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
@@ -12,7 +12,7 @@ export default class RestartCommand extends BaseCommand {
     })
   }
 
-  public onBeforeRun(ctx: Context, _args: any) {
+  public onBeforeRun(ctx: Context, _: ParsedArgs) {
     const letRun = !this.notRun;
     if (letRun)
       this.notRun = true;
