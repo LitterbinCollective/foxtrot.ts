@@ -3,19 +3,22 @@ import {
   ClusterClient,
   CommandClient,
   CommandClientOptions,
+  CommandClientPrefixes,
   InteractionCommandClient,
   InteractionCommandClientOptions,
   ShardClient
 } from 'detritus-client'
 import { ActivityTypes, ClientEvents } from 'detritus-client/lib/constants'
-import Matcher from 'did-you-mean';
 import fs from 'fs';
 import { decodeArrayStream } from '@msgpack/msgpack'
 import * as Sentry from '@sentry/node'
 import { PackageJson } from 'type-fest'
 import Sh from 'sh';
+import { Sequelize } from 'sequelize';
 
 import { Voice } from './voice'
+import { FILENAME_REGEX } from './constants';
+import { Context } from 'detritus-client/lib/command';
 
 export class CommandClientExtended extends CommandClient {
   public readonly application: Application
@@ -27,6 +30,13 @@ export class CommandClientExtended extends CommandClient {
   ) {
     super(token, options)
     this.application = application
+  }
+
+  public async onPrefixCheck(ctx: Context): Promise<CommandClientPrefixes> {
+    const settings: any = await this.application.sequelize.models.settings.findOne({ where: { serverId: ctx.guildId } })
+    if (settings && settings.prefix)
+      return [ settings.prefix ]
+    return this.prefixes.custom
   }
 }
 
@@ -48,12 +58,12 @@ export class Application {
   public pkg: PackageJson
   public sh: Sh;
   public soundeffects: Record < string, string[] > = {}
-  public soundeffectsMatcher: Matcher;
-  public startAt: number;
+  public startAt: number
   public voices: Map<string, Voice> = new Map()
   public readonly commandClient: CommandClientExtended
   public readonly clusterClient: ClusterClient
   public readonly interactionCommandClient: InteractionCommandClientExtended
+  public readonly sequelize: Sequelize
 
   constructor (config: IConfig, pkg: PackageJson) {
     this.config = config
@@ -93,6 +103,13 @@ export class Application {
       this.interactionCommandClient.addMultipleIn('dist/interactionCommands/')
     }
 
+    this.sequelize = new Sequelize(this.config.databaseURL);
+    for (const storeFileName of fs.readdirSync('dist/models/')) {
+      const fileName = storeFileName.replace(FILENAME_REGEX, '')
+      const { name, attributes } = require('./models/' + fileName)
+      this.sequelize.define(name, attributes);
+    }
+
     this.startAt = Date.now()
 
     Sentry.init({
@@ -105,6 +122,7 @@ export class Application {
   private async initialize() {
     await this.fetchSoundeffects()
     this.sh = new Sh(this.soundeffects)
+    await this.sequelize.sync()
     await this.clusterClient.run()
     await this.commandClient.run()
     await this.interactionCommandClient.run()
@@ -210,7 +228,5 @@ export class Application {
         }
       }
     }
-
-    this.soundeffectsMatcher = new Matcher(Object.keys(this.soundeffects))
   }
 }

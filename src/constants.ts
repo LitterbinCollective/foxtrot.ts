@@ -16,12 +16,13 @@ export const EMOJIS = {
   STOPWATCH: '⏱️'
 }
 
-export const YOUTUBE_APPLICATION_ID = '880218394199220334'
-export const EMBEDDED_APPLICATION = 2
-export const FILENAME_REGEX = /\.[^/.]+$/
-export const COLOR_REGEX = /\u001b\[(?:\d*;){0,5}\d*m/g
-
 export const EMOJI_ICONS = {
   GOOGLE_MIC: '<:googlemicrophone:879221835370213406>',
   GOOGLE_ASSISTANT: '<:googleassistant:879221886180016159>'
 }
+
+export const ADMINISTRATOR_PERMISSION = BigInt(0x8)
+export const YOUTUBE_APPLICATION_ID = '880218394199220334'
+export const EMBEDDED_APPLICATION = 2
+export const FILENAME_REGEX = /\.[^/.]+$/
+export const COLOR_REGEX = /\u001b\[(?:\d*;){0,5}\d*m/g
