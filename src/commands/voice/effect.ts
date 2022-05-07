@@ -16,10 +16,6 @@ export default class EffectCommand extends BaseCommand {
       label: 'effect',
       type: CommandArgumentTypes.STRING,
       args: [{
-        name: 'c',
-        type: CommandArgumentTypes.STRING,
-        consume: true
-      }, {
         name: 'enable',
         type: CommandArgumentTypes.BOOL,
         aliases: ['e']
@@ -41,13 +37,7 @@ export default class EffectCommand extends BaseCommand {
         type: CommandArgumentTypes.STRING,
         aliases: ['g'],
         consume: true
-      }],
-      metadata: {
-        usage: [
-          'mb!effect reverb -e',
-          'mb!effect reverb -s reverberance=100'
-        ]
-      }
+      }]
     })
   }
 
@@ -144,7 +134,7 @@ export default class EffectCommand extends BaseCommand {
     }
 
     let restart: boolean | Message = false
-    for (const command in commandsToExecute) { command.endsWith('true') && (restart = await commandsToExecute[command]()) }
+    for (const command in commandsToExecute) { command.endsWith('true') && (restart = restart || await commandsToExecute[command]()) }
 
     if (restart === true) {
       res.restart()
