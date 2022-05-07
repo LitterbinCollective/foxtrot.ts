@@ -8,7 +8,7 @@ import {
 } from 'child_process'
 import dbg from 'debug'
 import { Message } from 'detritus-client/lib/structures'
-import { Embed } from 'detritus-client/lib/utils'
+import { Embed, Markup } from 'detritus-client/lib/utils'
 import fs from 'fs'
 import GoogleAssistant from 'google-assistant'
 import prism from 'prism-media'
@@ -212,7 +212,7 @@ export default class GoogleAssistantVoiceModule extends BaseModule {
       embed: {
         title: endedConv ? 'Conversation ended with an error' : 'Google Assistant Error',
         color: EMBED_COLORS.ERR,
-        description: '```\n' + error.message + '```'
+        description: Markup.codeblock(error.message)
       }
     })
   }
