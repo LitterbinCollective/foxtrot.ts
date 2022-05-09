@@ -22,7 +22,6 @@
     "pg": "^8.7.3",
     "pretty-ms": "^7.0.1",
     "prism-media": "^1.3.1",
-    "puppeteer": "^13.7.0",
     "sequelize": "^6.19.0",
     "sh": "github:NonagonNetwork/sh",
     "soundcloud-downloader": "^1.0.0",
