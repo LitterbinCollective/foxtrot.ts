@@ -135,7 +135,18 @@ export default class EffectCommand extends BaseCommand {
     }
 
     let restart: boolean | Message = false
-    for (const command in commandsToExecute) { command.endsWith('true') && (restart = restart || await commandsToExecute[command]()) }
+    let doToggle = true;
+    for (const command in commandsToExecute) {
+      if (command.endsWith('true')) {
+        restart = restart || await commandsToExecute[command]()
+        doToggle = false
+      }
+    }
+
+    if (doToggle) {
+      afx.enabled = !afx.enabled
+      restart = true
+    }
 
     if (restart === true) {
       res.restart()
