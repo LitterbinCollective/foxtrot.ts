@@ -103,7 +103,7 @@ export class Application {
       this.interactionCommandClient.addMultipleIn('dist/interactionCommands/')
     }
 
-    this.sequelize = new Sequelize(this.config.databaseURL, null, null, {
+    this.sequelize = new Sequelize(this.config.databaseURL, {
       logging: false,
     });
     for (const storeFileName of fs.readdirSync('dist/models/')) {
