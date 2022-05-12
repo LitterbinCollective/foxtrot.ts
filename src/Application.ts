@@ -103,7 +103,9 @@ export class Application {
       this.interactionCommandClient.addMultipleIn('dist/interactionCommands/')
     }
 
-    this.sequelize = new Sequelize(this.config.databaseURL);
+    this.sequelize = new Sequelize(this.config.databaseURL, null, null, {
+      logging: false,
+    });
     for (const storeFileName of fs.readdirSync('dist/models/')) {
       const fileName = storeFileName.replace(FILENAME_REGEX, '')
       const { name, attributes } = require('./models/' + fileName)
