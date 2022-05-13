@@ -3,12 +3,12 @@ import { ParsedArgs } from 'detritus-client/lib/command'
 import { Embed } from 'detritus-client/lib/utils'
 import * as Sentry from '@sentry/node'
 
-import { CommandClientExtended, InteractionCommandClientExtended } from './Application'
+import { GMCommandClient, GMInteractionCommandClient } from './Application'
 import { EMBED_COLORS } from './constants'
 import { ApplicationCommandTypes, MessageFlags } from 'detritus-client/lib/constants'
 
 export class BaseCommand extends Command.Command {
-  public readonly commandClient: CommandClientExtended
+  public readonly commandClient: GMCommandClient
   public readonly disableDm = true
 
   // public onBeforeRun(ctx: Command.Context, _args: any) {
@@ -60,7 +60,7 @@ export class BaseCommand extends Command.Command {
 }
 
 export class InteractionContextExtended extends Interaction.InteractionContext {
-  public interactionCommandClient: InteractionCommandClientExtended
+  public interactionCommandClient: GMInteractionCommandClient
 }
 
 export class BaseInteractionCommand<ParsedArgsFinished = Interaction.ParsedArgs> extends Interaction.InteractionCommand<ParsedArgsFinished> {

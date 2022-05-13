@@ -4,12 +4,12 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 import { Markup } from 'detritus-client/lib/utils'
 import { RequestTypes } from 'detritus-client-rest'
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 import { EMBED_COLORS } from '../../constants';
 
 export default class IssueCommand extends BaseCommand {
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'exec',
       aliases: ['cexec'],

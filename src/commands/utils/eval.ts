@@ -7,12 +7,12 @@ import { Markup, regex } from 'detritus-client/lib/utils'
 import axios from 'axios'
 
 import { BaseCommand } from '../../BaseCommand'
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
 
 export default class EvalCommand extends BaseCommand {
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'eval',
       type: (value) => {

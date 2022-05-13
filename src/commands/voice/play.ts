@@ -1,12 +1,12 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command'
 import { CommandArgumentTypes } from 'detritus-client/lib/constants'
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 import { Voice } from '../../voice'
 
 export default class PlayCommand extends BaseCommand {
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'play',
       label: 'url',

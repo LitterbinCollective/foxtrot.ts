@@ -4,13 +4,13 @@ import { Message } from 'detritus-client/lib/structures'
 import { Markup } from 'detritus-client/lib/utils'
 import Table from 'cli-table'
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 import BaseEffect from '../../voice/foundation/BaseEffect'
 import { COLOR_REGEX, EMBED_COLORS, EMOJIS } from '../../constants'
 
 export default class EffectCommand extends BaseCommand {
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'effect',
       aliases: ['e'],
