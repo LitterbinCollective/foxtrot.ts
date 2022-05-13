@@ -1,11 +1,11 @@
 import { Context } from 'detritus-client/lib/command'
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 import { EMBEDDED_APPLICATION, YOUTUBE_APPLICATION_ID } from '../../constants'
 
 export default class YTTCommand extends BaseCommand {
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'ytt',
       aliases: ['yt', 'youtube', 'youtubetogether', 'yttogether']

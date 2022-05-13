@@ -1,11 +1,11 @@
 import { ClusterClient } from 'detritus-client'
 import { Context } from 'detritus-client/lib/command'
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 
 export default class PingCommand extends BaseCommand {
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'ping'
     })

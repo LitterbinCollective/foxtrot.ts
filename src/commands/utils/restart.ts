@@ -1,12 +1,12 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command'
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 
 export default class RestartCommand extends BaseCommand {
   private notRun: boolean;
 
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'restart',
     })

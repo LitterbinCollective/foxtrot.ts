@@ -4,7 +4,7 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 import { Markup } from 'detritus-client/lib/utils';
 import { DataTypes } from 'sequelize';
 
-import { CommandClientExtended } from '../../Application'
+import { GMCommandClient } from '../../Application'
 import { BaseCommand } from '../../BaseCommand'
 import { ADMINISTRATOR_PERMISSION, COLOR_REGEX } from '../../constants';
 import { attributes } from '../../models/settings';
@@ -12,7 +12,7 @@ import { attributes } from '../../models/settings';
 export default class SettingsCommand extends BaseCommand {
   private readonly ATTR_BLACKLIST = [ 'createdAt', 'updatedAt', 'serverId' ];
 
-  constructor (commandClient: CommandClientExtended) {
+  constructor (commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'settings',
       label: 'selection',
