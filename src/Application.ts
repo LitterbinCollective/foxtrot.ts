@@ -20,7 +20,7 @@ import { Voice } from './voice'
 import { FILENAME_REGEX } from './constants';
 import { Context } from 'detritus-client/lib/command';
 
-export class CommandClientExtended extends CommandClient {
+export class GMCommandClient extends CommandClient {
   public readonly application: Application
 
   constructor (
@@ -40,7 +40,7 @@ export class CommandClientExtended extends CommandClient {
   }
 }
 
-export class InteractionCommandClientExtended extends InteractionCommandClient {
+export class GMInteractionCommandClient extends InteractionCommandClient {
   public readonly application: Application
 
   constructor (
@@ -60,9 +60,9 @@ export class Application {
   public soundeffects: Record < string, string[] > = {}
   public startAt: number
   public voices: Map<string, Voice> = new Map()
-  public readonly commandClient: CommandClientExtended
+  public readonly commandClient: GMCommandClient
   public readonly clusterClient: ClusterClient
-  public readonly interactionCommandClient: InteractionCommandClientExtended
+  public readonly interactionCommandClient: GMInteractionCommandClient
   public readonly sequelize: Sequelize
 
   constructor (config: IConfig, pkg: PackageJson) {
@@ -89,7 +89,7 @@ export class Application {
     )
 
     {
-      this.commandClient = new CommandClientExtended(this, this.clusterClient, {
+      this.commandClient = new GMCommandClient(this, this.clusterClient, {
         prefix: this.config.prefix || '~',
         activateOnEdits: true,
       })
@@ -99,7 +99,7 @@ export class Application {
     }
 
     {
-      this.interactionCommandClient = new InteractionCommandClientExtended(this, this.clusterClient)
+      this.interactionCommandClient = new GMInteractionCommandClient(this, this.clusterClient)
       this.interactionCommandClient.addMultipleIn('dist/interactionCommands/')
     }
 
