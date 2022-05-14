@@ -297,7 +297,9 @@ export default class GoogleAssistantVoiceModule extends BaseModule {
           stream = new Readable({
             read () {}
           })
-          this.voice.addToQueue(stream)
+          this.voice.addToQueue({
+            readable: stream
+          })
         }
 
         stream.push(Buffer.from(data))

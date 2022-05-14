@@ -50,25 +50,27 @@ export default class YouTubeFormat extends BaseFormat {
       }
     }
 
-    return () => {
-      const stream: ExtendedReadable = ytdl(matched, {
-        quality: 'highestaudio',
-        filter: 'audioonly',
-        highWaterMark: 1 << 25,
-        /*requestOptions: {
-          headers: {
-            cookies: this.cookies
-          }
-        },*/
-        IPv6Block: this.formatCredentials.youtube.ipv6,
-      })
-      stream.info = {
+    return {
+      fetch: () => {
+        const stream: ExtendedReadable = ytdl(matched, {
+          quality: 'highestaudio',
+          filter: 'audioonly',
+          highWaterMark: 1 << 25,
+          /*requestOptions: {
+            headers: {
+              cookies: this.cookies
+            }
+          },*/
+          IPv6Block: this.formatCredentials.youtube.ipv6,
+        })
+        return stream;
+      },
+      info: {
         title: info.videoDetails.title,
         url: info.videoDetails.video_url,
         duration: Number(info.videoDetails.lengthSeconds),
         image
       }
-      return stream;
     }
   }
 }
