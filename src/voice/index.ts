@@ -35,7 +35,12 @@ interface ExtendedReadableInfo {
 export class ExtendedReadable extends Readable {
   public info?: ExtendedReadableInfo
   public cleanup?: () => any
-  public reconnect?: () => any
+}
+
+export interface FormatResponse {
+  readable?: ExtendedReadable
+  fetch?: () => (ExtendedReadable | Promise<ExtendedReadable>)
+  info?: ExtendedReadableInfo
 }
 
 class ExtendedPassThrough extends PassThrough {
@@ -188,7 +193,7 @@ export class Voice extends EventEmitter {
   public effects: Map < string, BaseEffect > = new Map()
   public connection: VoiceConnection
   public currentlyPlaying: ExtendedReadable | string | false
-  public queue: ((() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable)[] = []
+  public queue: FormatResponse[] = []
   public startTime: number | boolean
   public pauseTime = 0
   public restartTime?: number
@@ -231,8 +236,7 @@ export class Voice extends EventEmitter {
       })).connection
     } catch (err) {
       this.logChannel.createMessage(
-        "Something went wrong while creating a voice connection! This can occur if you're " +
-        'inviting me over to a voice channel that I cannot join. Try in a different one.'
+        'Unable to create a voice connection, halting...'
       )
       return this.kill()
     }
@@ -286,6 +290,8 @@ export class Voice extends EventEmitter {
 
   private convert2PCM (streamOrFile = this.currentlyPlaying, ss?: number) {
     const isFile = typeof streamOrFile === 'string'
+    if (!isFile)
+      (streamOrFile as ExtendedReadable).on('error', (e) => debug('stream just died', e))
 
     const ffmpegArgs: string[] = [
       '-ar',
@@ -520,23 +526,20 @@ export class Voice extends EventEmitter {
       debug('Stopping to overlay...')
     }
 
-    if (this.queue.length === 0) {
+    const empty = this.queue.length === 0;
+    if (empty) {
       this.currentlyPlaying = false
       this.setupIdleInterval()
     }
 
     this.emit('playerKill')
-    if (this.queue.length === 0)
+    if (empty)
       return
 
     debug('Another stream available, playing')
-    const stream = this.queue.shift()
-    if (typeof stream === 'function')
-      this.currentlyPlaying = await stream(),
-      this.currentlyPlaying.info.platform = (stream.constructor as any).platform,
-      this.currentlyPlaying.info.submittee = (stream.constructor as any).submittee
-    else
-      this.currentlyPlaying = stream
+    const response = this.queue.shift()
+    this.currentlyPlaying = response.readable ? response.readable : (await response.fetch())
+    this.currentlyPlaying.info = response.info
     this.start()
   }
 
@@ -550,13 +553,13 @@ export class Voice extends EventEmitter {
       })
     }
 
-    let result: (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false = false
+    let result: FormatResponse[] | FormatResponse | false = false
 
     for (const format of this.formats) {
       const res = url.match(format.regex)
       if (!res || res.length === 0) continue
 
-      let streamOrFalse: (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false
+      let streamOrFalse: FormatResponse[] | FormatResponse | false
       try {
         streamOrFalse = await format.onMatch(url)
         if (!streamOrFalse) {
@@ -578,14 +581,12 @@ export class Voice extends EventEmitter {
       debug(`submitted url matched to ${format.printName} format, yay!`)
       result = streamOrFalse
 
-      if (typeof result === 'function')
-        (result.constructor as any).platform = format.printName,
-        (result.constructor as any).submittee = submittee
-      else if (Array.isArray(result))
+      if (Array.isArray(result))
         result = result.map(x => { x.info.platform = format.printName; x.info.submittee = submittee; return x })
-      else
-        (result as ExtendedReadable).info.platform = format.printName,
-        (result as ExtendedReadable).info.submittee = submittee
+      else {
+        result.info.platform = format.printName
+        result.info.submittee = submittee
+      }
 
       break
     }
@@ -652,12 +653,7 @@ export class Voice extends EventEmitter {
 
     this.killPrevious(true)
     const str = this.queue.splice(id, 1)[0]
-    if (typeof str === 'function')
-      this.overlay = await str(),
-      this.overlay.info.platform = (str.constructor as any).platform,
-      this.overlay.info.submittee = (str.constructor as any).submittee;
-    else
-      this.overlay = str
+    this.overlay = (str.readable ? str.readable : await str.fetch())
     this.restartTime = Date.now()
     debug('Starting to overlay, time:', ms, 'ms')
     this.start(ms / 1000)
@@ -680,18 +676,17 @@ export class Voice extends EventEmitter {
     if (this.currentlyPlaying) this.start(ms / 1000)
   }
 
-  public async addToQueue (str: (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | string) {
+  public async addToQueue (str: FormatResponse[] | FormatResponse | string) {
     if (this.queue.length === 0 && !this.currentlyPlaying) {
-      if (typeof str === 'function')
-        this.currentlyPlaying = await str(),
-        this.currentlyPlaying.info.platform = (str.constructor as any).platform,
-        this.currentlyPlaying.info.submittee = (str.constructor as any).submittee
-      else {
-        if (Array.isArray(str)) {
-          this.currentlyPlaying = str.shift()
-          this.queue = str
-        } else
-          this.currentlyPlaying = str
+      if (Array.isArray(str)) {
+        const formatResponse = str.shift()
+        this.currentlyPlaying = formatResponse.readable ? formatResponse.readable : (await formatResponse.fetch())
+        this.currentlyPlaying.info = formatResponse.info
+        this.queue = str
+      } else {
+        const isFile = typeof str === 'string'
+        this.currentlyPlaying = isFile ? str : (str.readable ? str.readable : (await str.fetch()))
+        if (!isFile) (this.currentlyPlaying as ExtendedReadable).info = str.info
       }
       return this.start()
     }

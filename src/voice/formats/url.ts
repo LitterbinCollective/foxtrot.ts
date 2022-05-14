@@ -44,34 +44,35 @@ export default class URLFormat extends BaseFormat {
       return false
     }
 
-    return () => {
-      let readable: ExtendedReadable
+    return {
+      fetch: () => {
+        let readable: ExtendedReadable
 
-      if (isMod) {
-        /*
-         * this is a weird way of doing it but since directly piping it
-         * doesn't work i have to use it. optional todo: come up with a
-         * better idea.
-         */
-        const child = spawn('ffmpeg', [
-          '-i', matched,
-          '-ar', '48000',
-          '-ac', '2',
-          '-f', 'wav',
-          '-'
-        ])
-        readable = child.stdout
-        readable.cleanup = () =>
-          child.kill(9);
-      } else
-        readable = resp.data
+        if (isMod) {
+          /*
+           * this is a weird way of doing it but since directly piping it
+           * doesn't work i have to use it. optional todo: come up with a
+           * better idea.
+           */
+          const child = spawn('ffmpeg', [
+            '-i', matched,
+            '-ar', '48000',
+            '-ac', '2',
+            '-f', 'wav',
+            '-'
+          ])
+          readable = child.stdout
+          readable.cleanup = () =>
+            child.kill(9);
+        } else
+          readable = resp.data
 
-      readable.info = {
+        return readable
+      },
+      info: {
         title: filename,
         url: matched
       }
-
-      return readable
     }
   }
 }

@@ -1,4 +1,4 @@
-import { ExtendedReadable } from '..'
+import { FormatResponse } from '..'
 
 export default class BaseFormat {
   public regex = /.+/g
@@ -9,8 +9,7 @@ export default class BaseFormat {
     this.formatCredentials = formatCredentials;
   }
 
-  public onMatch (_matched: string): Promise<(() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false>
-    | (() => ExtendedReadable) | (() => Promise<ExtendedReadable>) | ExtendedReadable[] | ExtendedReadable | false {
+  public onMatch (_matched: string): Promise<FormatResponse[] | FormatResponse | false> | FormatResponse[] | FormatResponse | false {
     return false
   }
 }

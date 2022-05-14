@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { ExtendedReadable } from '..'
+import { ExtendedReadable, FormatResponse } from '..'
 import BaseFormat from '../foundation/BaseFormat'
 
 export default class BandcampFormat extends BaseFormat {
@@ -29,16 +29,17 @@ export default class BandcampFormat extends BaseFormat {
       })
       const readable: ExtendedReadable = resp.data
 
-      readable.info = {
-        title: track.title,
-        image: `https://f4.bcbits.com/img/a${info.art_id}_1.jpg`,
-        url: info.url,
-        duration: track.duration
+      return {
+        readable: readable,
+        info: {
+          title: track.title,
+          image: `https://f4.bcbits.com/img/a${info.art_id}_1.jpg`,
+          url: info.url,
+          duration: track.duration
+        }
       }
+    }))
 
-      return readable
-    }));
-
-    return array as ExtendedReadable[]
+    return array as FormatResponse[]
   }
 }
