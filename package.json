@@ -37,10 +37,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NonagonNetwork/glowing-memory.git"
+    "url": "git+https://github.com/LitterbinCollective/glowing-memory.git"
   },
   "bugs": {
-    "url": "https://github.com/NonagonNetwork/glowing-memory/issues"
+    "url": "https://github.com/LitterbinCollective/glowing-memory/issues"
   },
-  "homepage": "https://github.com/NonagonNetwork/glowing-memory"
+  "homepage": "https://github.com/LitterbinCollective/glowing-memory"
 }
