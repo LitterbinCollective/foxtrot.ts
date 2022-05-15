@@ -216,6 +216,7 @@ export class Voice extends EventEmitter {
     this.logChannel = logChannel;
 
     application.voices.set(channel.guildId, this);
+    this.handleStreamError = this.handleStreamError.bind(this);
     this.initialize();
   }
 
@@ -390,6 +391,35 @@ export class Voice extends EventEmitter {
       .join(':');
   }
 
+  private async handleStreamError(e: any) {
+    debug('this.currentlyPlaying readable stream just died!', e);
+    if (e.code !== 'ECONNRESET') return this.skip();
+
+    let input = this.currentlyPlaying as ExtendedReadable;
+    let newerInput: ExtendedReadable;
+    if ((input as Skip).src) {
+      (input as Skip).kill();
+      input = (input as Skip).src;
+    }
+
+    if (typeof (input as any).socket === 'undefined') return this.skip();
+    const bytesToSkip = (input as any).socket.bytesRead;
+
+    if (input.reprocess) newerInput = await input.reprocess();
+    else return this.skip();
+    debug('attempting to recover...');
+
+    newerInput.info = input.info;
+    newerInput.cleanup = input.cleanup;
+    newerInput.reprocess = input.reprocess;
+    newerInput.on('error', this.handleStreamError);
+    newerInput = newerInput.pipe(new Skip({ offset: bytesToSkip }));
+    if (this.children.ffmpeg)
+      input.unpipe(this.children.ffmpeg.stdio[3]),
+        (input = this.currentlyPlaying = newerInput),
+        input.pipe(this.children.ffmpeg.stdio[3]);
+  }
+
   private async start(ss?: number) {
     const restarted = typeof ss !== 'undefined';
     this.killPrevious(restarted);
@@ -441,32 +471,7 @@ export class Voice extends EventEmitter {
         embed,
       });
 
-      const handleInputError = async (e: any) => {
-        debug('this.currentlyPlaying readable stream just died!', e);
-        if (e.code !== 'ECONNRESET') return this.skip();
-
-        let input = this.currentlyPlaying as ExtendedReadable;
-        let newerInput: ExtendedReadable;
-        if ((input as Skip).src) input = (input as Skip).src;
-
-        if (typeof (input as any).socket === 'undefined') return this.skip();
-        const bytesToSkip = (input as any).socket.bytesRead;
-
-        if (input.reprocess) newerInput = await input.reprocess();
-        else return this.skip();
-        debug('attempting to recover...');
-
-        newerInput.info = input.info;
-        newerInput.cleanup = input.cleanup;
-        newerInput.reprocess = input.reprocess;
-        newerInput.on('error', handleInputError);
-        newerInput = newerInput.pipe(new Skip({ offset: bytesToSkip }));
-        if (this.children.ffmpeg)
-          input.unpipe(this.children.ffmpeg.stdio[3]),
-            (input = this.currentlyPlaying = newerInput),
-            input.pipe(this.children.ffmpeg.stdio[3]);
-      };
-      (input as ExtendedReadable).on('error', handleInputError);
+      (input as ExtendedReadable).on('error', this.handleStreamError);
     }
 
     const effects = Array.from(this.effects, ([_, effect]) => {
@@ -721,6 +726,7 @@ export class Voice extends EventEmitter {
     this.killPrevious(true);
     const str = this.queue.splice(id, 1)[0];
     this.overlay = str.readable ? str.readable : await str.fetch();
+    (this.overlay as ExtendedReadable).on('error', this.handleStreamError);
     this.restartTime = Date.now();
     debug('Starting to overlay, time:', ms, 'ms');
     this.start(ms / 1000);
