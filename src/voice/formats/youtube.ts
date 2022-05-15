@@ -1,24 +1,28 @@
-import fs from 'fs'
-import ytdl from 'ytdl-core'
+import fs from 'fs';
+import ytdl from 'ytdl-core';
 
-import { ExtendedReadable } from '..'
-import BaseFormat from '../foundation/BaseFormat'
+import { ExtendedReadable } from '..';
+import BaseFormat from '../foundation/BaseFormat';
 
 export default class YouTubeFormat extends BaseFormat {
-  public regex = /https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g
-  public printName = 'YouTube'
+  public regex =
+    /https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g;
+  public printName = 'YouTube';
 
   private get cookies() {
     const cookie = fs.readFileSync('youtube.cookies').toString();
     let result = '';
 
     for (const line of cookie) {
-      if (line.trim() === '' || line.startsWith('#'))
-        continue;
+      if (line.trim() === '' || line.startsWith('#')) continue;
 
-      const [ domain, _include, path, secure, _expiry, key, value ] = line.split('\t');
-      if (!(domain.startsWith('.') || domain.startsWith('www')) || secure.toLowerCase() !== 'true' ||
-        path !== '/')
+      const [domain, _include, path, secure, _expiry, key, value] =
+        line.split('\t');
+      if (
+        !(domain.startsWith('.') || domain.startsWith('www')) ||
+        secure.toLowerCase() !== 'true' ||
+        path !== '/'
+      )
         continue;
       result += `${key}=${value};`;
     }
@@ -26,9 +30,11 @@ export default class YouTubeFormat extends BaseFormat {
     return result;
   }
 
-  public async process (matched: string) {
-    const IPv6Block = this.formatCredentials.youtube ? this.formatCredentials.youtube.ipv6 : null
-    let info: ytdl.videoInfo
+  public async process(matched: string) {
+    const IPv6Block = this.formatCredentials.youtube
+      ? this.formatCredentials.youtube.ipv6
+      : null;
+    let info: ytdl.videoInfo;
     try {
       info = await ytdl.getBasicInfo(matched, {
         /*requestOptions: {
@@ -37,17 +43,16 @@ export default class YouTubeFormat extends BaseFormat {
           }
         },*/
         IPv6Block,
-      } as any)
+      } as any);
     } catch (err) {
-      return false
+      return false;
     }
 
-    let image = ''
-    let width = 0
+    let image = '';
+    let width = 0;
     for (const thumbnail of info.videoDetails.thumbnails) {
       if (thumbnail.width > width) {
-        image = thumbnail.url,
-        width = thumbnail.width
+        (image = thumbnail.url), (width = thumbnail.width);
       }
     }
 
@@ -62,8 +67,8 @@ export default class YouTubeFormat extends BaseFormat {
           }
         },*/
         IPv6Block,
-      })
-      return stream
+      });
+      return stream;
     }
 
     return {
@@ -73,8 +78,8 @@ export default class YouTubeFormat extends BaseFormat {
         title: info.videoDetails.title,
         url: info.videoDetails.video_url,
         duration: Number(info.videoDetails.lengthSeconds),
-        image
+        image,
       },
-    }
+    };
   }
 }

@@ -1,32 +1,33 @@
-import { Context, ParsedArgs } from 'detritus-client/lib/command'
+import { Context, ParsedArgs } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application'
-import { BaseCommand } from '../../BaseCommand'
+import { GMCommandClient } from '../../Application';
+import { BaseCommand } from '../../BaseCommand';
 
 export default class RestartCommand extends BaseCommand {
   private notRun: boolean;
 
-  constructor (commandClient: GMCommandClient) {
+  constructor(commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'restart',
-    })
+    });
   }
 
   public onBeforeRun(ctx: Context, _: ParsedArgs) {
     const letRun = !this.notRun;
-    if (letRun)
-      this.notRun = true;
+    if (letRun) this.notRun = true;
     return letRun && ctx.user.isClientOwner;
   }
 
-  public async run (_ctx: Context) {
-    this.commandClient.application.voices.forEach(x => {
-      x.kill(false),
-      x.playInternalSoundeffect('restarting');
-    })
+  public async run(_ctx: Context) {
+    this.commandClient.application.voices.forEach((x) => {
+      x.kill(false), x.playInternalSoundeffect('restarting');
+    });
 
     setTimeout(
-      () => (this.commandClient.application.voices.forEach(x => x.kill()), process.exit(0)),
+      () => (
+        this.commandClient.application.voices.forEach((x) => x.kill()),
+        process.exit(0)
+      ),
       3000
     );
   }
