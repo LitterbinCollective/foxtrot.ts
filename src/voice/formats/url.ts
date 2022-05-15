@@ -42,6 +42,7 @@ export default class URLFormat extends BaseFormat {
       const contentType = resp.headers['content-type']
       if (!contentType.startsWith('audio/') && !contentType.startsWith('video/') &&
         !isMod) return false
+      return true
     }
 
     function postFetch() {
@@ -70,7 +71,8 @@ export default class URLFormat extends BaseFormat {
     }
 
     try {
-      await connect()
+      const result = await connect()
+      if (!result) return false
     } catch (err) {
       return false
     }
