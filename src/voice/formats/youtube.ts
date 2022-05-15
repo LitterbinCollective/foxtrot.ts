@@ -27,6 +27,7 @@ export default class YouTubeFormat extends BaseFormat {
   }
 
   public async process (matched: string) {
+    const IPv6Block = this.formatCredentials.youtube ? this.formatCredentials.youtube.ipv6 : null
     let info: ytdl.videoInfo
     try {
       info = await ytdl.getBasicInfo(matched, {
@@ -35,7 +36,7 @@ export default class YouTubeFormat extends BaseFormat {
             cookies: this.cookies
           }
         },*/
-        IPv6Block: this.formatCredentials.youtube.ipv6,
+        IPv6Block,
       } as any)
     } catch (err) {
       return false
@@ -60,7 +61,7 @@ export default class YouTubeFormat extends BaseFormat {
             cookies: this.cookies
           }
         },*/
-        IPv6Block: this.formatCredentials.youtube.ipv6,
+        IPv6Block,
       })
       return stream
     }
