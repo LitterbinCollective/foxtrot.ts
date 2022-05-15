@@ -1,47 +1,52 @@
-import { Context, ParsedArgs } from 'detritus-client/lib/command'
-import { CommandArgumentTypes } from 'detritus-client/lib/constants'
+import { Context, ParsedArgs } from 'detritus-client/lib/command';
+import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
-import { GMCommandClient } from '../../Application'
-import { BaseCommand } from '../../BaseCommand'
-import { Voice } from '../../voice'
+import { GMCommandClient } from '../../Application';
+import { BaseCommand } from '../../BaseCommand';
+import { Voice } from '../../voice';
 
 export default class PlayCommand extends BaseCommand {
-  constructor (commandClient: GMCommandClient) {
+  constructor(commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'play',
       label: 'url',
       type: CommandArgumentTypes.STRING,
       required: true,
-      aliases: ['p']
-    })
+      aliases: ['p'],
+    });
   }
 
-  public async run (ctx: Context, { url }: ParsedArgs) {
-    if (!ctx.member.voiceChannel) { return await ctx.reply('You are not in the voice channel.') }
+  public async run(ctx: Context, { url }: ParsedArgs) {
+    if (!ctx.member.voiceChannel) {
+      return await ctx.reply('You are not in the voice channel.');
+    }
 
-    let res = this.commandClient.application.voices.get(ctx.guild.id)
+    let res = this.commandClient.application.voices.get(ctx.guild.id);
     if (!res) {
       res = new Voice(
         this.commandClient.application,
         ctx.member.voiceChannel,
         ctx.channel
-      )
+      );
       return res.once('initComplete', () => {
         try {
-          res.playURL(url, ctx.user)
+          res.playURL(url, ctx.user);
         } catch (err) {
-          console.log(err)
+          console.log(err);
         }
-      })
+      });
     }
-    if (res.channel !== ctx.member.voiceChannel) { return await ctx.reply('You are not in the voice channel this bot is currently in.') }
-    if (!res.initialized)
-      return await ctx.reply('Voice not yet initialized!')
+    if (res.channel !== ctx.member.voiceChannel) {
+      return await ctx.reply(
+        'You are not in the voice channel this bot is currently in.'
+      );
+    }
+    if (!res.initialized) return await ctx.reply('Voice not yet initialized!');
 
     try {
-      res.playURL(url, ctx.user)
+      res.playURL(url, ctx.user);
     } catch (err) {
-      console.log(err)
+      console.log(err);
     }
   }
 }

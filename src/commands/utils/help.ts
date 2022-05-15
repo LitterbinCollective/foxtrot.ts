@@ -1,18 +1,18 @@
-import { Context } from 'detritus-client/lib/command'
+import { Context } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application'
-import { BaseCommand } from '../../BaseCommand'
+import { GMCommandClient } from '../../Application';
+import { BaseCommand } from '../../BaseCommand';
 
 export default class HelpCommand extends BaseCommand {
-  constructor (commandClient: GMCommandClient) {
+  constructor(commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'help',
-      aliases: [ '?' ]
-    })
+      aliases: ['?'],
+    });
   }
 
-  public async run (ctx: Context) {
-    const { homepage } = this.commandClient.application.pkg
-    ctx.reply(homepage + '/wiki')
+  public async run(ctx: Context) {
+    const { homepage } = this.commandClient.application.pkg;
+    ctx.reply(homepage + '/wiki');
   }
 }

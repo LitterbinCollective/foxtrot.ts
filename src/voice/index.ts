@@ -1,144 +1,134 @@
-import { spawn } from 'child_process'
-import dbg from 'debug'
-import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection'
-import { ChannelGuildVoice, ChannelTextType, User } from 'detritus-client/lib/structures'
-import { Markup } from 'detritus-client/lib/utils'
-import { RequestTypes } from 'detritus-client-rest'
-import { EventEmitter } from 'events'
-import fs from 'fs'
-import * as prism from 'prism-media'
-import * as Sentry from '@sentry/node'
+import { spawn } from 'child_process';
+import dbg from 'debug';
+import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
 import {
-  Stream,
-  Writable,
-  Readable,
-  Transform,
-  PassThrough
-} from 'stream'
-import * as yt from 'youtube-search-without-api-key' // i'm too lazy to code my own. todo: diy you lazy fuck.
+  ChannelGuildVoice,
+  ChannelTextType,
+  User,
+} from 'detritus-client/lib/structures';
+import { Markup } from 'detritus-client/lib/utils';
+import { RequestTypes } from 'detritus-client-rest';
+import { EventEmitter } from 'events';
+import fs from 'fs';
+import * as prism from 'prism-media';
+import * as Sentry from '@sentry/node';
+import { Stream, Writable, Readable, Transform, PassThrough } from 'stream';
+import * as yt from 'youtube-search-without-api-key'; // i'm too lazy to code my own. todo: diy you lazy fuck.
 
-import { Application } from '../Application'
-import BaseEffect from './foundation/BaseEffect'
-import BaseFormat from './foundation/BaseFormat'
-import { EMBED_COLORS, FILENAME_REGEX } from '../constants'
-import BaseModule from './foundation/BaseModule'
-import { Skip } from './util'
+import { Application } from '../Application';
+import BaseEffect from './foundation/BaseEffect';
+import BaseFormat from './foundation/BaseFormat';
+import { EMBED_COLORS, FILENAME_REGEX } from '../constants';
+import BaseModule from './foundation/BaseModule';
+import { Skip } from './util';
 
 interface ExtendedReadableInfo {
-  title: string
-  image?: string
-  url: string
-  platform?: string
-  submittee?: User
-  duration?: number
-};
+  title: string;
+  image?: string;
+  url: string;
+  platform?: string;
+  submittee?: User;
+  duration?: number;
+}
 
 export class ExtendedReadable extends Readable {
-  public info?: ExtendedReadableInfo
-  public cleanup?: () => any
-  public reprocess?: () => (ExtendedReadable | Promise<ExtendedReadable>)
+  public info?: ExtendedReadableInfo;
+  public cleanup?: () => any;
+  public reprocess?: () => ExtendedReadable | Promise<ExtendedReadable>;
 }
 
 export interface FormatResponse {
-  readable?: ExtendedReadable
-  fetch?: () => (ExtendedReadable | Promise<ExtendedReadable>)
-  reprocess?: () => (ExtendedReadable | Promise<ExtendedReadable>)
-  info?: ExtendedReadableInfo
+  readable?: ExtendedReadable;
+  fetch?: () => ExtendedReadable | Promise<ExtendedReadable>;
+  reprocess?: () => ExtendedReadable | Promise<ExtendedReadable>;
+  info?: ExtendedReadableInfo;
 }
 
 class ExtendedPassThrough extends PassThrough {
   public counter: number = 0;
 }
 
-const TAG = 'Voice/Player'
-const debug = dbg(TAG)
+const TAG = 'Voice/Player';
+const debug = dbg(TAG);
 
 class Player extends Writable {
-  public count = 0
-  public ss = 0
-  private curPos = 0
-  private readonly FRAME_LENGTH = 20
-  private readonly voice: Voice
+  public count = 0;
+  public ss = 0;
+  private curPos = 0;
+  private readonly FRAME_LENGTH = 20;
+  private readonly voice: Voice;
 
-  constructor (voice: Voice) {
-    super()
-    this.voice = voice
+  constructor(voice: Voice) {
+    super();
+    this.voice = voice;
   }
 
-  public get position (): number {
-    return this.ss + this.curPos
+  public get position(): number {
+    return this.ss + this.curPos;
   }
 
-  private calcMs (count: number) {
-    const {
-      startTime,
-      restartTime,
-      pauseTime
-    } = this.voice
-    if (typeof startTime === 'boolean') return 0
+  private calcMs(count: number) {
+    const { startTime, restartTime, pauseTime } = this.voice;
+    if (typeof startTime === 'boolean') return 0;
     return (
       count * this.FRAME_LENGTH -
       (Date.now() - (restartTime || startTime) - pauseTime)
-    )
+    );
   }
 
-  public _write (chunk: any, _enc: any, callback: any) {
-    if (!this.voice.startTime) this.voice.startTime = Date.now()
+  public _write(chunk: any, _enc: any, callback: any) {
+    if (!this.voice.startTime) this.voice.startTime = Date.now();
 
     this.voice.connection.sendAudio(chunk, {
-      isOpus: true
-    })
+      isOpus: true,
+    });
     setTimeout(
-      () => (
-        callback(null),
-        (this.curPos = this.count * this.FRAME_LENGTH)
-      ),
+      () => (callback(null), (this.curPos = this.count * this.FRAME_LENGTH)),
       this.calcMs(this.count)
-    )
-    this.count++
+    );
+    this.count++;
 
-    return true
+    return true;
   }
 
-  public onEnd () {
-    this.kill()
-    debug('stream ends here')
+  public onEnd() {
+    this.kill();
+    debug('stream ends here');
   }
 
-  public kill (notCritical = false) {
+  public kill(notCritical = false) {
     // this.voice.connection.sendAudioSilenceFrame()
     if (!notCritical) {
-      this.voice.playerKill()
-      this.voice.startTime = false
-      this.voice.restartTime = null
+      this.voice.playerKill();
+      this.voice.startTime = false;
+      this.voice.restartTime = null;
     }
 
-    this.ss = 0
-    this.curPos = 0
-    debug('Player.kill() call')
+    this.ss = 0;
+    this.curPos = 0;
+    debug('Player.kill() call');
   }
 }
 
 class Mixer extends Transform {
-  public buffers: Buffer[] = []
+  public buffers: Buffer[] = [];
   public streams: ExtendedPassThrough[] = [];
   public volume = 1;
   public readonly FRAME_LENGTH = 20;
   private voice: Voice;
 
-  constructor (voice: Voice, buffers?: Buffer[]) {
+  constructor(voice: Voice, buffers?: Buffer[]) {
     super();
     this.voice = voice;
-    if (buffers)
-      this.buffers = buffers
+    if (buffers) this.buffers = buffers;
   }
 
   public _write(chunk: any, _enc: any, callback: any) {
-    const SAMPLE_BYTE_LEN = 2
+    const SAMPLE_BYTE_LEN = 2;
 
-    let newbuf = Buffer.alloc(chunk.length)
-    const MIN_SAMPLE = -32768
-    const MAX_SAMPLE = 32767
+    const newbuf = Buffer.alloc(chunk.length);
+    const MIN_SAMPLE = -32768;
+    const MAX_SAMPLE = 32767;
     for (let v = 0; v < chunk.length / SAMPLE_BYTE_LEN; v++) {
       const pos = v * SAMPLE_BYTE_LEN;
 
@@ -158,9 +148,7 @@ class Mixer extends Transform {
       for (const stream of this.streams) {
         count++;
         const buffer = stream.read(SAMPLE_BYTE_LEN);
-        if (buffer)
-          samples += buffer.readInt16LE(0),
-          stream.counter = 0
+        if (buffer) (samples += buffer.readInt16LE(0)), (stream.counter = 0);
         else {
           stream.counter++;
           if (stream.counter >= SAMPLE_BYTE_LEN * 2 * 48000)
@@ -171,14 +159,14 @@ class Mixer extends Transform {
       samples = Math.floor(samples * this.volume);
       if (samples < MIN_SAMPLE || samples > MAX_SAMPLE)
         debug('clamping samples!! (' + samples + ')'),
-        samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE)
+          (samples = Math.max(Math.min(samples, MAX_SAMPLE), MIN_SAMPLE));
 
       newbuf.writeInt16LE(samples, pos);
     }
     this.push(newbuf);
 
     callback();
-    return true
+    return true;
   }
 
   public addBuffer(buf: Buffer) {
@@ -193,81 +181,82 @@ class Mixer extends Transform {
 }
 
 export class Voice extends EventEmitter {
-  public effects: Map < string, BaseEffect > = new Map()
-  public connection: VoiceConnection
-  public currentlyPlaying: ExtendedReadable | string | false
-  public queue: FormatResponse[] = []
-  public startTime: number | boolean
-  public pauseTime = 0
-  public restartTime?: number
-  public denyOnAudioSubmission = false
-  public initialized = false
-  public module?: BaseModule
-  public readonly SAMPLE_RATE = 48000
-  public readonly AUDIO_CHANNELS = 2
-  public readonly FRAME_SIZE = 960
-  public readonly application: Application
-  public readonly channel: ChannelGuildVoice
-  public readonly logChannel: ChannelTextType
-  private readonly formats: BaseFormat[] = []
-  private streams: Record < string, any > = {}
-  private children: Record < string, any > = {}
-  private player: Player
-  private overlay: ExtendedReadable | false
+  public effects: Map<string, BaseEffect> = new Map();
+  public connection: VoiceConnection;
+  public currentlyPlaying: ExtendedReadable | string | false;
+  public queue: FormatResponse[] = [];
+  public startTime: number | boolean;
+  public pauseTime = 0;
+  public restartTime?: number;
+  public denyOnAudioSubmission = false;
+  public initialized = false;
+  public module?: BaseModule;
+  public readonly SAMPLE_RATE = 48000;
+  public readonly AUDIO_CHANNELS = 2;
+  public readonly FRAME_SIZE = 960;
+  public readonly application: Application;
+  public readonly channel: ChannelGuildVoice;
+  public readonly logChannel: ChannelTextType;
+  private readonly formats: BaseFormat[] = [];
+  private streams: Record<string, any> = {};
+  private children: Record<string, any> = {};
+  private player: Player;
+  private overlay: ExtendedReadable | false;
   private mixer: Mixer;
   private idle: NodeJS.Timeout;
 
-  constructor (
+  constructor(
     application: Application,
     channel: ChannelGuildVoice,
     logChannel: ChannelTextType
   ) {
-    super()
-    this.application = application
-    this.channel = channel
-    this.logChannel = logChannel
+    super();
+    this.application = application;
+    this.channel = channel;
+    this.logChannel = logChannel;
 
-    application.voices.set(channel.guildId, this)
-    this.initialize()
+    application.voices.set(channel.guildId, this);
+    this.initialize();
   }
 
-  private async initialize () {
-    let connection: VoiceConnection
+  private async initialize() {
+    let connection: VoiceConnection;
     try {
-      connection = (await this.channel.join({
-        receive: true
-      })).connection
+      connection = (
+        await this.channel.join({
+          receive: true,
+        })
+      ).connection;
     } catch (err) {
       this.logChannel.createMessage(
         'Unable to create a voice connection, halting...'
-      )
-      return this.kill()
+      );
+      return this.kill();
     }
 
     for (const formatFileName of fs.readdirSync(__dirname + '/formats/')) {
-      const Format: any = require (
-          './formats/' + formatFileName.replace(FILENAME_REGEX, '')
-        ).default;
-      this.formats.push(new Format(this.application.config.formatCredentials))
+      const Format: any = require('./formats/' +
+        formatFileName.replace(FILENAME_REGEX, '')).default;
+      this.formats.push(new Format(this.application.config.formatCredentials));
     }
 
     for (const effectFileName of fs.readdirSync(__dirname + '/effects/')) {
-      const name = effectFileName.replace(FILENAME_REGEX, '')
-      const Effect: any = require ('./effects/' + name).default
-      this.effects.set(name, new Effect())
+      const name = effectFileName.replace(FILENAME_REGEX, '');
+      const Effect: any = require('./effects/' + name).default;
+      this.effects.set(name, new Effect());
     }
 
-    this.setupConnections()
-    this.setupIdleInterval()
+    this.setupConnections();
+    this.setupIdleInterval();
 
-    this.connection = connection
-    this.connection.setOpusEncoder()
+    this.connection = connection;
+    this.connection.setOpusEncoder();
     this.connection.setSpeaking({
-      voice: true
-    })
-    this.emit('initComplete')
-    this.initialized = true
-    debug('Voice initialized')
+      voice: true,
+    });
+    this.emit('initComplete');
+    this.initialized = true;
+    debug('Voice initialized');
   }
 
   private setupConnections() {
@@ -276,23 +265,26 @@ export class Voice extends EventEmitter {
       new prism.opus.Encoder({
         channels: this.AUDIO_CHANNELS,
         rate: this.SAMPLE_RATE,
-        frameSize: this.FRAME_SIZE
+        frameSize: this.FRAME_SIZE,
       }),
       { end: false }
-    )
-    this.player = this.streams.opus.pipe(new Player(this), { end: false })
+    );
+    this.player = this.streams.opus.pipe(new Player(this), { end: false });
   }
 
   private setupIdleInterval() {
-    debug('starting idle interval')
+    debug('starting idle interval');
     this.idle = setInterval(
-      () => this.mixer.write(Buffer.alloc(this.FRAME_SIZE * this.AUDIO_CHANNELS * 2)),
+      () =>
+        this.mixer.write(
+          Buffer.alloc(this.FRAME_SIZE * this.AUDIO_CHANNELS * 2)
+        ),
       this.mixer.FRAME_LENGTH
     );
   }
 
-  private convert2PCM (streamOrFile = this.currentlyPlaying, ss?: number) {
-    const isFile = typeof streamOrFile === 'string'
+  private convert2PCM(streamOrFile = this.currentlyPlaying, ss?: number) {
+    const isFile = typeof streamOrFile === 'string';
 
     const ffmpegArgs: string[] = [
       '-ar',
@@ -301,105 +293,119 @@ export class Voice extends EventEmitter {
       this.AUDIO_CHANNELS.toString(),
       '-f',
       's16le',
-      'pipe:1'
-    ]
+      'pipe:1',
+    ];
 
     ffmpegArgs.unshift(
       '-re',
       '-i',
-      (isFile ? (streamOrFile as string) : 'pipe:3')
-    )
+      isFile ? (streamOrFile as string) : 'pipe:3'
+    );
 
-    if (ss) ffmpegArgs.unshift('-ss', ss.toString())
-    if (this.overlay) { ffmpegArgs.splice(2, 0, '-i', 'pipe:4', '-filter_complex', 'amix=inputs=2') }
+    if (ss) ffmpegArgs.unshift('-ss', ss.toString());
+    if (this.overlay) {
+      ffmpegArgs.splice(
+        2,
+        0,
+        '-i',
+        'pipe:4',
+        '-filter_complex',
+        'amix=inputs=2'
+      );
+    }
 
-    const ffmpeg = this.children.ffmpeg = spawn('ffmpeg', ffmpegArgs, {
-      stdio: [
-        'inherit', 'pipe', 'inherit',
-        'pipe', 'pipe'
-      ]
-    })
+    const ffmpeg = (this.children.ffmpeg = spawn('ffmpeg', ffmpegArgs, {
+      stdio: ['inherit', 'pipe', 'inherit', 'pipe', 'pipe'],
+    }));
 
-    ffmpeg.on('close', (code: number) =>
-      (!ffmpeg.killed && (this.player.onEnd(), code === 1 && this.onPlayingError('ffmpeg', new Error('FFMPEG unexpectedly closed with exit code 1'))))
-    )
+    ffmpeg.on(
+      'close',
+      (code: number) =>
+        !ffmpeg.killed &&
+        (this.player.onEnd(),
+        code === 1 &&
+          this.onPlayingError(
+            'ffmpeg',
+            new Error('FFMPEG unexpectedly closed with exit code 1')
+          ))
+    );
 
-    const onError = (err: any) => err.code !== 'ECONNRESET' && this.onPlayingError('ffmpeg', err)
+    const onError = (err: any) =>
+      err.code !== 'ECONNRESET' && this.onPlayingError('ffmpeg', err);
 
     if (!isFile) {
-      const stream = streamOrFile as Stream
-      stream.pipe(ffmpeg.stdio[3] as Writable)
-      stream.on('error', onError)
+      const stream = streamOrFile as Stream;
+      stream.pipe(ffmpeg.stdio[3] as Writable);
+      stream.on('error', onError);
     }
 
     if (this.overlay) {
-      this.overlay.pipe(ffmpeg.stdio[4] as Writable)
-      this.overlay.on('error', onError)
+      this.overlay.pipe(ffmpeg.stdio[4] as Writable);
+      this.overlay.on('error', onError);
     }
 
-    ffmpeg.on('error', onError)
-    ffmpeg.stdio[3].on('error', onError)
-    ffmpeg.stdio[4].on('error', onError)
-    return ffmpeg.stdout
+    ffmpeg.on('error', onError);
+    ffmpeg.stdio[3].on('error', onError);
+    ffmpeg.stdio[4].on('error', onError);
+    return ffmpeg.stdout;
   }
 
-  private onPlayingError (cause: string, err: any) {
-    if (err.code === 'EPIPE') return
-    debug('Error on one of the ' + cause + ' streams', err)
+  private onPlayingError(cause: string, err: any) {
+    if (err.code === 'EPIPE') return;
+    debug('Error on one of the ' + cause + ' streams', err);
 
     Sentry.captureException(err, {
       tags: {
         stream: cause,
-        loc: TAG
+        loc: TAG,
       },
       extra: {
-        mediaMetadata: typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying
-          ? this.currentlyPlaying.info
-          : this.currentlyPlaying
-      }
-    })
+        mediaMetadata:
+          typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying
+            ? this.currentlyPlaying.info
+            : this.currentlyPlaying,
+      },
+    });
 
     this.error(
       'Error occurred while trying to play audio',
       err ? Markup.codeblock(err.message) : null
-    )
+    );
 
-    this.skip()
+    this.skip();
   }
 
-  public skip () {
-    if (this.player) { this.player.kill() } else this.playerKill()
+  public skip() {
+    if (this.player) {
+      this.player.kill();
+    } else this.playerKill();
   }
 
   private durationInStr(seconds: number) {
-    const result = [
-      ~~(seconds / 60) % 60,
-      ~~seconds % 60
-    ]
+    const result = [~~(seconds / 60) % 60, ~~seconds % 60];
     let hours: number;
-    if ((hours = ~~(seconds / 3600)) !== 0)
-      result.unshift(hours);
-    return result.map(n => n < 10 ? '0' + n.toString() : n.toString()).join(':');
+    if ((hours = ~~(seconds / 3600)) !== 0) result.unshift(hours);
+    return result
+      .map((n) => (n < 10 ? '0' + n.toString() : n.toString()))
+      .join(':');
   }
 
-  private async start (ss?: number) {
-    const restarted = typeof ss !== 'undefined'
-    this.killPrevious(restarted)
+  private async start(ss?: number) {
+    const restarted = typeof ss !== 'undefined';
+    this.killPrevious(restarted);
     let input = this.currentlyPlaying;
 
     if (!restarted && this.player) this.player.ss = 0;
 
-    const postPlayingMessage = !restarted && this.currentlyPlaying !== false &&
-      typeof this.currentlyPlaying !== 'string' && this.currentlyPlaying.info
+    const postPlayingMessage =
+      !restarted &&
+      this.currentlyPlaying !== false &&
+      typeof this.currentlyPlaying !== 'string' &&
+      this.currentlyPlaying.info;
     if (postPlayingMessage) {
-      const {
-        title,
-        image,
-        url,
-        platform,
-        duration,
-        submittee
-      } = (this.currentlyPlaying as ExtendedReadable).info
+      const { title, image, url, platform, duration, submittee } = (
+        this.currentlyPlaying as ExtendedReadable
+      ).info;
 
       const embed: RequestTypes.CreateChannelMessageEmbed = {
         title: 'Now playing: ' + title,
@@ -409,66 +415,65 @@ export class Voice extends EventEmitter {
           {
             name: 'Submitted by',
             value: submittee.mention,
-            inline: true
-          }
+            inline: true,
+          },
         ],
         footer: {
-          text: 'Fetched from ' + platform
-        }
-      }
+          text: 'Fetched from ' + platform,
+        },
+      };
 
       if (duration) {
         embed.fields.push({
           name: 'Duration',
           value: this.durationInStr(duration),
-          inline: true
-        })
+          inline: true,
+        });
       }
 
       if (url) {
         embed.thumbnail = {
-          url: image
-        }
+          url: image,
+        };
       }
 
       this.logChannel.createMessage({
-        embed
+        embed,
       });
 
       const handleInputError = async (e: any) => {
-        debug('this.currentlyPlaying readable stream just died!', e)
-        if (e.code !== 'ECONNRESET') return this.skip()
+        debug('this.currentlyPlaying readable stream just died!', e);
+        if (e.code !== 'ECONNRESET') return this.skip();
 
-        let input = this.currentlyPlaying as ExtendedReadable
-        let newerInput: ExtendedReadable
-        if ((input as Skip).src) input = (input as Skip).src
+        let input = this.currentlyPlaying as ExtendedReadable;
+        let newerInput: ExtendedReadable;
+        if ((input as Skip).src) input = (input as Skip).src;
 
         if (typeof (input as any).socket === 'undefined') return this.skip();
-        const bytesToSkip = (input as any).socket.bytesRead
+        const bytesToSkip = (input as any).socket.bytesRead;
 
-        if (input.reprocess)
-          newerInput = await input.reprocess()
-        else return this.skip()
-        debug('attempting to recover...')
+        if (input.reprocess) newerInput = await input.reprocess();
+        else return this.skip();
+        debug('attempting to recover...');
 
-        newerInput.info = input.info
-        newerInput.cleanup = input.cleanup
-        newerInput.reprocess = input.reprocess
-        newerInput.on('error', handleInputError)
-        newerInput = newerInput.pipe(new Skip({ offset: bytesToSkip }))
+        newerInput.info = input.info;
+        newerInput.cleanup = input.cleanup;
+        newerInput.reprocess = input.reprocess;
+        newerInput.on('error', handleInputError);
+        newerInput = newerInput.pipe(new Skip({ offset: bytesToSkip }));
         if (this.children.ffmpeg)
           input.unpipe(this.children.ffmpeg.stdio[3]),
-          input = this.currentlyPlaying = newerInput,
-          input.pipe(this.children.ffmpeg.stdio[3])
-      }
-      (input as ExtendedReadable).on('error', handleInputError)
+            (input = this.currentlyPlaying = newerInput),
+            input.pipe(this.children.ffmpeg.stdio[3]);
+      };
+      (input as ExtendedReadable).on('error', handleInputError);
     }
 
     const effects = Array.from(this.effects, ([_, effect]) => {
-      if (typeof effect.args === 'boolean') return []
-      return [effect.name, ...effect.args]
-    }).reduce((global, local) => global.concat(local), [])
-    debug('afx: ', effects)
+      if (typeof effect.args === 'boolean') return [];
+      return [effect.name, ...effect.args];
+    }).reduce((global, local) => global.concat(local), []);
+    debug('afx: ', effects);
 
     this.children.sox = spawn('sox', [
       '-r',
@@ -493,155 +498,179 @@ export class Voice extends EventEmitter {
       '-e',
       'signed-integer',
       '-',
-      ...effects
-    ])
+      ...effects,
+    ]);
 
-    if (!restarted)
-      this.streams.ffmpeg = this.convert2PCM(input, ss);
+    if (!restarted) this.streams.ffmpeg = this.convert2PCM(input, ss);
     if (this.overlay) {
       if (!this.streams.ffmpeg2_out) {
-        this.children.ffmpeg2 = spawn('ffmpeg', [
-          '-re',
-          '-f',
-          's16le',
-          '-ar',
-          this.SAMPLE_RATE.toString(),
-          '-ac',
-          this.AUDIO_CHANNELS.toString(),
-          '-i',
-          'pipe:3',
-          '-ss',
-          ss.toString(),
-          '-i',
-          'pipe:4',
-          '-filter_complex',
-          'amix=inputs=2',
-          '-ar',
-          this.SAMPLE_RATE.toString(),
-          '-ac',
-          this.AUDIO_CHANNELS.toString(),
-          '-f',
-          's16le',
-          'pipe:1'
-        ], {
-          stdio: [
-            'inherit', 'pipe', 'inherit',
-            'pipe', 'pipe'
-          ]
-        });
+        this.children.ffmpeg2 = spawn(
+          'ffmpeg',
+          [
+            '-re',
+            '-f',
+            's16le',
+            '-ar',
+            this.SAMPLE_RATE.toString(),
+            '-ac',
+            this.AUDIO_CHANNELS.toString(),
+            '-i',
+            'pipe:3',
+            '-ss',
+            ss.toString(),
+            '-i',
+            'pipe:4',
+            '-filter_complex',
+            'amix=inputs=2',
+            '-ar',
+            this.SAMPLE_RATE.toString(),
+            '-ac',
+            this.AUDIO_CHANNELS.toString(),
+            '-f',
+            's16le',
+            'pipe:1',
+          ],
+          {
+            stdio: ['inherit', 'pipe', 'inherit', 'pipe', 'pipe'],
+          }
+        );
 
-        this.streams.ffmpeg2_1 = this.streams.ffmpeg.pipe(this.children.ffmpeg2.stdio[3] as Writable);
-        this.streams.ffmpeg2_2 = this.overlay.pipe(this.children.ffmpeg2.stdio[4] as Writable);
+        this.streams.ffmpeg2_1 = this.streams.ffmpeg.pipe(
+          this.children.ffmpeg2.stdio[3] as Writable
+        );
+        this.streams.ffmpeg2_2 = this.overlay.pipe(
+          this.children.ffmpeg2.stdio[4] as Writable
+        );
         this.streams.ffmpeg2_out = this.children.ffmpeg2.stdout;
       }
 
-      this.streams.sox = this.streams.ffmpeg2_out.pipe(this.children.sox.stdin, { end: false });
+      this.streams.sox = this.streams.ffmpeg2_out.pipe(
+        this.children.sox.stdin,
+        { end: false }
+      );
     } else
-      this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin, { end: false })
+      this.streams.sox = this.streams.ffmpeg.pipe(this.children.sox.stdin, {
+        end: false,
+      });
     this.children.sox.stdout.pipe(this.mixer, { end: false });
 
-    this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e))
-    this.streams.opus.once('error', (e: Error) => this.onPlayingError('opus', e))
+    this.streams.sox.on('error', (e: Error) => this.onPlayingError('sox', e));
+    this.streams.opus.once('error', (e: Error) =>
+      this.onPlayingError('opus', e)
+    );
   }
 
-  public async playerKill () {
-    debug('Voice.playerKill() call')
-    this.killPrevious()
-    if (typeof this.currentlyPlaying === 'object' && this.currentlyPlaying.cleanup)
-      debug(`cleaning up this.currentlyPlaying (platform ${this.currentlyPlaying.info.platform})`),
-      this.currentlyPlaying.cleanup()
+  public async playerKill() {
+    debug('Voice.playerKill() call');
+    this.killPrevious();
+    if (
+      typeof this.currentlyPlaying === 'object' &&
+      this.currentlyPlaying.cleanup
+    )
+      debug(
+        `cleaning up this.currentlyPlaying (platform ${this.currentlyPlaying.info.platform})`
+      ),
+        this.currentlyPlaying.cleanup();
     if (this.overlay) {
-      this.overlay = false,
-      debug('Stopping to overlay...')
+      (this.overlay = false), debug('Stopping to overlay...');
     }
 
     const empty = this.queue.length === 0;
     if (empty) {
-      this.currentlyPlaying = false
-      this.setupIdleInterval()
+      this.currentlyPlaying = false;
+      this.setupIdleInterval();
     }
 
-    this.emit('playerKill')
-    if (empty)
-      return
+    this.emit('playerKill');
+    if (empty) return;
 
-    debug('Another stream available, playing')
-    const response = this.queue.shift()
-    this.currentlyPlaying = response.readable ? response.readable : (await response.fetch())
-    this.currentlyPlaying.info = response.info
-    this.currentlyPlaying.reprocess = response.reprocess
-    this.start()
+    debug('Another stream available, playing');
+    const response = this.queue.shift();
+    this.currentlyPlaying = response.readable
+      ? response.readable
+      : await response.fetch();
+    this.currentlyPlaying.info = response.info;
+    this.currentlyPlaying.reprocess = response.reprocess;
+    this.start();
   }
 
-  public async playURL (url: string, submittee: User) {
+  public async playURL(url: string, submittee: User) {
     if (this.denyOnAudioSubmission) {
       return await this.logChannel.createMessage({
         embed: {
           title: 'You are denied to submit audio currently',
-          color: EMBED_COLORS.ERR
-        }
-      })
+          color: EMBED_COLORS.ERR,
+        },
+      });
     }
 
-    let result: FormatResponse[] | FormatResponse | false = false
+    let result: FormatResponse[] | FormatResponse | false = false;
 
     for (const format of this.formats) {
-      const res = url.match(format.regex)
-      if (!res || res.length === 0) continue
+      const res = url.match(format.regex);
+      if (!res || res.length === 0) continue;
 
-      let streamOrFalse: FormatResponse[] | FormatResponse | false
+      let streamOrFalse: FormatResponse[] | FormatResponse | false;
       try {
-        streamOrFalse = await format.process(url)
+        streamOrFalse = await format.process(url);
         if (!streamOrFalse) {
-          debug(format.printName + ' did not match, continuing')
-          continue
+          debug(format.printName + ' did not match, continuing');
+          continue;
         }
       } catch (err) {
-        debug(`error on ${format.printName} format:`, err)
+        debug(`error on ${format.printName} format:`, err);
         Sentry.captureException(err, {
           tags: {
             format: format.printName,
-            loc: TAG
+            loc: TAG,
           },
-          extra: { url }
-        })
-        continue
+          extra: { url },
+        });
+        continue;
       }
 
-      debug(`submitted url matched to ${format.printName} format, yay!`)
-      result = streamOrFalse
+      debug(`submitted url matched to ${format.printName} format, yay!`);
+      result = streamOrFalse;
 
       if (Array.isArray(result))
-        result = result.map(x => { x.info.platform = format.printName; x.info.submittee = submittee; return x })
+        result = result.map((x) => {
+          x.info.platform = format.printName;
+          x.info.submittee = submittee;
+          return x;
+        });
       else {
-        result.info.platform = format.printName
-        result.info.submittee = submittee
+        result.info.platform = format.printName;
+        result.info.submittee = submittee;
       }
 
-      break
+      break;
     }
 
-    if (result !== false) this.addToQueue(result)
+    if (result !== false) this.addToQueue(result);
     else {
-      debug('nothing was matched, searching on yt instead...')
-      const search = await yt.search(url)
+      debug('nothing was matched, searching on yt instead...');
+      const search = await yt.search(url);
       if (search.length === 0) {
-        const formats = this.formats.map(x => x.printName)
-        return await this.error('Query not found or unrecognizable URL!', 'Available formats:\n' + Markup.codeblock(formats.join('\n')))
+        const formats = this.formats.map((x) => x.printName);
+        return await this.error(
+          'Query not found or unrecognizable URL!',
+          'Available formats:\n' + Markup.codeblock(formats.join('\n'))
+        );
       } else
-        return this.playURL('https://youtu.be/' + search[0].id.videoId, submittee)
+        return this.playURL(
+          'https://youtu.be/' + search[0].id.videoId,
+          submittee
+        );
     }
   }
 
   public playInternalSoundeffect(file: string) {
-    const path = 'resources/sounds/' + file + '.raw'
-    if (fs.existsSync(path))
-      this.mixer.addBuffer(fs.readFileSync(path))
+    const path = 'resources/sounds/' + file + '.raw';
+    if (fs.existsSync(path)) this.mixer.addBuffer(fs.readFileSync(path));
   }
 
   public setVolume(volume: number) {
-    if (isNaN(volume) || !isFinite(volume))
-      return;
+    if (isNaN(volume) || !isFinite(volume)) return;
     this.mixer.volume = volume;
   }
 
@@ -658,119 +687,129 @@ export class Voice extends EventEmitter {
     this.mixer.addReadable(stream);
   }
 
-  private async error (title = 'Unknown Error', description: string = null) {
+  private async error(title = 'Unknown Error', description: string = null) {
     return await this.logChannel.createMessage({
       embed: {
         title,
         color: EMBED_COLORS.ERR,
-        description
-      }
-    })
+        description,
+      },
+    });
   }
 
-  public async startOverlaying (id: number) {
-    id--
-    if (this.overlay) { return await this.error('You can only overlay two streams at once!') }
-    if (!this.currentlyPlaying) { return await this.error('Nothing currently playing!') }
-    if (!this.queue[id]) { return await this.error('No such queue item ' + id + 1) }
-    if (typeof this.queue[id] === 'string') { return await this.error("You can't overlay local files!") }
-    let ms: number
+  public async startOverlaying(id: number) {
+    id--;
+    if (this.overlay) {
+      return await this.error('You can only overlay two streams at once!');
+    }
+    if (!this.currentlyPlaying) {
+      return await this.error('Nothing currently playing!');
+    }
+    if (!this.queue[id]) {
+      return await this.error('No such queue item ' + id + 1);
+    }
+    if (typeof this.queue[id] === 'string') {
+      return await this.error("You can't overlay local files!");
+    }
+    let ms: number;
 
     if (this.player) {
-      ms = this.player.position
-      this.player.kill(true)
+      ms = this.player.position;
+      this.player.kill(true);
     }
 
-    this.killPrevious(true)
-    const str = this.queue.splice(id, 1)[0]
-    this.overlay = (str.readable ? str.readable : await str.fetch())
-    this.restartTime = Date.now()
-    debug('Starting to overlay, time:', ms, 'ms')
-    this.start(ms / 1000)
+    this.killPrevious(true);
+    const str = this.queue.splice(id, 1)[0];
+    this.overlay = str.readable ? str.readable : await str.fetch();
+    this.restartTime = Date.now();
+    debug('Starting to overlay, time:', ms, 'ms');
+    this.start(ms / 1000);
   }
 
-  public playFile (path: string) {
-    if (!fs.existsSync(path)) { return debug('File', path, 'does not exist!') }
-    this.addToQueue(path)
+  public playFile(path: string) {
+    if (!fs.existsSync(path)) {
+      return debug('File', path, 'does not exist!');
+    }
+    this.addToQueue(path);
   }
 
-  public async restart () {
-    if (!this.player || !this.currentlyPlaying) return
+  public async restart() {
+    if (!this.player || !this.currentlyPlaying) return;
 
-    const ms = this.player.position
-    this.player.kill(true)
-    this.player.ss = ms
-    this.restartTime = Date.now()
-    debug('Restart call, time: ', ms, 'ms')
+    const ms = this.player.position;
+    this.player.kill(true);
+    this.player.ss = ms;
+    this.restartTime = Date.now();
+    debug('Restart call, time: ', ms, 'ms');
 
-    if (this.currentlyPlaying) this.start(ms / 1000)
+    if (this.currentlyPlaying) this.start(ms / 1000);
   }
 
-  public async addToQueue (str: FormatResponse[] | FormatResponse | string) {
+  public async addToQueue(str: FormatResponse[] | FormatResponse | string) {
     if (this.queue.length === 0 && !this.currentlyPlaying) {
       if (Array.isArray(str)) {
-        const formatResponse = str.shift()
-        this.currentlyPlaying = formatResponse.readable ? formatResponse.readable : (await formatResponse.fetch())
-        this.currentlyPlaying.info = formatResponse.info
-        this.currentlyPlaying.reprocess = formatResponse.reprocess
-        this.queue = str
+        const formatResponse = str.shift();
+        this.currentlyPlaying = formatResponse.readable
+          ? formatResponse.readable
+          : await formatResponse.fetch();
+        this.currentlyPlaying.info = formatResponse.info;
+        this.currentlyPlaying.reprocess = formatResponse.reprocess;
+        this.queue = str;
       } else {
-        const isFile = typeof str === 'string'
-        this.currentlyPlaying = isFile ? str : (str.readable ? str.readable : (await str.fetch()))
+        const isFile = typeof str === 'string';
+        this.currentlyPlaying = isFile
+          ? str
+          : str.readable
+          ? str.readable
+          : await str.fetch();
         if (!isFile) {
-          const input = this.currentlyPlaying as ExtendedReadable
-          input.info = str.info
-          input.reprocess = str.reprocess
+          const input = this.currentlyPlaying as ExtendedReadable;
+          input.info = str.info;
+          input.reprocess = str.reprocess;
         }
       }
-      return this.start()
+      return this.start();
     }
     if (typeof str !== 'string') {
-      if (Array.isArray(str))
-        this.queue = this.queue.concat(str)
-      else
-        this.queue.push(str)
+      if (Array.isArray(str)) this.queue = this.queue.concat(str);
+      else this.queue.push(str);
     }
   }
 
-  private killPrevious (notFullCleanup = false) {
-    this.emit('killPrevious')
-    debug('Voice.killPrevious() call')
-    clearInterval(this.idle)
-    if (this.player)
-      this.player.count = 0
-    if (this.children.sox)
-      this.children.sox.stdout.unpipe(this.mixer)
+  private killPrevious(notFullCleanup = false) {
+    this.emit('killPrevious');
+    debug('Voice.killPrevious() call');
+    clearInterval(this.idle);
+    if (this.player) this.player.count = 0;
+    if (this.children.sox) this.children.sox.stdout.unpipe(this.mixer);
     if (this.streams.ffmpeg) {
       if (this.streams.ffmpeg2_out)
-        this.streams.ffmpeg2_out.unpipe(this.streams.sox)
-      else
-        this.streams.ffmpeg.unpipe(this.streams.sox);
+        this.streams.ffmpeg2_out.unpipe(this.streams.sox);
+      else this.streams.ffmpeg.unpipe(this.streams.sox);
     }
 
     Object.entries(this.children).forEach((c: [string, any]) => {
-      if (notFullCleanup && c[0].startsWith('ffmpeg')) return
-      return c[1].kill(9)
+      if (notFullCleanup && c[0].startsWith('ffmpeg')) return;
+      return c[1].kill(9);
     });
 
-    this.children = {}
+    this.children = {};
   }
 
-  public kill (removeVoice = true, clearQueue = true) {
-    this.queue = clearQueue ? [] : this.queue
-    this.overlay = false
+  public kill(removeVoice = true, clearQueue = true) {
+    this.queue = clearQueue ? [] : this.queue;
+    this.overlay = false;
 
-    let ms: number
-    this.killPrevious()
+    let ms: number;
+    this.killPrevious();
     if (this.player) {
-      ms = this.player.position
-      this.player.kill()
+      ms = this.player.position;
+      this.player.kill();
     }
     if (removeVoice) {
-      if (this.connection)
-        this.connection.kill();
-      this.application.voices.delete(this.channel.guildId)
+      if (this.connection) this.connection.kill();
+      this.application.voices.delete(this.channel.guildId);
     }
-    return ms
+    return ms;
   }
 }

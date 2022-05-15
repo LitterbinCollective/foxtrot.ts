@@ -1,27 +1,28 @@
-import { Context } from 'detritus-client/lib/command'
+import { Context } from 'detritus-client/lib/command';
 import prettyMilliseconds from 'pretty-ms';
 
-import { GMCommandClient } from '../../Application'
-import { BaseCommand } from '../../BaseCommand'
-import { EMBED_COLORS, EMOJIS } from '../../constants'
+import { GMCommandClient } from '../../Application';
+import { BaseCommand } from '../../BaseCommand';
+import { EMBED_COLORS, EMOJIS } from '../../constants';
 
 export default class UptimeCommand extends BaseCommand {
-  constructor (commandClient: GMCommandClient) {
+  constructor(commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'uptime',
-      aliases: ['ut']
-    })
+      aliases: ['ut'],
+    });
   }
 
-  public async run (ctx: Context) {
-    const { startAt } = this.commandClient.application
+  public async run(ctx: Context) {
+    const { startAt } = this.commandClient.application;
 
-    const prefix = Math.random() >= .75 ? ' Suffering for ' : ' Running for '
+    const prefix = Math.random() >= 0.75 ? ' Suffering for ' : ' Running for ';
     ctx.reply({
       embed: {
-        title: EMOJIS.STOPWATCH + prefix + prettyMilliseconds(Date.now() - startAt),
-        color: EMBED_COLORS.DEF
-      }
-    })
+        title:
+          EMOJIS.STOPWATCH + prefix + prettyMilliseconds(Date.now() - startAt),
+        color: EMBED_COLORS.DEF,
+      },
+    });
   }
 }
