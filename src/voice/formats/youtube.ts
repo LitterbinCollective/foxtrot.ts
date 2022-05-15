@@ -26,7 +26,7 @@ export default class YouTubeFormat extends BaseFormat {
     return result;
   }
 
-  public async onMatch (matched: string) {
+  public async process (matched: string) {
     let info: ytdl.videoInfo
     try {
       info = await ytdl.getBasicInfo(matched, {
@@ -50,27 +50,30 @@ export default class YouTubeFormat extends BaseFormat {
       }
     }
 
+    function fetch() {
+      const stream: ExtendedReadable = ytdl(matched, {
+        quality: 'highestaudio',
+        filter: 'audioonly',
+        highWaterMark: 1 << 25,
+        /*requestOptions: {
+          headers: {
+            cookies: this.cookies
+          }
+        },*/
+        IPv6Block: this.formatCredentials.youtube.ipv6,
+      })
+      return stream
+    }
+
     return {
-      fetch: () => {
-        const stream: ExtendedReadable = ytdl(matched, {
-          quality: 'highestaudio',
-          filter: 'audioonly',
-          highWaterMark: 1 << 25,
-          /*requestOptions: {
-            headers: {
-              cookies: this.cookies
-            }
-          },*/
-          IPv6Block: this.formatCredentials.youtube.ipv6,
-        })
-        return stream;
-      },
+      fetch,
+      reprocess: fetch,
       info: {
         title: info.videoDetails.title,
         url: info.videoDetails.video_url,
         duration: Number(info.videoDetails.lengthSeconds),
         image
-      }
+      },
     }
   }
 }

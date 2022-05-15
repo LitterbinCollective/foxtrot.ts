@@ -25,49 +25,62 @@ export default class URLFormat extends BaseFormat {
     })
   }
 
-  public async onMatch (matched: string) {
+  public async process (matched: string) {
     if (await this.isUrlLocal(matched)) return false
 
     const filename = new URL(matched).pathname.split('/').pop()
     const isMod = this.MODULE_FILE_EXT.indexOf(filename.split('.').pop().toLowerCase()) !== -1
     let resp: any
-    try {
+    let child: any
+
+    async function connect() {
       resp = await axios({
         method: 'get',
         url: matched,
         responseType: 'stream'
-      });
+      })
       const contentType = resp.headers['content-type']
       if (!contentType.startsWith('audio/') && !contentType.startsWith('video/') &&
         !isMod) return false
+    }
+
+    function postFetch() {
+      let readable: ExtendedReadable
+
+      if (isMod) {
+        /*
+          * this is a weird way of doing it but since directly piping it
+          * doesn't work i have to use it. optional todo: come up with a
+          * better idea.
+          */
+        child = spawn('ffmpeg', [
+          '-i', matched,
+          '-ar', '48000',
+          '-ac', '2',
+          '-f', 'wav',
+          '-'
+        ])
+        readable = child.stdout
+        readable.cleanup = () =>
+          child.kill(9);
+      } else
+        readable = resp.data
+
+      return readable
+    }
+
+    try {
+      await connect()
     } catch (err) {
       return false
     }
 
     return {
-      fetch: () => {
-        let readable: ExtendedReadable
-
-        if (isMod) {
-          /*
-           * this is a weird way of doing it but since directly piping it
-           * doesn't work i have to use it. optional todo: come up with a
-           * better idea.
-           */
-          const child = spawn('ffmpeg', [
-            '-i', matched,
-            '-ar', '48000',
-            '-ac', '2',
-            '-f', 'wav',
-            '-'
-          ])
-          readable = child.stdout
-          readable.cleanup = () =>
-            child.kill(9);
-        } else
-          readable = resp.data
-
-        return readable
+      fetch: postFetch,
+      reprocess: async () => {
+        if (child) child.kill(9)
+        await connect()
+        return postFetch()
       },
       info: {
         title: filename,
