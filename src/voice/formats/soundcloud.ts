@@ -7,7 +7,7 @@ export default class SoundcloudFormat extends BaseFormat {
   public regex = /^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/g
   public printName = 'SoundCloud'
 
-  public async onMatch (matched: string) {
+  public async process (matched: string) {
     let info: any
     try {
       info = await scdl.getInfo(matched)
@@ -15,11 +15,14 @@ export default class SoundcloudFormat extends BaseFormat {
       return false
     }
 
+    async function fetch() {
+      const stream: ExtendedReadable = await scdl.download(matched)
+      return stream
+    }
+
     return {
-      fetch: async () => {
-        const stream: ExtendedReadable = await scdl.download(matched)
-        return stream
-      },
+      fetch,
+      reprocess: fetch,
       info: {
         title: info.user.username + ' - ' + info.title,
         image: info.artwork_url,

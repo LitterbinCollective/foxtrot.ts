@@ -22,6 +22,7 @@ import BaseEffect from './foundation/BaseEffect'
 import BaseFormat from './foundation/BaseFormat'
 import { EMBED_COLORS, FILENAME_REGEX } from '../constants'
 import BaseModule from './foundation/BaseModule'
+import { Skip } from './util'
 
 interface ExtendedReadableInfo {
   title: string
@@ -35,11 +36,13 @@ interface ExtendedReadableInfo {
 export class ExtendedReadable extends Readable {
   public info?: ExtendedReadableInfo
   public cleanup?: () => any
+  public reprocess?: () => (ExtendedReadable | Promise<ExtendedReadable>)
 }
 
 export interface FormatResponse {
   readable?: ExtendedReadable
   fetch?: () => (ExtendedReadable | Promise<ExtendedReadable>)
+  reprocess?: () => (ExtendedReadable | Promise<ExtendedReadable>)
   info?: ExtendedReadableInfo
 }
 
@@ -290,8 +293,6 @@ export class Voice extends EventEmitter {
 
   private convert2PCM (streamOrFile = this.currentlyPlaying, ss?: number) {
     const isFile = typeof streamOrFile === 'string'
-    if (!isFile)
-      (streamOrFile as ExtendedReadable).on('error', (e) => debug('stream just died', e))
 
     const ffmpegArgs: string[] = [
       '-ar',
@@ -432,7 +433,32 @@ export class Voice extends EventEmitter {
 
       this.logChannel.createMessage({
         embed
-      })
+      });
+
+      const handleInputError = async (e: any) => {
+        debug('this.currentlyPlaying readable stream just died!', e)
+        if (e.code !== 'ECONNRESET') return this.skip()
+
+        let input = this.currentlyPlaying as ExtendedReadable
+        if ((input as Skip).src) input = (input as Skip).src
+        let newerInput: ExtendedReadable
+        const b = (input as any).socket.bytesRead
+        if (input.reprocess)
+          newerInput = await input.reprocess()
+        else return this.skip()
+        debug('attempting to recover...')
+
+        newerInput.info = input.info
+        newerInput.cleanup = input.cleanup
+        newerInput.reprocess = input.reprocess
+        newerInput.on('error', handleInputError)
+        newerInput = newerInput.pipe(new Skip({ offset: b }))
+        if (this.children.ffmpeg)
+          input.unpipe(this.children.ffmpeg.stdio[3]),
+          input = this.currentlyPlaying = newerInput,
+          input.pipe(this.children.ffmpeg.stdio[3])
+      }
+      (input as ExtendedReadable).on('error', handleInputError)
     }
 
     const effects = Array.from(this.effects, ([_, effect]) => {
@@ -540,6 +566,7 @@ export class Voice extends EventEmitter {
     const response = this.queue.shift()
     this.currentlyPlaying = response.readable ? response.readable : (await response.fetch())
     this.currentlyPlaying.info = response.info
+    this.currentlyPlaying.reprocess = response.reprocess
     this.start()
   }
 
@@ -561,7 +588,7 @@ export class Voice extends EventEmitter {
 
       let streamOrFalse: FormatResponse[] | FormatResponse | false
       try {
-        streamOrFalse = await format.onMatch(url)
+        streamOrFalse = await format.process(url)
         if (!streamOrFalse) {
           debug(format.printName + ' did not match, continuing')
           continue
@@ -682,11 +709,16 @@ export class Voice extends EventEmitter {
         const formatResponse = str.shift()
         this.currentlyPlaying = formatResponse.readable ? formatResponse.readable : (await formatResponse.fetch())
         this.currentlyPlaying.info = formatResponse.info
+        this.currentlyPlaying.reprocess = formatResponse.reprocess
         this.queue = str
       } else {
         const isFile = typeof str === 'string'
         this.currentlyPlaying = isFile ? str : (str.readable ? str.readable : (await str.fetch()))
-        if (!isFile) (this.currentlyPlaying as ExtendedReadable).info = str.info
+        if (!isFile) {
+          const input = this.currentlyPlaying as ExtendedReadable
+          input.info = str.info
+          input.reprocess = str.reprocess
+        }
       }
       return this.start()
     }

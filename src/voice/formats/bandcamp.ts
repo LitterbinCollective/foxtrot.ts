@@ -13,7 +13,7 @@ export default class BandcampFormat extends BaseFormat {
     return str.replaceAll(/&(.+?);/g, (m) => this.CHARS[m.slice(1, -1)])
   }
 
-  public async onMatch (matched: string) {
+  public async process (matched: string) {
     let info: any = await axios(matched)
 
     const match = [...info.data.matchAll(this.tralbumRegex)][0][4]
@@ -22,15 +22,19 @@ export default class BandcampFormat extends BaseFormat {
     info = JSON.parse(this.decodeHTML(match))
 
     const array = await Promise.all(info.trackinfo.map(async (track: any) => {
-      const resp = await axios({
-        method: 'get',
-        url: track.file['mp3-128'],
-        responseType: 'stream'
-      })
-      const readable: ExtendedReadable = resp.data
+      async function fetch() {
+        const resp = await axios({
+          method: 'get',
+          url: track.file['mp3-128'],
+          responseType: 'stream'
+        })
+        return resp.data
+      }
+      const readable: ExtendedReadable = await fetch()
 
       return {
         readable: readable,
+        reprocess: fetch,
         info: {
           title: track.title,
           image: `https://f4.bcbits.com/img/a${info.art_id}_1.jpg`,

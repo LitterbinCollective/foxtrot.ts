@@ -9,7 +9,7 @@ export default class BaseFormat {
     this.formatCredentials = formatCredentials;
   }
 
-  public onMatch (_matched: string): Promise<FormatResponse[] | FormatResponse | false> | FormatResponse[] | FormatResponse | false {
+  public process (_matched: string): Promise<FormatResponse[] | FormatResponse | false> | FormatResponse[] | FormatResponse | false {
     return false
   }
 }
