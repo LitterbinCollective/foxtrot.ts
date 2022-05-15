@@ -440,9 +440,12 @@ export class Voice extends EventEmitter {
         if (e.code !== 'ECONNRESET') return this.skip()
 
         let input = this.currentlyPlaying as ExtendedReadable
-        if ((input as Skip).src) input = (input as Skip).src
         let newerInput: ExtendedReadable
-        const b = (input as any).socket.bytesRead
+        if ((input as Skip).src) input = (input as Skip).src
+
+        if (typeof (input as any).socket === 'undefined') return this.skip();
+        const bytesToSkip = (input as any).socket.bytesRead
+
         if (input.reprocess)
           newerInput = await input.reprocess()
         else return this.skip()
@@ -452,7 +455,7 @@ export class Voice extends EventEmitter {
         newerInput.cleanup = input.cleanup
         newerInput.reprocess = input.reprocess
         newerInput.on('error', handleInputError)
-        newerInput = newerInput.pipe(new Skip({ offset: b }))
+        newerInput = newerInput.pipe(new Skip({ offset: bytesToSkip }))
         if (this.children.ffmpeg)
           input.unpipe(this.children.ffmpeg.stdio[3]),
           input = this.currentlyPlaying = newerInput,
