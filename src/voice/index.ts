@@ -68,11 +68,10 @@ class Player extends Writable {
   }
 
   private calcMs(count: number) {
-    const { startTime, restartTime, pauseTime } = this.voice;
+    const { startTime, restartTime } = this.voice;
     if (typeof startTime === 'boolean') return 0;
     return (
-      count * this.FRAME_LENGTH -
-      (Date.now() - (restartTime || startTime) - pauseTime)
+      count * this.FRAME_LENGTH - (Date.now() - (restartTime || startTime))
     );
   }
 
@@ -82,10 +81,16 @@ class Player extends Writable {
     this.voice.connection.sendAudio(chunk, {
       isOpus: true,
     });
-    setTimeout(
-      () => (callback(null), (this.curPos = this.count * this.FRAME_LENGTH)),
-      this.calcMs(this.count)
+
+    const ms = this.calcMs(this.count);
+    const timeoutCallback = () => (
+      callback(null), (this.curPos = this.count * this.FRAME_LENGTH)
     );
+    if (ms <= 0) {
+      setImmediate(timeoutCallback);
+      debug('returned of Player.calcMs is negative or zero!', ms);
+    } else setTimeout(timeoutCallback, ms);
+
     this.count++;
 
     return true;
@@ -186,7 +191,6 @@ export class Voice extends EventEmitter {
   public currentlyPlaying: ExtendedReadable | string | false;
   public queue: FormatResponse[] = [];
   public startTime: number | boolean;
-  public pauseTime = 0;
   public restartTime?: number;
   public denyOnAudioSubmission = false;
   public initialized = false;
@@ -785,6 +789,7 @@ export class Voice extends EventEmitter {
   private killPrevious(notFullCleanup = false) {
     this.emit('killPrevious');
     debug('Voice.killPrevious() call');
+    this.startTime = false;
     clearInterval(this.idle);
     if (this.player) this.player.count = 0;
     if (this.children.sox) this.children.sox.stdout.unpipe(this.mixer);

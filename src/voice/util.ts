@@ -15,7 +15,11 @@ export class Skip extends Transform {
     this.src = src;
   }
 
-  public _transform(chunk: any, _: BufferEncoding, callback: TransformCallback): void {
+  public _transform(
+    chunk: any,
+    _: BufferEncoding,
+    callback: TransformCallback
+  ): void {
     if (this.offset === 0) this.push(chunk);
     else if (this.offset > chunk.length) this.offset -= chunk.length;
     else {
