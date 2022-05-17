@@ -8,7 +8,7 @@
     "start": "node index.js"
   },
   "author": "Litterbin Collective",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@discordjs/opus": "^0.5.3",
     "@msgpack/msgpack": "^2.7.2",
