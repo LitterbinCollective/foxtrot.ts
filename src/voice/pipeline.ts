@@ -1,8 +1,8 @@
-import { OpusEncoder } from '@discordjs/opus';
 import _debug from 'debug';
 import { GatewayClientEvents } from 'detritus-client';
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
 import { ChannelGuildVoice } from 'detritus-client/lib/structures';
+import { opus } from 'prism-media';
 import { Readable, Transform, TransformCallback, Writable, PassThrough } from 'stream';
 
 import NewVoice from './new';
@@ -11,31 +11,23 @@ const debug = _debug('glowmem/pipeline');
 
 class VoicePipelinePlayer extends Writable {
   public voiceConnection: VoiceConnection;
-
-  private buffer: Buffer;
-  private readonly opusEncoder: OpusEncoder;
   private readonly pipeline: VoicePipeline;
-  private readonly OPUS_MINIMUM_BYTES: number;
 
   constructor(pipeline: VoicePipeline, voiceChannel: ChannelGuildVoice) {
     super();
-
     this.pipeline = pipeline;
-    const { OPUS_FRAME_SIZE, SAMPLE_RATE, AUDIO_CHANNELS, SAMPLE_BYTE_LEN } = this.pipeline;
-    this.opusEncoder = new OpusEncoder(
-      SAMPLE_RATE,
-      AUDIO_CHANNELS
-    );
-    this.buffer = Buffer.alloc(0);
-    this.OPUS_MINIMUM_BYTES = OPUS_FRAME_SIZE * AUDIO_CHANNELS * SAMPLE_BYTE_LEN;
-
     this.initialize(voiceChannel);
+  }
+
+  private get OPUS_FRAME_LENGTH() {
+    return this.pipeline.OPUS_FRAME_LENGTH;
   }
 
   private async initialize(voiceChannel: ChannelGuildVoice) {
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
       throw new Error('Bot is not able to join or speak in this voice channel.');
     await this.onVoiceStateUpdate(voiceChannel);
+    this.emit('connected');
   }
 
   public async onVoiceStateUpdate(payload: ChannelGuildVoice | GatewayClientEvents.VoiceStateUpdate, force: boolean = false) {
@@ -51,33 +43,23 @@ class VoicePipelinePlayer extends Writable {
     });
   }
 
-  public _write(
+  public async _write(
     chunk: any,
     _encoding: BufferEncoding,
     callback: (error?: Error) => void
-  ): void {
+   ) {
     if (!this.voiceConnection)
       return callback();
 
-    this.buffer = Buffer.concat([ this.buffer, chunk ]);
-    let frames = 0;
-    while (this.OPUS_MINIMUM_BYTES * (frames + 1) <= this.buffer.length) {
-      const opusPacket = this.opusEncoder.encode(
-        this.buffer.slice(this.OPUS_MINIMUM_BYTES * frames, this.OPUS_MINIMUM_BYTES * (frames + 1))
-      );
-      this.voiceConnection.sendAudio(opusPacket, { isOpus: true });
-      frames++;
-    }
+    this.voiceConnection.sendAudio(chunk, { isOpus: true });
 
-    if (frames > 0) {
-      this.buffer = this.buffer.slice(this.OPUS_MINIMUM_BYTES * frames);
-      setTimeout(callback, this.pipeline.OPUS_FRAME_LENGTH * frames);
-    } else callback();
+    setImmediate(callback);
   }
 
   public destroy() {
     super.destroy();
-    this.voiceConnection.kill();
+    if (this.voiceConnection)
+      this.voiceConnection.kill();
   }
 }
 
@@ -124,7 +106,7 @@ class VoicePipelineMixer extends Transform {
             readable.counter >=
             AUDIO_CHANNELS * SAMPLE_RATE * SAMPLE_BYTE_LEN
           )
-            this.audioReadables.splice(i, 1);
+            this.removeReadable(i);
         }
       }
 
@@ -157,6 +139,11 @@ class VoicePipelineMixer extends Transform {
     const passThrough = new PassThroughWithCounter();
     readable.pipe(passThrough, { end: false });
     this.audioReadables.push(passThrough);
+    return this.audioReadables.length - 1
+  }
+
+  public removeReadable(index: number) {
+    this.audioReadables.splice(index, 1);
   }
 
   public clearReadableArray() {
@@ -164,13 +151,14 @@ class VoicePipelineMixer extends Transform {
   }
 }
 
-export default class VoicePipeline extends Transform {
+export default class VoicePipeline extends PassThrough {
   public readonly mixer: VoicePipelineMixer;
   public readonly OPUS_FRAME_LENGTH = 20;
   public readonly OPUS_FRAME_SIZE = 960;
   public readonly SAMPLE_BYTE_LEN = 2;
 
   private silenceInterval?: NodeJS.Timeout;
+  private readonly opus: opus.Decoder;
   private readonly player: VoicePipelinePlayer;
   private readonly voice: NewVoice;
 
@@ -178,10 +166,14 @@ export default class VoicePipeline extends Transform {
     super();
 
     this.voice = voice;
+    this.opus = new opus.Encoder({ channels: this.AUDIO_CHANNELS, frameSize: this.OPUS_FRAME_SIZE, rate: this.SAMPLE_RATE });
     this.player = new VoicePipelinePlayer(this, voiceChannel);
     this.mixer = new VoicePipelineMixer(this);
 
-    this.pipe(this.mixer, { end: false }).pipe(this.player, { end: false });
+    this.player.on('connected', () => this.emit('connected'));
+    this.pipe(this.mixer, { end: false })
+      .pipe(this.opus, { end: false })
+      .pipe(this.player, { end: false });
   }
 
   public get SAMPLE_RATE() {
@@ -190,15 +182,6 @@ export default class VoicePipeline extends Transform {
 
   public get AUDIO_CHANNELS() {
     return this.voice.AUDIO_CHANNELS;
-  }
-
-  public _transform(
-    chunk: any,
-    _encoding: BufferEncoding,
-    callback: TransformCallback
-  ): void {
-    this.push(chunk);
-    callback();
   }
 
   public playSilence() {

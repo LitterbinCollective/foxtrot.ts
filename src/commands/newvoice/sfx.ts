@@ -21,7 +21,7 @@ export default class NSfxCommand extends BaseCommand {
 
     const voice = this.commandClient.application.newvoices.get(ctx.guild.id);
     if (!voice) return await ctx.reply('Not in the voice channel.');
-    if (!voice.canCallVoiceCommands(ctx.member)) {
+    if (!voice.canExecuteVoiceCommands(ctx.member)) {
       return await ctx.reply('You are not in the correct voice channel.');
     }
 
