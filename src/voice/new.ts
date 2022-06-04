@@ -1,14 +1,21 @@
 import { ChannelGuildVoice, ChannelTextType, Member } from 'detritus-client/lib/structures';
 import { EventEmitter } from 'events';
+import { Readable } from 'stream';
 
 import { Application } from '../Application';
 import VoicePipeline from './pipeline';
+import { VoiceEffectProcessor, VoiceFormatProcessor } from './processors';
+import { FFMpeg } from './ffmpeg';
 
 export default class NewVoice extends EventEmitter {
+  public readonly queue = [];
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
   private application: Application;
   private channel: ChannelGuildVoice;
+  private effects: VoiceEffectProcessor;
+  private ffmpeg?: FFMpeg;
+  private formats: VoiceFormatProcessor;
   private pipeline: VoicePipeline;
 
   constructor(
@@ -30,17 +37,47 @@ export default class NewVoice extends EventEmitter {
       return this.kill();
     }
 
+    this.effects = new VoiceEffectProcessor(this);
+    this.formats = new VoiceFormatProcessor(this.application);
+
     this.application.newvoices.set(this.channel.guildId, this);
-    this.pipeline.playSilence();
-    this.emit('initialized');
+    this.pipeline.on('connected', async () =>
+      {
+        this.emit('initialized');
+        const result = await this.formats.fromURL('https://soundcloud.com/iamhzn/nocturne');
+        if (result !== false)
+          this.playStream(await (Array.isArray(result) ? result[0] : result).fetch());
+      }
+    )
   }
 
-  public canCallVoiceCommands(member: Member) {
+  private playStream(stream: Readable) {
+    if (this.ffmpeg) {
+      this.ffmpeg.unpipe(this.effects);
+      this.ffmpeg.destroy();
+    }
+
+    this.ffmpeg = new FFMpeg([
+      '-analyzeduration', '0',
+      // '-loglevel', '0',
+      '-ar', this.SAMPLE_RATE.toString(),
+      '-ac', this.AUDIO_CHANNELS.toString(),
+      '-f', 's16le'
+    ], [ '-re' ]);
+
+    this.effects.createAudioEffectProcessor();
+    this.ffmpeg.on('end', () => console.log('ffmpeg stream ended'));
+    stream.pipe(this.ffmpeg, { end: false })
+      .pipe(this.effects, { end: false })
+      .pipe(this.pipeline, { end: false });
+  }
+
+  public canExecuteVoiceCommands(member: Member) {
     return this.channel === member.voiceChannel;
   }
 
   public canLeave(member: Member) {
-    return this.canCallVoiceCommands(member) ||
+    return this.canExecuteVoiceCommands(member) ||
       this.channel.members.size === 1;
   }
 

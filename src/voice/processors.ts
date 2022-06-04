@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { User } from 'detritus-client/lib/structures';
 import fs from 'fs';
-import { PassThrough } from 'stream';
+import { Transform } from 'stream';
 
 import { FormatResponse } from '.'; // todo: remove
 
@@ -11,27 +11,27 @@ import BaseEffect from './foundation/BaseEffect';
 import BaseFormat from './foundation/BaseFormat';
 import NewVoice from './new';
 
-class BaseVoiceProcessor {
+class BaseVoiceProcessor extends Transform {
   public readonly processors: Record<string, any> = {};
 
   constructor (constructorArgs: any[], scanPath: string) {
+    super();
     for (const fileName of fs.readdirSync(__dirname + '/' + scanPath)) {
       const name = fileName.replace(FILENAME_REGEX, '');
-      const any: any = require('./formats/' +
-        fileName.replace(FILENAME_REGEX, '')).default;
+      const any: any = require('./' + scanPath + fileName).default;
       this.processors[name] = new any(...constructorArgs);
     }
   }
 }
 
 export class VoiceFormatProcessor extends BaseVoiceProcessor {
-  public readonly processors: Record<string, BaseFormat> = {};
+  public readonly processors: Record<string, BaseFormat>;
 
   constructor (application: Application) {
     super([application.config.formatCredentials], 'formats/');
   }
 
-  public async getURL(url: string, user: User) {
+  public async fromURL(url: string, user?: User) {
     let result: FormatResponse[] | FormatResponse | false;
 
     for (const formatName in this.processors) {
@@ -66,17 +66,15 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
 }
 
 export class VoiceEffectProcessor extends BaseVoiceProcessor {
-  public readonly processors: Record<string, BaseEffect> = {};
-  public readonly stdin: PassThrough;
-  private child?: ChildProcessWithoutNullStreams;
+  public readonly processors: Record<string, BaseEffect>;
+  private sox?: ChildProcessWithoutNullStreams;
   private stack: BaseEffect[] = [];
   private readonly voice: NewVoice;
   private readonly STACK_LIMIT = 16;
 
-  constructor (application: Application, voice: NewVoice) {
-    super([application.config.formatCredentials], 'effects/');
+  constructor (voice: NewVoice) {
+    super([], 'effects/');
     this.voice = voice;
-    this.stdin = new PassThrough();
   }
 
   public addEffect(name: string, start?: number) {
@@ -108,13 +106,20 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     return this.voice.AUDIO_CHANNELS;
   }
 
-  public createAudioEffectProcessor() {
-    if (this.child) {
-      this.stdin.unpipe(this.child.stdin);
-      this.child.kill(9);
-    }
+  public destroyAudioEffectProcessor() {
+    if (this.sox)
+      this.sox.kill(9);
+  }
 
-    this.child = spawn('sox', [
+  public _write(chunk: any, _encoding: BufferEncoding, callback: (error?: Error) => void): void {
+    if (this.sox) this.sox.stdin.write(chunk);
+    callback();
+  }
+
+  public createAudioEffectProcessor() {
+    this.destroyAudioEffectProcessor();
+
+    this.sox = spawn('sox', [
       '-r',
       this.SAMPLE_RATE.toString(),
       '-c',
@@ -140,6 +145,8 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
       ...this.args,
     ]);
 
-    this.stdin.pipe(this.child.stdin);
+    this.sox.stdout.on('data', (chunk) => this.push(chunk));
+    this.sox.stdout.on('error', (e) => console.error('sox.stdout'));
+    this.sox.stdout.on('end', () => this.push(null));
   }
 }
