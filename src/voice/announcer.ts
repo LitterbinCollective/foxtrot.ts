@@ -1,9 +1,9 @@
-import { ChannelGuildText } from 'detritus-client/lib/structures';
+import { ChannelTextType } from 'detritus-client/lib/structures';
 
-export default class VoiceAnnouncer {
-  private channel: ChannelGuildText;
+export default class VoiceQueueAnnouncer {
+  private channel: ChannelTextType;
 
-  constructor (channel: ChannelGuildText) {
+  constructor (channel: ChannelTextType) {
     this.channel = channel;
   }
 

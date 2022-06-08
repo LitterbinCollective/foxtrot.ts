@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { Transform, Writable } from 'stream';
 
-export class FFMpeg extends Transform {
+export default class FFMpeg extends Transform {
   public instance: ChildProcessWithoutNullStreams;
   private startTime: number;
   private readonly args: string[];

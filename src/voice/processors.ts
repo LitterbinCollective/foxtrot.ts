@@ -81,7 +81,10 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     start = start || this.stack.length;
     if (this.stack.length === this.STACK_LIMIT)
       throw new Error('effect stack overflow');
-    this.stack.splice(start, 0, Object.assign(Object.create(Object.getPrototypeOf(this.processors[name])), this.processors[name]));
+    const effect = Object.assign(Object.create(Object.getPrototypeOf(this.processors[name])), this.processors[name]);
+    effect.enabled = true;
+    this.stack.splice(start, 0, effect);
+    if (this.sox) this.createAudioEffectProcessor();
     return start + 1;
   }
 
@@ -89,12 +92,14 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     if (this.stack.length === 0)
       throw new Error('effect stack underflow');
     this.stack.splice(id, 1);
+    if (this.sox) this.createAudioEffectProcessor();
   }
 
   private get args() {
-    const result = [];
+    let result = [];
     for (const effect of this.stack)
-      result.push(effect.args);
+      if (effect.enabled !== false && typeof effect.args !== 'boolean')
+        result = result.concat([effect.name, ...effect.args]);
     return result;
   }
 
@@ -145,8 +150,10 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
       ...this.args,
     ]);
 
+    console.log(this.args)
+
     this.sox.stdout.on('data', (chunk) => this.push(chunk));
+    this.sox.stderr.on('data', (data) => console.log(data.toString()));
     this.sox.stdout.on('error', (e) => console.error('sox.stdout'));
-    this.sox.stdout.on('end', () => this.push(null));
   }
 }
