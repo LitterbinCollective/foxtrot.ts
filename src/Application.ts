@@ -74,6 +74,7 @@ export class Application {
     this.pkg = pkg;
 
     this.clusterClient = new ClusterClient(this.config.token, {
+      cache: { messages: { expire: 60 * 60 * 1000 } },
       gateway: {
         presence: {
           activity: {
