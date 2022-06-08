@@ -1,4 +1,4 @@
-import { ChannelTextType } from 'detritus-client/lib/structures';
+import { ChannelTextType, User } from 'detritus-client/lib/structures';
 
 import { FormatResponse } from '.';
 import VoiceQueueAnnouncer from './announcer';
@@ -17,8 +17,8 @@ export default class VoiceQueue {
     this.formats = new VoiceFormatProcessor(voice.application);
   }
 
-  public async push(url: string) {
-    const result = await this.formats.fromURL(url);
+  public async push(url: string, user?: User) {
+    const result = await this.formats.fromURL(url, user);
     if (!result) return false;
     const wasEmpty = this.queue.length === 0;
 

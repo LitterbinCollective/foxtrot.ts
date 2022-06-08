@@ -10,6 +10,7 @@ import VoiceQueue from './queue';
 
 export default class NewVoice extends EventEmitter {
   public ffmpeg?: FFMpeg;
+  public initialized = false;
   public queue: VoiceQueue;
   public readonly application: Application;
   public readonly AUDIO_CHANNELS = 2;
@@ -39,15 +40,18 @@ export default class NewVoice extends EventEmitter {
 
     this.effects = new VoiceEffectProcessor(this);
     this.queue = new VoiceQueue(this, logChannel);
+    this.pipeline.playSilence();
 
     this.application.newvoices.set(this.channel.guildId, this);
+    this.emit('initialized');
+    this.initialized = true;
   }
 
   public playStream(stream: Readable) {
-    if (this.ffmpeg) {
-      this.ffmpeg.unpipe(this.effects);
-      this.ffmpeg.destroy();
-    }
+    if (this.ffmpeg)
+      this.cleanUp();
+
+    this.pipeline.stopSilence();
 
     this.ffmpeg = new FFMpeg([
       '-analyzeduration', '0',
@@ -71,6 +75,7 @@ export default class NewVoice extends EventEmitter {
     this.ffmpeg.unpipe(this.effects);
     this.ffmpeg.destroy();
     this.ffmpeg = undefined;
+    this.pipeline.playSilence();
 
     this.effects.destroyAudioEffectProcessor();
     this.effects.unpipe(this.pipeline);
