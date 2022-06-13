@@ -6,14 +6,14 @@ import NewVoice from './new';
 import { VoiceFormatProcessor } from './processors';
 
 export default class VoiceQueue {
+  public readonly announcer: VoiceQueueAnnouncer;
   private formats: VoiceFormatProcessor;
   private queue: VoiceFormatResponse[] = [];
-  private readonly announcer: VoiceQueueAnnouncer;
   private readonly voice: NewVoice;
 
   constructor (voice: NewVoice, logChannel: ChannelTextType) {
     this.voice = voice;
-    this.announcer = new VoiceQueueAnnouncer(logChannel);
+    this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
     this.formats = new VoiceFormatProcessor(voice.application);
   }
 
@@ -35,8 +35,9 @@ export default class VoiceQueue {
   }
 
   public async next() {
-    if ((this.voice.ffmpeg && !this.voice.ffmpeg.readableEnded) || this.queue.length === 0)
+    if (this.voice.ffmpeg && !this.voice.ffmpeg.readableEnded)
       return;
+    if (this.queue.length === 0) return this.announcer.reset();
     const singleResponse = this.queue.shift();
     this.announcer.play(singleResponse.info);
     switch (singleResponse.type) {

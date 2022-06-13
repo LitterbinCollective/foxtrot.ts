@@ -4,13 +4,16 @@ import { RequestTypes } from 'detritus-client-rest';
 
 import { VoiceFormatResponseInfo } from './processors';
 import { EMBED_COLORS, EMOJIS } from '../constants';
+import NewVoice from './new';
 
 export default class VoiceQueueAnnouncer {
   private channel: ChannelTextType;
   private current: VoiceFormatResponseInfo;
   private startTime: number;
+  private readonly voice: NewVoice;
 
-  constructor (channel: ChannelTextType) {
+  constructor (voice: NewVoice, channel: ChannelTextType) {
+    this.voice = voice;
     this.channel = channel;
   }
 
@@ -23,6 +26,22 @@ export default class VoiceQueueAnnouncer {
       .join(':');
   }
 
+  private get offsetTime() {
+    if (!this.voice.ffmpeg)
+      return null;
+    return this.voice.ffmpeg.offsetTime;
+  }
+
+  private get pauseTime() {
+    if (!this.voice.ffmpeg)
+      return null;
+    return this.voice.ffmpeg.pauseTime;
+  }
+
+  private get time() {
+    return (this.pauseTime || Date.now()) - (this.offsetTime || 0);
+  }
+
   private playProgress(duration?: number) {
     if (!duration) {
       if (this.current)
@@ -31,21 +50,25 @@ export default class VoiceQueueAnnouncer {
         throw new Error('Duration not provided');
     }
 
-    const progress = Math.floor((Date.now() - this.startTime) / 1000);
-    const factor = progress / duration;
+    const progress = Math.floor((this.time - this.startTime) / 1000);
+    const factor = Math.min(progress / duration, 1);
 
     const progressStr = this.durationInStr(progress),
       durationStr = this.durationInStr(duration);
 
     const LENGTH = 16;
     const repeatCount = ~~(factor * LENGTH);
-    const progressBar = '-'.repeat(repeatCount) + EMOJIS.RADIO + '-'.repeat(LENGTH - repeatCount);
+    const progressBar = '-'.repeat(Math.max(repeatCount, 0)) + EMOJIS.RADIO + '-'.repeat(Math.max(LENGTH - repeatCount, 0));
     return Markup.codestring(`${progressStr} ${progressBar} ${durationStr}`);
   }
 
-  public play(streamInfo: VoiceFormatResponseInfo) {
-    this.startTime = Date.now();
-    this.current = streamInfo;
+  public play(streamInfo: VoiceFormatResponseInfo = this.current) {
+    if (!streamInfo) throw new Error('No stream info provided');
+    if (!this.current) {
+      this.startTime = Date.now();
+      this.current = streamInfo;
+    }
+
     const fromURL = typeof streamInfo.image === 'string';
     const embed = new Embed({
       author: streamInfo.submittee ? {
@@ -53,17 +76,22 @@ export default class VoiceQueueAnnouncer {
         icon_url: streamInfo.submittee.avatarUrl,
       } : undefined,
       title: EMOJIS.PLAY + ' ' + streamInfo.title,
+      description: this.playProgress(streamInfo.duration),
       color: EMBED_COLORS.DEF,
       url: streamInfo.url,
       thumbnail: {
         url: fromURL ? streamInfo.image as string : 'attachment://image.jpg',
       },
     });
-    if (streamInfo.duration)
-      embed.description = this.playProgress(streamInfo.duration);
+
     const options: RequestTypes.CreateMessage = { embed };
     if (!fromURL)
       options.file = { filename: 'image.jpg', value: streamInfo.image as Buffer };
     return this.channel.createMessage(options);
+  }
+
+  public reset() {
+    this.current = undefined;
+    this.startTime = undefined;
   }
 }

@@ -25,7 +25,7 @@ export default class SoundcloudFormat extends BaseFormat {
       type: VoiceFormatResponseType.FETCH,
       info: {
         title: info.user.username + ' - ' + info.title,
-        image: info.artwork_url,
+        image: info.artwork_url || info.user.avatar_url,
         url: matched,
         duration: info.full_duration / 1000,
       },

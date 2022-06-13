@@ -23,6 +23,10 @@ class VoicePipelinePlayer extends Writable {
     return this.pipeline.OPUS_FRAME_LENGTH;
   }
 
+  private get OPUS_FRAME_SIZE() {
+    return this.pipeline.OPUS_FRAME_SIZE;
+  }
+
   private async initialize(voiceChannel: ChannelGuildVoice) {
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
       throw new Error('Bot is not able to join or speak in this voice channel.');
@@ -52,7 +56,6 @@ class VoicePipelinePlayer extends Writable {
       return callback();
 
     this.voiceConnection.sendAudio(chunk, { isOpus: true });
-
     setImmediate(callback);
   }
 
@@ -87,14 +90,14 @@ class VoicePipelineMixer extends Transform {
     const { SAMPLE_BYTE_LEN, AUDIO_CHANNELS, SAMPLE_RATE } = this.pipeline;
     const INT_16_BOUNDARIES = { MIN: -32768, MAX: 32767 };
 
-    for (
-      let position = 0;
-      position < chunk.length;
-      position += SAMPLE_BYTE_LEN
-    ) {
+    let position = 0;
+    while (position < chunk.length - SAMPLE_BYTE_LEN) {
+      position += SAMPLE_BYTE_LEN;
       let sample = chunk.readInt16LE(position);
 
-      for (let i = 0; i < this.audioReadables.length; i++) {
+      let i = 0;
+      while (i < this.audioReadables.length) {
+        i++;
         const readable = this.audioReadables[i];
         const buffer = readable.read(SAMPLE_BYTE_LEN);
         if (buffer) {

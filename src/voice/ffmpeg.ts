@@ -3,7 +3,8 @@ import { Transform, Writable } from 'stream';
 
 export default class FFMpeg extends Transform {
   public instance: ChildProcessWithoutNullStreams;
-  private startTime: number;
+  public offsetTime: number = 0;
+  public pauseTime: number;
   private readonly args: string[];
   private readonly bufferContainer: Buffer[] = [];
   private readonly pre: string[];
@@ -25,9 +26,6 @@ export default class FFMpeg extends Transform {
   }
 
   private setupFFMpeg(args = this.args, pre = this.pre) {
-    if (!this.startTime)
-      this.startTime = Date.now();
-
     args.unshift('-i', this.url ? this.url : 'pipe:3');
     args = pre.concat(args);
     args.push('pipe:1');
@@ -58,10 +56,6 @@ export default class FFMpeg extends Transform {
   private onEnd() {
     (this.instance.stdio[3] as Writable).end();
     this.bufferContainer.push(null);
-  }
-
-  public get timePassed() {
-    return Date.now() - this.startTime;
   }
 
   public destroy(error?: Error): void {

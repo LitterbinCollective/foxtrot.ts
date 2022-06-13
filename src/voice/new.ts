@@ -59,19 +59,21 @@ export default class NewVoice extends EventEmitter {
       '-ar', this.SAMPLE_RATE.toString(),
       '-ac', this.AUDIO_CHANNELS.toString(),
       '-f', 's16le'
-    ], [ '-re' ], fromURL ? stream : null);
+    ], [ '-re' ], fromURL && stream);
 
     this.effects.createAudioEffectProcessor();
-    this.ffmpeg.on('end', () => {
-      this.cleanUp();
-      this.queue.next();
-    });
+    this.ffmpeg.on('end', () => this.skip());
 
     if (!fromURL)
       stream.pipe(this.ffmpeg, { end: false });
 
     this.ffmpeg.pipe(this.effects, { end: false })
       .pipe(this.pipeline, { end: false });
+  }
+
+  public skip() {
+    this.cleanUp();
+    this.queue.next();
   }
 
   private cleanUp() {
