@@ -70,7 +70,7 @@ export default class NewVoice extends EventEmitter {
         '-f',
         's16le',
       ],
-      ['-re'],
+      [ '-re' ],
       fromURL && stream
     );
 
@@ -80,7 +80,7 @@ export default class NewVoice extends EventEmitter {
     if (!fromURL) stream.pipe(this.ffmpeg, { end: false });
 
     this.ffmpeg
-      .pipe(this.effects, { end: false })
+      //.pipe(this.effects, { end: false })
       .pipe(this.pipeline, { end: false });
   }
 
@@ -113,12 +113,12 @@ export default class NewVoice extends EventEmitter {
     script = script.toLowerCase();
     for (const word of script.split(' '))
       if (word.split(':')[0].split('#')[0] === 'sh') {
-        this.pipeline.mixer.clearReadableArray();
+        this.pipeline.clearReadableArray();
         break;
       }
     const parsedScript = this.application.sh.Parser.parse(script);
     const stream = await this.application.sh.Audio.run(parsedScript);
-    this.pipeline.mixer.addReadable(stream);
+    this.pipeline.addReadable(stream);
   }
 
   public kill() {
