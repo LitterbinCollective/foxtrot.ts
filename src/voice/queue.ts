@@ -1,13 +1,13 @@
 import { ChannelTextType, User } from 'detritus-client/lib/structures';
 
-import { FormatResponse } from '.';
+import { VoiceFormatResponse, VoiceFormatResponseType } from './processors';
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from './new';
 import { VoiceFormatProcessor } from './processors';
 
 export default class VoiceQueue {
   private formats: VoiceFormatProcessor;
-  private queue: FormatResponse[] = [];
+  private queue: VoiceFormatResponse[] = [];
   private readonly announcer: VoiceQueueAnnouncer;
   private readonly voice: NewVoice;
 
@@ -18,8 +18,12 @@ export default class VoiceQueue {
   }
 
   public async push(url: string, user?: User) {
-    const result = await this.formats.fromURL(url, user);
+    let result = await this.formats.fromURL(url);
     if (!result) return false;
+    if (Array.isArray(result))
+      result = result.map(res => { res.info.submittee = user; return res; });
+    else
+      result.info.submittee = user;
     const wasEmpty = this.queue.length === 0;
 
     if (Array.isArray(result))
@@ -34,6 +38,20 @@ export default class VoiceQueue {
     if ((this.voice.ffmpeg && !this.voice.ffmpeg.readableEnded) || this.queue.length === 0)
       return;
     const singleResponse = this.queue.shift();
-    this.voice.playStream(singleResponse.readable ? singleResponse.readable : await singleResponse.fetch());
+    this.announcer.play(singleResponse.info);
+    switch (singleResponse.type) {
+      case VoiceFormatResponseType.URL:
+        this.voice.play(singleResponse.url);
+        break;
+      case VoiceFormatResponseType.READABLE:
+        this.voice.play(singleResponse.readable);
+        break;
+      case VoiceFormatResponseType.FETCH:
+        this.voice.play(await singleResponse.fetch());
+        break;
+      default:
+        throw new Error('Unknown VoiceFormatResponseType');
+    }
+    // this.voice.playStream(singleResponse.readable ? singleResponse.readable : await singleResponse.fetch());
   }
 }

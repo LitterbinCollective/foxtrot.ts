@@ -19,16 +19,7 @@ export default class RestartCommand extends BaseCommand {
   }
 
   public async run(_ctx: Context) {
-    this.commandClient.application.voices.forEach((x) => {
-      x.kill(false), x.playInternalSoundeffect('restarting');
-    });
-
-    setTimeout(
-      () => (
-        this.commandClient.application.voices.forEach((x) => x.kill()),
-        process.exit(0)
-      ),
-      3000
-    );
+    this.commandClient.application.newvoices.forEach((x) => x.kill());
+    process.exit(0);
   }
 }

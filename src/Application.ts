@@ -16,7 +16,6 @@ import { PackageJson } from 'type-fest';
 import Sh from 'sh';
 import { Sequelize } from 'sequelize';
 
-import { Voice } from './voice';
 import { FILENAME_REGEX } from './constants';
 import { Context } from 'detritus-client/lib/command';
 import NewVoice from './voice/new';
@@ -62,7 +61,6 @@ export class Application {
   public sh: Sh;
   public soundeffects: Record<string, string[]> = {};
   public startAt: number;
-  public voices: Map<string, Voice> = new Map();
   public newvoices: Map<string, NewVoice> = new Map();
   public readonly commandClient: GMCommandClient;
   public readonly clusterClient: ClusterClient;

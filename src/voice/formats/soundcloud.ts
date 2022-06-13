@@ -1,6 +1,6 @@
 import scdl from 'soundcloud-downloader';
 
-import { ExtendedReadable } from '..';
+import { VoiceFormatResponseType } from '../processors';
 import BaseFormat from '../foundation/BaseFormat';
 
 export default class SoundcloudFormat extends BaseFormat {
@@ -16,13 +16,13 @@ export default class SoundcloudFormat extends BaseFormat {
     }
 
     async function fetch() {
-      const stream: ExtendedReadable = await scdl.download(matched);
+      const stream = await scdl.download(matched);
       return stream;
     }
 
     return {
       fetch,
-      reprocess: fetch,
+      type: VoiceFormatResponseType.FETCH,
       info: {
         title: info.user.username + ' - ' + info.title,
         image: info.artwork_url,

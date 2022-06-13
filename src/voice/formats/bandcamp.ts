@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { ExtendedReadable, FormatResponse } from '..';
+import { VoiceFormatResponse, VoiceFormatResponseType } from '../processors';
 import BaseFormat from '../foundation/BaseFormat';
 
 export default class BandcampFormat extends BaseFormat {
@@ -24,19 +24,9 @@ export default class BandcampFormat extends BaseFormat {
 
     const array = await Promise.all(
       info.trackinfo.map(async (track: any) => {
-        async function fetch() {
-          const resp = await axios({
-            method: 'get',
-            url: track.file['mp3-128'],
-            responseType: 'stream',
-          });
-          return resp.data;
-        }
-        const readable: ExtendedReadable = await fetch();
-
         return {
-          readable: readable,
-          reprocess: fetch,
+          type: VoiceFormatResponseType.URL,
+          url: track.file['mp3-128'],
           info: {
             title: track.title,
             image: `https://f4.bcbits.com/img/a${info.art_id}_1.jpg`,
@@ -47,6 +37,6 @@ export default class BandcampFormat extends BaseFormat {
       })
     );
 
-    return array as FormatResponse[];
+    return array as VoiceFormatResponse[];
   }
 }

@@ -1,6 +1,5 @@
 import { ChannelGuildVoice, ChannelTextType, Member } from 'detritus-client/lib/structures';
 import { EventEmitter } from 'events';
-import { Readable } from 'stream';
 
 import { Application } from '../Application';
 import VoicePipeline from './pipeline';
@@ -47,27 +46,31 @@ export default class NewVoice extends EventEmitter {
     this.initialized = true;
   }
 
-  public playStream(stream: Readable) {
+  public play(stream: NodeJS.ReadableStream | string) {
     if (this.ffmpeg)
       this.cleanUp();
 
     this.pipeline.stopSilence();
 
+    const fromURL = typeof stream === 'string';
     this.ffmpeg = new FFMpeg([
       '-analyzeduration', '0',
       // '-loglevel', '0',
       '-ar', this.SAMPLE_RATE.toString(),
       '-ac', this.AUDIO_CHANNELS.toString(),
       '-f', 's16le'
-    ], [ '-re' ]);
+    ], [ '-re' ], fromURL ? stream : null);
 
     this.effects.createAudioEffectProcessor();
     this.ffmpeg.on('end', () => {
       this.cleanUp();
       this.queue.next();
     });
-    stream.pipe(this.ffmpeg, { end: false })
-      .pipe(this.effects, { end: false })
+
+    if (!fromURL)
+      stream.pipe(this.ffmpeg, { end: false });
+
+    this.ffmpeg.pipe(this.effects, { end: false })
       .pipe(this.pipeline, { end: false });
   }
 

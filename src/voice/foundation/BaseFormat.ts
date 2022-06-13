@@ -1,4 +1,4 @@
-import { FormatResponse } from '..';
+import { VoiceFormatResponse } from '../processors';
 
 export default class BaseFormat {
   public regex = /.+/g;
@@ -12,9 +12,9 @@ export default class BaseFormat {
   public process(
     _matched: string
   ):
-    | Promise<FormatResponse[] | FormatResponse | false>
-    | FormatResponse[]
-    | FormatResponse
+    | Promise<VoiceFormatResponse[] | VoiceFormatResponse | false>
+    | VoiceFormatResponse[]
+    | VoiceFormatResponse
     | false {
     return false;
   }

@@ -3,8 +3,6 @@ import { User } from 'detritus-client/lib/structures';
 import fs from 'fs';
 import { Transform } from 'stream';
 
-import { FormatResponse } from '.'; // todo: remove
-
 import { Application } from '../Application';
 import { FILENAME_REGEX } from '../constants';
 import BaseEffect from './foundation/BaseEffect';
@@ -24,6 +22,28 @@ class BaseVoiceProcessor extends Transform {
   }
 }
 
+export interface VoiceFormatResponseInfo {
+  title: string;
+  url: string;
+  submittee?: User;
+  image: string | Buffer;
+  duration: number;
+}
+
+export enum VoiceFormatResponseType {
+  URL = 'url',
+  READABLE = 'readable',
+  FETCH = 'fetch',
+}
+
+export interface VoiceFormatResponse {
+  fetch?: () => Promise<NodeJS.ReadableStream> | NodeJS.ReadableStream;
+  info: VoiceFormatResponseInfo;
+  readable?: NodeJS.ReadableStream;
+  type: VoiceFormatResponseType;
+  url?: string;
+}
+
 export class VoiceFormatProcessor extends BaseVoiceProcessor {
   public readonly processors: Record<string, BaseFormat>;
 
@@ -31,8 +51,8 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
     super([application.config.formatCredentials], 'formats/');
   }
 
-  public async fromURL(url: string, user?: User) {
-    let result: FormatResponse[] | FormatResponse | false;
+  public async fromURL(url: string) {
+    let result: VoiceFormatResponse[] | VoiceFormatResponse | false;
 
     for (const formatName in this.processors) {
       const format = this.processors[formatName];
@@ -45,17 +65,6 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
       } catch (err) {
         console.error('VoiceFormatProcessor/' + format.printName, err);
         continue;
-      }
-
-      if (Array.isArray(result))
-        result = result.map((x) => {
-          x.info.platform = format.printName;
-          x.info.submittee = user;
-          return x;
-        });
-      else {
-        result.info.platform = format.printName;
-        result.info.submittee = user;
       }
 
       break;

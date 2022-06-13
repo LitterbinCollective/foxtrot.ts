@@ -1,8 +1,8 @@
 import fs from 'fs';
 import ytdl from 'ytdl-core';
 
-import { ExtendedReadable } from '..';
 import BaseFormat from '../foundation/BaseFormat';
+import { VoiceFormatResponseType } from '../processors';
 
 export default class YouTubeFormat extends BaseFormat {
   public regex =
@@ -50,14 +50,12 @@ export default class YouTubeFormat extends BaseFormat {
 
     let image = '';
     let width = 0;
-    for (const thumbnail of info.videoDetails.thumbnails) {
-      if (thumbnail.width > width) {
+    for (const thumbnail of info.videoDetails.thumbnails)
+      if (thumbnail.width > width)
         (image = thumbnail.url), (width = thumbnail.width);
-      }
-    }
 
     function fetch() {
-      const stream: ExtendedReadable = ytdl(matched, {
+      const stream = ytdl(matched, {
         quality: 'highestaudio',
         filter: 'audioonly',
         highWaterMark: 1 << 25,
@@ -73,7 +71,7 @@ export default class YouTubeFormat extends BaseFormat {
 
     return {
       fetch,
-      reprocess: fetch,
+      type: VoiceFormatResponseType.FETCH,
       info: {
         title: info.videoDetails.title,
         url: info.videoDetails.video_url,

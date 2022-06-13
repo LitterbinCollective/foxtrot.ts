@@ -13,6 +13,8 @@ export const GOOGLE_COLORS = {
 
 export const EMOJIS = {
   OK: '👌',
+  PLAY: '▶️',
+  RADIO: '🔘',
   STOPWATCH: '⏱️',
 };
 

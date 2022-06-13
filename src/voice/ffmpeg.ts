@@ -7,12 +7,14 @@ export default class FFMpeg extends Transform {
   private readonly args: string[];
   private readonly bufferContainer: Buffer[] = [];
   private readonly pre: string[];
+  private readonly url?: string;
 
-  constructor (args: string[], pre: string[] = []) {
+  constructor (args: string[], pre: string[] = [], url?: string) {
     super();
 
     this.args = args;
     this.pre = pre;
+    this.url = url;
 
     this.onEnd = this.onEnd.bind(this);
     this.ffmpegClose = this.ffmpegClose.bind(this);
@@ -26,7 +28,7 @@ export default class FFMpeg extends Transform {
     if (!this.startTime)
       this.startTime = Date.now();
 
-    args.unshift('-i', 'pipe:3');
+    args.unshift('-i', this.url ? this.url : 'pipe:3');
     args = pre.concat(args);
     args.push('pipe:1');
 

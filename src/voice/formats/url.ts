@@ -1,96 +1,103 @@
-import axios from 'axios';
 import { spawn } from 'child_process';
 import { lookup } from 'dns';
 import { URL } from 'url';
 
 import BaseFormat from '../foundation/BaseFormat';
-import { ExtendedReadable } from '..';
+import { VoiceFormatResponseType } from '../processors';
 
 export default class URLFormat extends BaseFormat {
   public regex =
     /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
   public printName = 'URL';
-  private readonly MODULE_FILE_EXT = ['mod', 's3m', 'it', 'xm'];
+  private readonly LOCAL_IPS = [
+    '::1',
+    '::ffff:127.0.0.1',
+    '127.0.0.1',
+  ]
 
   private async isUrlLocal(url: string) {
     const { hostname } = new URL(url);
     return await new Promise((res, rej) => {
       lookup(hostname, (err, address) =>
-        err ? rej(err) : res(address === '127.0.0.1')
+        err ? rej(err) : res(this.LOCAL_IPS.indexOf(address) !== -1)
       );
     });
+  }
+
+  private createThumbnail(url: string): Promise<Buffer> {
+    return new Promise((res, rej) => {
+      const child = spawn('ffmpeg', [
+        '-ss', '00:00:01.00',
+        '-i', url,
+        '-vf', 'scale=320:240:force_original_aspect_ratio=decrease',
+        '-vframes', '1',
+        '-f', 'mjpeg',
+        '-',
+      ]);
+
+      let buffer = Buffer.alloc(0);
+      child.stdout.on('data', (data) => {
+        buffer = Buffer.concat([buffer, data]);
+      });
+
+      child.stdout.on('end', () => {
+        res(buffer);
+      });
+    });
+  }
+
+  private probe(url: string): Promise<{ duration: number, isVideo: boolean }> {
+    return new Promise((res, rej) => {
+      const child = spawn('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'format=duration:stream=codec_type',
+        '-of', 'default=noprint_wrappers=1',
+        url,
+      ]);
+
+      child.stdout.on('data', (data) => {
+        let duration: number;
+        let isVideo = false;
+        for (const line of data.toString().split('\n')) {
+          const [ key, value ] = line.split('=');
+          if (key === 'duration') {
+            duration = parseFloat(value);
+          } else if (key === 'codec_type' && value.trim() === 'video') {
+            isVideo = true;
+          }
+        }
+        res({ duration, isVideo });
+      });
+
+      child.stderr.on('data', (data) =>
+        rej(data.toString())
+      );
+    })
   }
 
   public async process(matched: string) {
     if (await this.isUrlLocal(matched)) return false;
 
-    const filename = new URL(matched).pathname.split('/').pop();
-    const isMod =
-      this.MODULE_FILE_EXT.indexOf(filename.split('.').pop().toLowerCase()) !==
-      -1;
-    let resp: any;
-    let child: any;
-
-    async function connect() {
-      resp = await axios({
-        method: 'get',
-        url: matched,
-        responseType: 'stream',
-      });
-      const contentType = resp.headers['content-type'];
-      if (
-        !contentType.startsWith('audio/') &&
-        !contentType.startsWith('video/') &&
-        !isMod
-      )
-        return false;
-      return true;
-    }
-
-    function postFetch() {
-      let readable: ExtendedReadable;
-
-      if (isMod) {
-        /*
-         * this is a weird way of doing it but since directly piping it
-         * doesn't work i have to use it. optional todo: come up with a
-         * better idea.
-         */
-        child = spawn('ffmpeg', [
-          '-i',
-          matched,
-          '-ar',
-          '48000',
-          '-ac',
-          '2',
-          '-f',
-          'wav',
-          '-',
-        ]);
-        readable = child.stdout;
-        readable.cleanup = () => child.kill(9);
-      } else readable = resp.data;
-
-      return readable;
-    }
-
+    let duration: number;
+    let image: string | Buffer = 'https://wicopee.came-in-your.mom/mNJWnlmlV3.png';
     try {
-      const result = await connect();
-      if (!result) return false;
+      const info = await this.probe(matched);
+      duration = info.duration;
+      if (info.isVideo)
+        image = await this.createThumbnail(matched);
     } catch (err) {
       return false;
     }
 
+    const url = new URL(matched);
     return {
-      fetch: postFetch,
-      reprocess: async () => {
-        if (child) child.kill(9);
-        await connect();
-        return postFetch();
-      },
+      type: VoiceFormatResponseType.URL,
+      url: matched,
       info: {
-        title: filename,
+        title: url.pathname.split('/').pop(),
         url: matched,
+        duration,
+        image
       },
     };
   }

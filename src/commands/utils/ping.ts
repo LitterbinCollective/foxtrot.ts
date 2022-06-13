@@ -21,11 +21,6 @@ export default class PingCommand extends BaseCommand {
       'REST: ' + rest + 'ms',
       'Gateway: ' + gateway + 'ms',
     ];
-    const res = this.commandClient.application.voices.get(ctx.guild.id);
-    if (res) {
-      let voice = await res.connection.gateway.ping();
-      text.push('Voice: ' + voice + 'ms');
-    }
 
     ctx.reply('Pong! ' + text.join(' / ') + '. (shardId: ' + ctx.shardId + ')');
   }
