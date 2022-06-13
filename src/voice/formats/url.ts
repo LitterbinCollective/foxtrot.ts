@@ -9,11 +9,7 @@ export default class URLFormat extends BaseFormat {
   public regex =
     /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
   public printName = 'URL';
-  private readonly LOCAL_IPS = [
-    '::1',
-    '::ffff:127.0.0.1',
-    '127.0.0.1',
-  ]
+  private readonly LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1'];
 
   private async isUrlLocal(url: string) {
     const { hostname } = new URL(url);
@@ -27,11 +23,16 @@ export default class URLFormat extends BaseFormat {
   private createThumbnail(url: string): Promise<Buffer> {
     return new Promise((res, rej) => {
       const child = spawn('ffmpeg', [
-        '-ss', '00:00:01.00',
-        '-i', url,
-        '-vf', 'scale=320:240:force_original_aspect_ratio=decrease',
-        '-vframes', '1',
-        '-f', 'mjpeg',
+        '-ss',
+        '00:00:01.00',
+        '-i',
+        url,
+        '-vf',
+        'scale=320:240:force_original_aspect_ratio=decrease',
+        '-vframes',
+        '1',
+        '-f',
+        'mjpeg',
         '-',
       ]);
 
@@ -46,12 +47,15 @@ export default class URLFormat extends BaseFormat {
     });
   }
 
-  private probe(url: string): Promise<{ duration: number, isVideo: boolean }> {
+  private probe(url: string): Promise<{ duration: number; isVideo: boolean }> {
     return new Promise((res, rej) => {
       const child = spawn('ffprobe', [
-        '-v', 'error',
-        '-show_entries', 'format=duration:stream=codec_type',
-        '-of', 'default=noprint_wrappers=1',
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration:stream=codec_type',
+        '-of',
+        'default=noprint_wrappers=1',
         url,
       ]);
 
@@ -59,7 +63,7 @@ export default class URLFormat extends BaseFormat {
         let duration: number;
         let isVideo = false;
         for (const line of data.toString().split('\n')) {
-          const [ key, value ] = line.split('=');
+          const [key, value] = line.split('=');
           if (key === 'duration') {
             duration = parseFloat(value);
           } else if (key === 'codec_type' && value.trim() === 'video') {
@@ -69,22 +73,20 @@ export default class URLFormat extends BaseFormat {
         res({ duration, isVideo });
       });
 
-      child.stderr.on('data', (data) =>
-        rej(data.toString())
-      );
-    })
+      child.stderr.on('data', (data) => rej(data.toString()));
+    });
   }
 
   public async process(matched: string) {
     if (await this.isUrlLocal(matched)) return false;
 
     let duration: number;
-    let image: string | Buffer = 'https://wicopee.came-in-your.mom/mNJWnlmlV3.png';
+    let image: string | Buffer =
+      'https://wicopee.came-in-your.mom/mNJWnlmlV3.png';
     try {
       const info = await this.probe(matched);
       duration = info.duration;
-      if (info.isVideo)
-        image = await this.createThumbnail(matched);
+      if (info.isVideo) image = await this.createThumbnail(matched);
     } catch (err) {
       return false;
     }
@@ -97,7 +99,7 @@ export default class URLFormat extends BaseFormat {
         title: url.pathname.split('/').pop(),
         url: matched,
         duration,
-        image
+        image,
       },
     };
   }

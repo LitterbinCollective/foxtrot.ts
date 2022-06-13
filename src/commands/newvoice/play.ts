@@ -33,7 +33,8 @@ export default class NPlayCommand extends BaseCommand {
       return await ctx.reply(
         'You are not in the voice channel this bot is currently in.'
       );
-    if (!voice.initialized) return await ctx.reply('Voice not yet initialized!');
+    if (!voice.initialized)
+      return await ctx.reply('Voice not yet initialized!');
 
     voice.queue.push(url, ctx.user);
   }

@@ -1,4 +1,8 @@
-import { ChannelGuildVoice, ChannelTextType, Member } from 'detritus-client/lib/structures';
+import {
+  ChannelGuildVoice,
+  ChannelTextType,
+  Member,
+} from 'detritus-client/lib/structures';
 import { EventEmitter } from 'events';
 
 import { Application } from '../Application';
@@ -46,28 +50,37 @@ export default class NewVoice extends EventEmitter {
     this.initialized = true;
   }
 
+  public update() { this.pipeline.update(); }
+
   public play(stream: NodeJS.ReadableStream | string) {
-    if (this.ffmpeg)
-      this.cleanUp();
+    if (this.ffmpeg) this.cleanUp();
 
     this.pipeline.stopSilence();
 
     const fromURL = typeof stream === 'string';
-    this.ffmpeg = new FFMpeg([
-      '-analyzeduration', '0',
-      // '-loglevel', '0',
-      '-ar', this.SAMPLE_RATE.toString(),
-      '-ac', this.AUDIO_CHANNELS.toString(),
-      '-f', 's16le'
-    ], [ '-re' ], fromURL && stream);
+    this.ffmpeg = new FFMpeg(
+      [
+        '-analyzeduration',
+        '0',
+        // '-loglevel', '0',
+        '-ar',
+        this.SAMPLE_RATE.toString(),
+        '-ac',
+        this.AUDIO_CHANNELS.toString(),
+        '-f',
+        's16le',
+      ],
+      ['-re'],
+      fromURL && stream
+    );
 
     this.effects.createAudioEffectProcessor();
     this.ffmpeg.on('end', () => this.skip());
 
-    if (!fromURL)
-      stream.pipe(this.ffmpeg, { end: false });
+    if (!fromURL) stream.pipe(this.ffmpeg, { end: false });
 
-    this.ffmpeg.pipe(this.effects, { end: false })
+    this.ffmpeg
+      .pipe(this.effects, { end: false })
       .pipe(this.pipeline, { end: false });
   }
 
@@ -91,8 +104,9 @@ export default class NewVoice extends EventEmitter {
   }
 
   public canLeave(member: Member) {
-    return this.canExecuteVoiceCommands(member) ||
-      this.channel.members.size === 1;
+    return (
+      this.canExecuteVoiceCommands(member) || this.channel.members.size === 1
+    );
   }
 
   public async playSoundeffect(script: string) {

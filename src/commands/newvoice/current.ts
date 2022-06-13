@@ -16,10 +16,10 @@ export default class SkipCommand extends BaseCommand {
     if (!voice) {
       return await ctx.reply('Not in the voice channel.');
     }
-    if (!voice.initialized) return await ctx.reply('Voice not yet initialized!');
+    if (!voice.initialized)
+      return await ctx.reply('Voice not yet initialized!');
 
-    if (voice.ffmpeg)
-      voice.queue.announcer.play()
-    else ctx.reply('Nothing is playing right now.')
+    if (voice.ffmpeg) voice.queue.announcer.play();
+    else ctx.reply('Nothing is playing right now.');
   }
 }

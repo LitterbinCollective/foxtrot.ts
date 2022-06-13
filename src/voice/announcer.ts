@@ -12,7 +12,7 @@ export default class VoiceQueueAnnouncer {
   private startTime: number;
   private readonly voice: NewVoice;
 
-  constructor (voice: NewVoice, channel: ChannelTextType) {
+  constructor(voice: NewVoice, channel: ChannelTextType) {
     this.voice = voice;
     this.channel = channel;
   }
@@ -27,14 +27,12 @@ export default class VoiceQueueAnnouncer {
   }
 
   private get offsetTime() {
-    if (!this.voice.ffmpeg)
-      return null;
+    if (!this.voice.ffmpeg) return null;
     return this.voice.ffmpeg.offsetTime;
   }
 
   private get pauseTime() {
-    if (!this.voice.ffmpeg)
-      return null;
+    if (!this.voice.ffmpeg) return null;
     return this.voice.ffmpeg.pauseTime;
   }
 
@@ -44,10 +42,8 @@ export default class VoiceQueueAnnouncer {
 
   private playProgress(duration?: number) {
     if (!duration) {
-      if (this.current)
-        duration = this.current.duration
-      else
-        throw new Error('Duration not provided');
+      if (this.current) duration = this.current.duration;
+      else throw new Error('Duration not provided');
     }
 
     const progress = Math.floor((this.time - this.startTime) / 1000);
@@ -58,7 +54,10 @@ export default class VoiceQueueAnnouncer {
 
     const LENGTH = 16;
     const repeatCount = ~~(factor * LENGTH);
-    const progressBar = '-'.repeat(Math.max(repeatCount, 0)) + EMOJIS.RADIO + '-'.repeat(Math.max(LENGTH - repeatCount, 0));
+    const progressBar =
+      '-'.repeat(Math.max(repeatCount, 0)) +
+      EMOJIS.RADIO +
+      '-'.repeat(Math.max(LENGTH - repeatCount, 0));
     return Markup.codestring(`${progressStr} ${progressBar} ${durationStr}`);
   }
 
@@ -71,22 +70,30 @@ export default class VoiceQueueAnnouncer {
 
     const fromURL = typeof streamInfo.image === 'string';
     const embed = new Embed({
-      author: streamInfo.submittee ? {
-        name: streamInfo.submittee.username + '#' + streamInfo.submittee.discriminator,
-        icon_url: streamInfo.submittee.avatarUrl,
-      } : undefined,
+      author: streamInfo.submittee
+        ? {
+            name:
+              streamInfo.submittee.username +
+              '#' +
+              streamInfo.submittee.discriminator,
+            icon_url: streamInfo.submittee.avatarUrl,
+          }
+        : undefined,
       title: EMOJIS.PLAY + ' ' + streamInfo.title,
       description: this.playProgress(streamInfo.duration),
       color: EMBED_COLORS.DEF,
       url: streamInfo.url,
       thumbnail: {
-        url: fromURL ? streamInfo.image as string : 'attachment://image.jpg',
+        url: fromURL ? (streamInfo.image as string) : 'attachment://image.jpg',
       },
     });
 
     const options: RequestTypes.CreateMessage = { embed };
     if (!fromURL)
-      options.file = { filename: 'image.jpg', value: streamInfo.image as Buffer };
+      options.file = {
+        filename: 'image.jpg',
+        value: streamInfo.image as Buffer,
+      };
     return this.channel.createMessage(options);
   }
 

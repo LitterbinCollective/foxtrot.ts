@@ -10,7 +10,7 @@ export default class FFMpeg extends Transform {
   private readonly pre: string[];
   private readonly url?: string;
 
-  constructor (args: string[], pre: string[] = [], url?: string) {
+  constructor(args: string[], pre: string[] = [], url?: string) {
     super();
 
     this.args = args;
@@ -43,7 +43,11 @@ export default class FFMpeg extends Transform {
     this.instance.on('close', this.ffmpegClose);
   }
 
-  public _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error) => void): void {
+  public _write(
+    chunk: any,
+    encoding: BufferEncoding,
+    callback: (error?: Error) => void
+  ): void {
     if ((this.instance.stdio[3] as Writable).writableEnded) return;
     (this.instance.stdio[3] as Writable).write(chunk, encoding, callback);
     this.bufferContainer.push(chunk);
@@ -60,7 +64,6 @@ export default class FFMpeg extends Transform {
 
   public destroy(error?: Error): void {
     super.destroy(error);
-    if (this.instance.connected)
-      this.instance.kill(9);
+    if (this.instance.connected) this.instance.kill(9);
   }
 }

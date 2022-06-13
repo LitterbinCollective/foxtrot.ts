@@ -1,68 +1,81 @@
 import _debug from 'debug';
-import { GatewayClientEvents } from 'detritus-client';
+import { GatewayClientEvents, ShardClient } from 'detritus-client';
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
 import { ChannelGuildVoice } from 'detritus-client/lib/structures';
+import { EventEmitter } from 'events';
 import { opus } from 'prism-media';
-import { Readable, Transform, TransformCallback, Writable, PassThrough } from 'stream';
+import { Readable, Transform, TransformCallback, PassThrough } from 'stream';
 
 import NewVoice from './new';
 
 const debug = _debug('glowmem/pipeline');
 
-class VoicePipelinePlayer extends Writable {
+class VoiceSafeConnection extends EventEmitter {
   public voiceConnection: VoiceConnection;
-  private readonly pipeline: VoicePipeline;
+  private channel: ChannelGuildVoice;
+  private readonly shard: ShardClient;
 
-  constructor(pipeline: VoicePipeline, voiceChannel: ChannelGuildVoice) {
+  constructor(
+    voiceChannel: ChannelGuildVoice,
+    shard: ShardClient
+  ) {
     super();
-    this.pipeline = pipeline;
+    this.shard = shard;
+    this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
+    this.shard.on('voiceStateUpdate', this.onVoiceStateUpdate);
     this.initialize(voiceChannel);
-  }
-
-  private get OPUS_FRAME_LENGTH() {
-    return this.pipeline.OPUS_FRAME_LENGTH;
-  }
-
-  private get OPUS_FRAME_SIZE() {
-    return this.pipeline.OPUS_FRAME_SIZE;
   }
 
   private async initialize(voiceChannel: ChannelGuildVoice) {
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
-      throw new Error('Bot is not able to join or speak in this voice channel.');
+      throw new Error(
+        'Bot is not able to join or speak in this voice channel.'
+      );
     await this.onVoiceStateUpdate(voiceChannel);
     this.emit('connected');
   }
 
-  public async onVoiceStateUpdate(payload: ChannelGuildVoice | GatewayClientEvents.VoiceStateUpdate, force: boolean = false) {
-    if (this.voiceConnection && !(payload as GatewayClientEvents.VoiceStateUpdate).old && !force) return;
+  public async onVoiceStateUpdate(
+    payload: ChannelGuildVoice | GatewayClientEvents.VoiceStateUpdate,
+    force: boolean = false
+  ) {
+    const payloadAsPayload = payload as GatewayClientEvents.VoiceStateUpdate;
+    if (
+      (this.voiceConnection && !payloadAsPayload.old && !force) ||
+      (payloadAsPayload.voiceState &&
+        (payloadAsPayload.voiceState.guildId !== this.channel.id ||
+          payloadAsPayload.voiceState.channelId ===
+            this.channel.id))
+    )
+      return;
     if (this.voiceConnection) this.voiceConnection.kill();
     debug('onVoiceStateUpdate, force =', force);
-    const voiceState = (payload as GatewayClientEvents.VoiceStateUpdate).voiceState;
-    const channel = voiceState ? voiceState.channel : (payload as ChannelGuildVoice);
+    const voiceState = payloadAsPayload.voiceState;
+    const channel = voiceState
+      ? voiceState.channel
+      : (payload as ChannelGuildVoice);
+    this.channel = channel;
     this.voiceConnection = (await channel.join({ receive: true })).connection;
     this.voiceConnection.setOpusEncoder();
     this.voiceConnection.setSpeaking({
       voice: true,
     });
+    this.voiceConnection.sendAudioSilenceFrame();
   }
 
-  public async _write(
-    chunk: any,
-    _encoding: BufferEncoding,
-    callback: (error?: Error) => void
-   ) {
-    if (!this.voiceConnection)
-      return callback();
+  public sendAudio(packet: Buffer) {
+    if (!this.voiceConnection) return;
+    this.voiceConnection.sendAudio(packet, { isOpus: true });
+  }
 
-    this.voiceConnection.sendAudio(chunk, { isOpus: true });
-    setImmediate(callback);
+  public sendEmpty() {
+    if (!this.voiceConnection) return;
+    this.voiceConnection.sendAudioSilenceFrame();
   }
 
   public destroy() {
-    super.destroy();
-    if (this.voiceConnection)
-      this.voiceConnection.kill();
+    if (this.voiceConnection) this.voiceConnection.kill();
+    this.shard.off('voiceStateUpdate', this.onVoiceStateUpdate);
   }
 }
 
@@ -90,14 +103,14 @@ class VoicePipelineMixer extends Transform {
     const { SAMPLE_BYTE_LEN, AUDIO_CHANNELS, SAMPLE_RATE } = this.pipeline;
     const INT_16_BOUNDARIES = { MIN: -32768, MAX: 32767 };
 
-    let position = 0;
-    while (position < chunk.length - SAMPLE_BYTE_LEN) {
-      position += SAMPLE_BYTE_LEN;
+    for (
+      let position = 0;
+      position < chunk.length;
+      position += SAMPLE_BYTE_LEN
+    ) {
       let sample = chunk.readInt16LE(position);
 
-      let i = 0;
-      while (i < this.audioReadables.length) {
-        i++;
+      for (let i = 0; i < this.audioReadables.length; i++) {
         const readable = this.audioReadables[i];
         const buffer = readable.read(SAMPLE_BYTE_LEN);
         if (buffer) {
@@ -142,7 +155,7 @@ class VoicePipelineMixer extends Transform {
     const passThrough = new PassThroughWithCounter();
     readable.pipe(passThrough, { end: false });
     this.audioReadables.push(passThrough);
-    return this.audioReadables.length - 1
+    return this.audioReadables.length - 1;
   }
 
   public removeReadable(index: number) {
@@ -161,22 +174,32 @@ export default class VoicePipeline extends PassThrough {
   public readonly SAMPLE_BYTE_LEN = 2;
 
   private silenceInterval?: NodeJS.Timeout;
+  private readonly connection: VoiceSafeConnection;
   private readonly opus: opus.Decoder;
-  private readonly player: VoicePipelinePlayer;
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice, voiceChannel: ChannelGuildVoice) {
     super();
 
     this.voice = voice;
-    this.opus = new opus.Encoder({ channels: this.AUDIO_CHANNELS, frameSize: this.OPUS_FRAME_SIZE, rate: this.SAMPLE_RATE });
-    this.player = new VoicePipelinePlayer(this, voiceChannel);
+    this.opus = new opus.Encoder({
+      channels: this.AUDIO_CHANNELS,
+      frameSize: this.OPUS_FRAME_SIZE,
+      rate: this.SAMPLE_RATE,
+    });
+    this.connection = new VoiceSafeConnection(
+      voiceChannel,
+      this.voice.application.clusterClient.shards.get(voiceChannel.shardId)
+    );
     this.mixer = new VoicePipelineMixer(this);
 
-    this.player.on('connected', () => this.emit('connected'));
-    this.pipe(this.mixer, { end: false })
-      .pipe(this.opus, { end: false })
-      .pipe(this.player, { end: false });
+    this.connection.on('connected', () => this.emit('connected'));
+    this.pipe(this.opus, { end: false }); //.pipe(this.mixer, { end: false })
+  }
+
+  public update() {
+    const packet = this.opus.read();
+    if (packet) this.connection.sendAudio(packet);
   }
 
   public get SAMPLE_RATE() {
@@ -211,9 +234,10 @@ export default class VoicePipeline extends PassThrough {
 
   public destroy() {
     this.stopSilence();
-    this.unpipe(this.mixer).unpipe(this.player);
-    this.player.destroy();
+    this.unpipe(this.mixer).unpipe(this.opus);
+    this.connection.destroy();
     this.mixer.destroy();
+    this.opus.destroy();
     super.destroy();
   }
 }

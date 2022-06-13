@@ -12,7 +12,7 @@ import NewVoice from './new';
 class BaseVoiceProcessor extends Transform {
   public readonly processors: Record<string, any> = {};
 
-  constructor (constructorArgs: any[], scanPath: string) {
+  constructor(constructorArgs: any[], scanPath: string) {
     super();
     for (const fileName of fs.readdirSync(__dirname + '/' + scanPath)) {
       const name = fileName.replace(FILENAME_REGEX, '');
@@ -47,7 +47,7 @@ export interface VoiceFormatResponse {
 export class VoiceFormatProcessor extends BaseVoiceProcessor {
   public readonly processors: Record<string, BaseFormat>;
 
-  constructor (application: Application) {
+  constructor(application: Application) {
     super([application.config.formatCredentials], 'formats/');
   }
 
@@ -81,7 +81,7 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
   private readonly voice: NewVoice;
   private readonly STACK_LIMIT = 16;
 
-  constructor (voice: NewVoice) {
+  constructor(voice: NewVoice) {
     super([], 'effects/');
     this.voice = voice;
   }
@@ -90,7 +90,10 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     start = start || this.stack.length;
     if (this.stack.length === this.STACK_LIMIT)
       throw new Error('effect stack overflow');
-    const effect = Object.assign(Object.create(Object.getPrototypeOf(this.processors[name])), this.processors[name]);
+    const effect = Object.assign(
+      Object.create(Object.getPrototypeOf(this.processors[name])),
+      this.processors[name]
+    );
     effect.enabled = true;
     this.stack.splice(start, 0, effect);
     if (this.sox) this.createAudioEffectProcessor();
@@ -98,8 +101,7 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
   }
 
   public removeEffect(id: number) {
-    if (this.stack.length === 0)
-      throw new Error('effect stack underflow');
+    if (this.stack.length === 0) throw new Error('effect stack underflow');
     this.stack.splice(id, 1);
     if (this.sox) this.createAudioEffectProcessor();
   }
@@ -121,11 +123,14 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
   }
 
   public destroyAudioEffectProcessor() {
-    if (this.sox)
-      this.sox.kill(9);
+    if (this.sox) this.sox.kill(9);
   }
 
-  public _write(chunk: any, _encoding: BufferEncoding, callback: (error?: Error) => void): void {
+  public _write(
+    chunk: any,
+    _encoding: BufferEncoding,
+    callback: (error?: Error) => void
+  ): void {
     if (this.sox) this.sox.stdin.write(chunk);
     callback();
   }
@@ -159,7 +164,7 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
       ...this.args,
     ]);
 
-    console.log(this.args)
+    console.log(this.args);
 
     this.sox.stdout.on('data', (chunk) => this.push(chunk));
     this.sox.stderr.on('data', (data) => console.log(data.toString()));

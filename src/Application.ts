@@ -55,13 +55,76 @@ export class GMInteractionCommandClient extends InteractionCommandClient {
   }
 }
 
+export class VoiceStore {
+  private cycleTimeout: NodeJS.Timeout | null = null;
+  private nextCycle: number = 0;
+  private readonly _map: Map<string, NewVoice> = new Map();
+  private readonly OPUS_FRAME_LENGTH = 20;
+
+  private cycleOverVoices(iterator: IterableIterator<NewVoice>) {
+    const next = iterator.next().value;
+
+    if (!next) {
+      if (this.nextCycle !== -1) {
+        this.cycleTimeout = setTimeout(() => {
+          this.nextCycle += this.OPUS_FRAME_LENGTH;
+          this.cycleOverVoices(this._map.values())
+        }, this.nextCycle - Date.now());
+      }
+      return;
+    }
+
+    next.update();
+    setImmediate(() => this.cycleOverVoices(iterator));
+  }
+
+  private initializeCycle() {
+    this.nextCycle = Date.now();
+    setImmediate(() => this.cycleOverVoices(this._map.values()));
+  }
+
+  private killCycle() {
+    if (this.cycleTimeout) {
+      clearTimeout(this.cycleTimeout);
+      this.cycleTimeout = null;
+    }
+    this.nextCycle = -1;
+  }
+
+  public get(guildId: string): NewVoice | undefined {
+    return this._map.get(guildId);
+  }
+
+  public set(guildId: string, voice: NewVoice): void {
+    this._map.set(guildId, voice);
+    if (this._map.size === 1)
+      this.initializeCycle();
+  }
+
+  public delete(guildId: string): void {
+    this._map.delete(guildId);
+    if (this._map.size === 0)
+      this.killCycle();
+  }
+
+  public has(guildId: string): boolean {
+    return this._map.has(guildId);
+  }
+
+  public clear(): void {
+    this._map.forEach(x => x.kill());
+    this._map.clear();
+    this.killCycle();
+  }
+}
+
 export class Application {
   public config: IConfig;
   public pkg: PackageJson;
   public sh: Sh;
   public soundeffects: Record<string, string[]> = {};
   public startAt: number;
-  public newvoices: Map<string, NewVoice> = new Map();
+  public newvoices: VoiceStore = new VoiceStore();
   public readonly commandClient: GMCommandClient;
   public readonly clusterClient: ClusterClient;
   public readonly interactionCommandClient: GMInteractionCommandClient;
