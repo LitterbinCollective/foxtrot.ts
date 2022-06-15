@@ -16,6 +16,9 @@ export const EMOJIS = {
   PLAY: '▶️',
   RADIO: '🔘',
   STOPWATCH: '⏱️',
+  PLUS: '➕',
+  MINUS: '➖',
+  CHECK: '✅',
 };
 
 export const EMOJI_ICONS = {

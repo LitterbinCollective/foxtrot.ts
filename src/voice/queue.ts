@@ -35,7 +35,7 @@ export default class VoiceQueue {
   }
 
   public async next() {
-    if (this.voice.ffmpeg && !this.voice.ffmpeg.readableEnded) return;
+    if (this.voice.isPlaying) return;
     if (this.queue.length === 0) return this.announcer.reset();
     const singleResponse = this.queue.shift();
     this.announcer.play(singleResponse.info);

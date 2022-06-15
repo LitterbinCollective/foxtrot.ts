@@ -26,27 +26,13 @@ export default class VoiceQueueAnnouncer {
       .join(':');
   }
 
-  private get offsetTime() {
-    if (!this.voice.ffmpeg) return null;
-    return this.voice.ffmpeg.offsetTime;
-  }
-
-  private get pauseTime() {
-    if (!this.voice.ffmpeg) return null;
-    return this.voice.ffmpeg.pauseTime;
-  }
-
-  private get time() {
-    return (this.pauseTime || Date.now()) - (this.offsetTime || 0);
-  }
-
   private playProgress(duration?: number) {
     if (!duration) {
       if (this.current) duration = this.current.duration;
       else throw new Error('Duration not provided');
     }
 
-    const progress = Math.floor((this.time - this.startTime) / 1000);
+    const progress = Math.floor((Date.now() - this.startTime) / 1000);
     const factor = Math.min(progress / duration, 1);
 
     const progressStr = this.durationInStr(progress),

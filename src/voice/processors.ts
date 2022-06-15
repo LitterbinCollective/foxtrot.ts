@@ -76,10 +76,10 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
 
 export class VoiceEffectProcessor extends BaseVoiceProcessor {
   public readonly processors: Record<string, BaseEffect>;
+  public readonly STACK_LIMIT = 8;
   private sox?: ChildProcessWithoutNullStreams;
   private stack: BaseEffect[] = [];
   private readonly voice: NewVoice;
-  private readonly STACK_LIMIT = 16;
 
   constructor(voice: NewVoice) {
     super([], 'effects/');
@@ -88,6 +88,8 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
 
   public addEffect(name: string, start?: number) {
     start = start || this.stack.length;
+    if (!this.processors[name])
+      throw new Error('effect not found');
     if (this.stack.length === this.STACK_LIMIT)
       throw new Error('effect stack overflow');
     const effect = Object.assign(
@@ -97,13 +99,61 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     effect.enabled = true;
     this.stack.splice(start, 0, effect);
     if (this.sox) this.createAudioEffectProcessor();
-    return start + 1;
+    return start;
   }
 
   public removeEffect(id: number) {
+    if (!this.stack[id]) throw new Error('effect not found');
     if (this.stack.length === 0) throw new Error('effect stack underflow');
     this.stack.splice(id, 1);
     if (this.sox) this.createAudioEffectProcessor();
+  }
+
+  public getEffectInfo(id: number): any[] {
+    if (!this.stack[id]) throw new Error('effect not found');
+    return [ this.stack[id].name, this.stack[id].options, this.stack[id].optionsRange ];
+  }
+
+  public clearEffects() {
+    this.stack = [];
+    if (this.sox) this.createAudioEffectProcessor();
+  }
+
+  public setValue(id: number, name: string, value: any) {
+    if (!this.stack[id]) throw new Error('effect not found');
+    const afx = this.stack[id];
+    if (afx.options[name] === undefined)
+      throw new Error('effect option not found');
+    const type = typeof afx.options[name];
+    switch (type) {
+      case 'number':
+        value = Number(value);
+        break;
+      case 'boolean':
+        value = value === 'true';
+        break;
+      default:
+        throw new Error(
+          'could not convert given value to needed type! ' + type
+        );
+    }
+
+    if (type !== typeof value)
+      throw new Error('the type of value is not equal to the type of a specified setting');
+
+    if (typeof value === 'number' && afx.optionsRange[name]) {
+      const [min, max] = afx.optionsRange[name];
+      if (value < min && value > max)
+        throw new Error(`given value out of range (${min} - ${max})`)
+    }
+
+    afx.options[name] = value;
+    if (this.sox) this.createAudioEffectProcessor();
+  }
+
+  public getValue(id: number, option: string) {
+    if (!this.stack[id]) throw new Error('effect not found');
+    return this.stack[id].options[option];
   }
 
   private get args() {
@@ -120,6 +170,10 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
 
   private get AUDIO_CHANNELS() {
     return this.voice.AUDIO_CHANNELS;
+  }
+
+  public get list() {
+    return this.stack.map((x) => x.name);
   }
 
   public destroyAudioEffectProcessor() {
