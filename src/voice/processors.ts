@@ -9,15 +9,24 @@ import BaseEffect from './foundation/BaseEffect';
 import BaseFormat from './foundation/BaseFormat';
 import NewVoice from './new';
 
+interface BaseVoiceProcessorOptions {
+  create?: boolean,
+  constructorArgs?: any[],
+  scanPath: string
+}
+
 class BaseVoiceProcessor extends Transform {
   public readonly processors: Record<string, any> = {};
 
-  constructor(constructorArgs: any[], scanPath: string) {
+  constructor(options: BaseVoiceProcessorOptions) {
     super();
-    for (const fileName of fs.readdirSync(__dirname + '/' + scanPath)) {
+    for (const fileName of fs.readdirSync(__dirname + '/' + options.scanPath)) {
       const name = fileName.replace(FILENAME_REGEX, '');
-      const any: any = require('./' + scanPath + fileName).default;
-      this.processors[name] = new any(...constructorArgs);
+      const any: any = require('./' + options.scanPath + fileName).default;
+      if (options.create)
+        this.processors[name] = new any(...options.constructorArgs)
+      else
+        this.processors[name] = any;
     }
   }
 }
@@ -48,7 +57,11 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
   public readonly processors: Record<string, BaseFormat>;
 
   constructor(application: Application) {
-    super([application.config.formatCredentials], 'formats/');
+    super({
+      create: true,
+      constructorArgs: [application.config.formatCredentials],
+      scanPath: 'formats/'
+    });
   }
 
   public async fromURL(url: string) {
@@ -75,14 +88,14 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
 }
 
 export class VoiceEffectProcessor extends BaseVoiceProcessor {
-  public readonly processors: Record<string, BaseEffect>;
+  public readonly processors: Record<string, new () => BaseEffect>;
   public readonly STACK_LIMIT = 8;
   private sox?: ChildProcessWithoutNullStreams;
   private stack: BaseEffect[] = [];
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice) {
-    super([], 'effects/');
+    super({ scanPath: 'effects/' });
     this.voice = voice;
   }
 
@@ -92,10 +105,7 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
       throw new Error('effect not found');
     if (this.stack.length === this.STACK_LIMIT)
       throw new Error('effect stack overflow');
-    const effect = Object.assign(
-      Object.create(Object.getPrototypeOf(this.processors[name])),
-      this.processors[name]
-    );
+    const effect = new this.processors[name];
     effect.enabled = true;
     this.stack.splice(start, 0, effect);
     if (this.sox) this.createAudioEffectProcessor();
@@ -143,7 +153,7 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
 
     if (typeof value === 'number' && afx.optionsRange[name]) {
       const [min, max] = afx.optionsRange[name];
-      if (value < min && value > max)
+      if (value < min || value > max)
         throw new Error(`given value out of range (${min} - ${max})`)
     }
 

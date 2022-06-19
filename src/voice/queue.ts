@@ -1,9 +1,8 @@
 import { ChannelTextType, User } from 'detritus-client/lib/structures';
 
-import { VoiceFormatResponse, VoiceFormatResponseType } from './processors';
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from './new';
-import { VoiceFormatProcessor } from './processors';
+import { VoiceFormatResponse, VoiceFormatResponseType, VoiceFormatProcessor } from './processors';
 
 export default class VoiceQueue {
   public readonly announcer: VoiceQueueAnnouncer;
