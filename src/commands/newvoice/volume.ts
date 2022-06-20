@@ -7,15 +7,15 @@ import { BaseCommand } from '../../BaseCommand';
 export default class SkipCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'bitrate',
-      aliases: ['br', 'b'],
-      label: 'bitrate',
+      name: 'volume',
+      aliases: ['v'],
+      label: 'volume',
       required: true,
       type: CommandArgumentTypes.NUMBER
     });
   }
 
-  public async run(ctx: Context, { bitrate }: { bitrate: number }) {
+  public async run(ctx: Context, { volume }: { volume: number }) {
     if (!ctx.guild) return;
     const voice = this.commandClient.application.newvoices.get(ctx.guild.id);
     if (!voice)
@@ -23,6 +23,6 @@ export default class SkipCommand extends BaseCommand {
     if (!voice.initialized)
       return await ctx.reply('Voice not yet initialized!');
 
-   voice.bitrate = bitrate;
+   voice.setVolume(volume);
   }
 }

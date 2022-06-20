@@ -7,8 +7,8 @@ import { BaseCommand } from '../../BaseCommand';
 export default class NSfxCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'nsfx',
-      aliases: ['nsaysound'],
+      name: 'sfx',
+      aliases: ['saysound'],
       type: CommandArgumentTypes.STRING,
       required: true,
     });

@@ -7,8 +7,8 @@ import NewVoice from '../../voice/new';
 export default class NJoinCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'njoin',
-      aliases: ['nconnect', 'nj'],
+      name: 'join',
+      aliases: ['connect', 'j'],
     });
   }
 

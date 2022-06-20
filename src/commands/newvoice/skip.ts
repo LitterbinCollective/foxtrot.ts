@@ -6,8 +6,8 @@ import { BaseCommand } from '../../BaseCommand';
 export default class SkipCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'nskip',
-      aliases: ['ns'],
+      name: 'skip',
+      aliases: ['s'],
     });
   }
 

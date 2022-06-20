@@ -9,8 +9,8 @@ import { COLOR_REGEX, EMBED_COLORS, EMOJIS } from '../../constants';
 export default class SkipCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'ne',
-      aliases: ['neffect'],
+      name: 'e',
+      aliases: ['effect'],
       type: [
         { name: 'command', type: 'string', required: true },
         { name: 'effect', type: 'string' },

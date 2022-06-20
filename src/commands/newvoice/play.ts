@@ -8,11 +8,11 @@ import NewVoice from '../../voice/new';
 export default class NPlayCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'nplay',
+      name: 'play',
+      aliases: ['p'],
       label: 'url',
       type: CommandArgumentTypes.STRING,
-      required: true,
-      aliases: ['np'],
+      required: true
     });
   }
 

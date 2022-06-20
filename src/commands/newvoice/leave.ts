@@ -6,8 +6,8 @@ import { BaseCommand } from '../../BaseCommand';
 export default class NLeaveCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
-      name: 'nleave',
-      aliases: ['nl', 'ngtfo', 'nstop'],
+      name: 'leave',
+      aliases: ['l', 'gtfo', 'stop'],
     });
   }
 
