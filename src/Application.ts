@@ -140,7 +140,7 @@ export class Application {
         presence: {
           activity: {
             type: ActivityTypes.PLAYING,
-            name: 'sounds / WIP, report issues with ~issue',
+            name: 'sounds / new voice is here, some bugs may occur',
           },
         },
       },
