@@ -138,6 +138,10 @@ export default class VoicePipeline extends PassThrough {
     this.mixer.stdout.pipe(this.opus, { end: false });
   }
 
+  public set bitrate(value: number) {
+    this.opus.setBitrate(value);
+  }
+
   private onConnectionDestroy() {
     this.voice.kill(true);
   }
