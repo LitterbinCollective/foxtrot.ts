@@ -121,7 +121,7 @@ export class VoiceStore {
 export class Application {
   public config: IConfig;
   public pkg: PackageJson;
-  public sh: Sh;
+  public sh!: Sh;
   public soundeffects: Record<string, string[]> = {};
   public startAt: number;
   public newvoices: VoiceStore = new VoiceStore();
@@ -263,7 +263,7 @@ export class Application {
   private async fetchSoundeffects() {
     const exists = fs.existsSync('.shat');
     const stat = exists && fs.statSync('.shat');
-    if (exists && Date.now() - stat.mtimeMs <= 24 * 60 * 60 * 1000) {
+    if (exists && stat && Date.now() - stat.mtimeMs <= 24 * 60 * 60 * 1000) {
       this.soundeffects = JSON.parse(fs.readFileSync('.shat').toString());
     } else {
       console.log('No shat file or modification lifetime expired! Fetching...');
@@ -301,11 +301,11 @@ export class Application {
       try {
         for (const repo in lists) {
           i++;
-          const cfg = lists[repo];
+          const cfg = lists[repo as keyof typeof lists];
           if (cfg.bases)
-            for (const base of cfg.bases)
-              await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack, base);
-          else await this.sfxBuildFromGitHub(repo, cfg.usesMsgPack);
+            for (const base of cfg.bases as string[])
+              await this.sfxBuildFromGitHub(repo, cfg.useMsgPack, base);
+          else await this.sfxBuildFromGitHub(repo, cfg.useMsgPack);
           console.log(
             `Loading soundeffects... [${i}/${Object.entries(lists).length}]`
           );

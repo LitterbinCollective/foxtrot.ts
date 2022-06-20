@@ -1,4 +1,4 @@
-import BaseEffect from '../foundation/BaseEffect';
+import { BaseEffect } from '../foundation/BaseEffect';
 
 export default class EchoEffect extends BaseEffect {
   public name = 'echos';
@@ -8,7 +8,6 @@ export default class EchoEffect extends BaseEffect {
     delay: 500,
     decay: 60,
   };
-
   public optionsRange = {
     gainIn: [0, 100],
     gainOut: [0, 100],

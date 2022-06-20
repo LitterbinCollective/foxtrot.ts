@@ -45,6 +45,7 @@ export default class SettingsCommand extends BaseCommand {
   }
 
   public onBeforeRun(context: Context, _: ParsedArgs) {
+    if (!context.member) return false;
     return (
       (context.member.permissions & ADMINISTRATOR_PERMISSION) ===
       ADMINISTRATOR_PERMISSION
@@ -56,7 +57,9 @@ export default class SettingsCommand extends BaseCommand {
     { selection, list, set, get, remove }: ParsedArgs
   ) {
     const model = this.commandClient.application.sequelize.models.settings;
-    const settings = await model.findOne({ where: { serverId: ctx.guildId } });
+    const selectedAttribute = attributes[selection as keyof typeof attributes];
+    let settings = await model.findOne({ where: { serverId: ctx.guildId } });
+
     const commandsToExecute = {
       ['l_' + list]: () => {
         if (!settings) return ctx.reply('No settings have been set yet.');
@@ -66,12 +69,12 @@ export default class SettingsCommand extends BaseCommand {
 
         for (const name in attributes)
           this.ATTR_BLACKLIST.indexOf(name) === -1 &&
-            tbl.push([name, settings[name] || '[no value]']);
+            tbl.push([name, settings[name as keyof typeof settings] || '[no value]']);
 
         ctx.reply(Markup.codeblock(tbl.toString().split(COLOR_REGEX).join('')));
       },
       ['s_' + (typeof set !== 'undefined')]: async () => {
-        let type = attributes[selection];
+        let type = selectedAttribute;
         if (!type || this.ATTR_BLACKLIST.indexOf(selection) !== -1)
           return ctx.reply('Unknown setting!');
         if (typeof type === 'object') type = type.type;
@@ -85,13 +88,13 @@ export default class SettingsCommand extends BaseCommand {
           default:
             throw new Error(
               'Could not convert given value to needed type! TODO: Add conversion method for ' +
-                Markup.codestring(type) +
+                Markup.codestring(type.toString()) + // lol
                 '.'
             );
         }
 
         if (!settings)
-          await model.create({
+          settings = await model.create({
             [selection]: set,
             serverId: ctx.guildId,
           });
@@ -100,26 +103,26 @@ export default class SettingsCommand extends BaseCommand {
         ctx.reply(
           Markup.codestring(selection) +
             ': => ' +
-            Markup.codestring(settings[selection])
+            Markup.codestring(settings[selection as keyof typeof settings])
         );
       },
       ['g_' + get]: () => {
         if (!settings) return ctx.reply('No settings have been set yet.');
         if (
-          !attributes[selection] ||
+          !selectedAttribute ||
           this.ATTR_BLACKLIST.indexOf(selection) !== -1
         )
           return ctx.reply('Unknown setting!');
         ctx.reply(
           Markup.codestring(selection) +
             ': ' +
-            Markup.codestring(settings[selection])
+            Markup.codestring(settings[selection as keyof typeof settings])
         );
       },
       ['r_' + remove]: async () => {
         if (!settings) return ctx.reply('No settings have been set yet.');
         if (
-          !attributes[selection] ||
+          !selectedAttribute ||
           this.ATTR_BLACKLIST.indexOf(selection) !== -1
         )
           return ctx.reply('Unknown setting!');

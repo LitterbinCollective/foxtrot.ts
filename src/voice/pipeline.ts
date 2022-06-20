@@ -5,12 +5,11 @@ import { ChannelGuildVoice } from 'detritus-client/lib/structures';
 import { EventEmitter } from 'events';
 import { opus } from 'prism-media';
 import { Readable, Transform, TransformCallback, PassThrough } from 'stream';
+import { Worker, isMainThread, parentPort } from 'worker_threads';
 
 import NewVoice from './new';
 
-import { Worker, isMainThread, parentPort } from 'worker_threads';
-
-const debug = _debug('glowmem/pipeline');
+const debug = _debug('catvox/pipeline');
 
 interface VoicePipelineMixerMessage {
   type: string;
@@ -18,8 +17,7 @@ interface VoicePipelineMixerMessage {
 }
 
 class VoiceSafeConnection extends EventEmitter {
-  public voiceConnection: VoiceConnection;
-  private channel: ChannelGuildVoice;
+  public voiceConnection!: VoiceConnection;
   private readonly shard: ShardClient;
 
   constructor(
@@ -29,7 +27,9 @@ class VoiceSafeConnection extends EventEmitter {
     super();
     this.shard = shard;
     this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
+    this.onVoiceServerUpdate = this.onVoiceServerUpdate.bind(this);
     this.shard.on('voiceStateUpdate', this.onVoiceStateUpdate);
+    this.shard.on('voiceServerUpdate', this.onVoiceServerUpdate);
     this.initialize(voiceChannel);
   }
 
@@ -38,51 +38,63 @@ class VoiceSafeConnection extends EventEmitter {
       throw new Error(
         'Bot is not able to join or speak in this voice channel.'
       );
-    await this.onVoiceStateUpdate(voiceChannel);
-    this.emit('connected');
-  }
-
-  public async onVoiceStateUpdate(
-    payload: ChannelGuildVoice | GatewayClientEvents.VoiceStateUpdate,
-    force: boolean = false
-  ) {
-    const payloadAsPayload = payload as GatewayClientEvents.VoiceStateUpdate;
-    if (
-      (this.voiceConnection && !payloadAsPayload.old && !force) ||
-      (payloadAsPayload.voiceState &&
-        (payloadAsPayload.voiceState.guildId !== this.channel.id ||
-          payloadAsPayload.voiceState.channelId ===
-            this.channel.id))
-    )
-      return;
-    if (this.voiceConnection) this.voiceConnection.kill();
-    debug('onVoiceStateUpdate, force =', force);
-    const voiceState = payloadAsPayload.voiceState;
-    const channel = voiceState
-      ? voiceState.channel
-      : (payload as ChannelGuildVoice);
-    this.channel = channel;
-    this.voiceConnection = (await channel.join({ receive: true })).connection;
+    const voiceConnectObj = await voiceChannel.join({ receive: true });
+    if (!voiceConnectObj) {
+      debug('failed to connect, destroying');
+      return this.destroy();
+    }
+    this.voiceConnection = voiceConnectObj.connection;
     this.voiceConnection.setOpusEncoder();
     this.voiceConnection.setSpeaking({
       voice: true,
     });
     this.voiceConnection.sendAudioSilenceFrame();
+    this.emit('connected');
+  }
+
+  private get channel() {
+    return this.voiceConnection ? this.voiceConnection.channel : undefined;
+  }
+
+  private async onVoiceServerUpdate(payload: GatewayClientEvents.VoiceServerUpdate) {
+    if (!this.channel) return;
+    if (payload.guildId !== this.channel.guildId) return;
+    if (this.voiceConnection.gateway.socket)
+      // to avoid reconnect, we must make the onclose event noop
+      this.voiceConnection.gateway.socket.socket.onclose = () => {};
+    this.voiceConnection.gateway.setEndpoint(payload.endpoint);
+    this.voiceConnection.gateway.setToken(payload.token);
+    this.voiceConnection.gateway.once('transportReady', () => {
+      debug('gateway says ready');
+      this.voiceConnection.setSpeaking({
+        voice: true,
+      });
+      this.voiceConnection.gateway.transport?.connect();
+    });
+  }
+
+  private async onVoiceStateUpdate(
+    payload: GatewayClientEvents.VoiceStateUpdate
+  ) {
+    if (!this.channel) return;
+    if (payload.voiceState.userId === this.shard.userId && payload.voiceState.guildId === this.channel.guildId && payload.leftChannel)
+      return this.destroy();
   }
 
   public sendAudio(packet: Buffer) {
-    if (!this.voiceConnection) return;
+    if (!this.voiceConnection || this.voiceConnection.killed) return;
     this.voiceConnection.sendAudio(packet, { isOpus: true });
   }
 
   public sendEmpty() {
-    if (!this.voiceConnection) return;
+    if (!this.voiceConnection || this.voiceConnection.killed) return;
     this.voiceConnection.sendAudioSilenceFrame();
   }
 
   public destroy() {
     if (this.voiceConnection) this.voiceConnection.kill();
     this.shard.off('voiceStateUpdate', this.onVoiceStateUpdate);
+    this.emit('destroy');
   }
 }
 
@@ -110,7 +122,7 @@ export default class VoicePipeline extends PassThrough {
     });
     this.connection = new VoiceSafeConnection(
       voiceChannel,
-      this.voice.application.clusterClient.shards.get(voiceChannel.shardId)
+      this.voice.application.clusterClient.shards.get(voiceChannel.shardId) as ShardClient
     );
     this.mixer = new Worker(__filename, {
       stdin: true,
@@ -118,7 +130,7 @@ export default class VoicePipeline extends PassThrough {
     });
 
     this.connection.on('connected', () => this.emit('connected'));
-    this.pipe(this.mixer.stdin, { end: false })
+    this.pipe(this.mixer.stdin as NodeJS.WritableStream, { end: false })
     this.mixer.stdout.pipe(this.opus, { end: false });
   }
 
@@ -196,11 +208,11 @@ export default class VoicePipeline extends PassThrough {
 
   public getVolume() {
     return new Promise((resolve) => {
-      function catchVolume(message: VoicePipelineMixerMessage) {
+      const catchVolume = (message: VoicePipelineMixerMessage) => {
         if (message.type !== 'getVolume') return;
         resolve(message.data);
         this.mixer.off('message', catchVolume);
-      }
+      };
 
       this.mixer.on('message', catchVolume);
 
@@ -213,7 +225,7 @@ export default class VoicePipeline extends PassThrough {
   public destroy() {
     this.stopSilence();
     this.mixer.terminate();
-    this.unpipe(this.mixer.stdin)
+    this.unpipe(this.mixer.stdin as NodeJS.WritableStream)
     this.mixer.stdout.unpipe(this.opus);
     this.connection.destroy();
     this.opus.destroy();
@@ -315,7 +327,7 @@ if (!isMainThread) {
 
   const mixer = new VoicePipelineMixer();
   process.stdin.pipe(mixer).pipe(process.stdout);
-  parentPort.on('message', (message: VoicePipelineMixerMessage) => {
+  parentPort?.on('message', (message: VoicePipelineMixerMessage) => {
     switch (message.type) {
       case 'addReadable':
         mixer.addReadable(message.data);
@@ -327,7 +339,7 @@ if (!isMainThread) {
         mixer.volume = Math.min(Math.max(message.data, 0), 1);
         break;
       case 'getVolume':
-        parentPort.postMessage({
+        parentPort?.postMessage({
           type: 'getVolume',
           data: mixer.volume,
         });

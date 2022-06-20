@@ -3,7 +3,7 @@ import { lookup } from 'dns';
 import { URL } from 'url';
 
 import BaseFormat from '../foundation/BaseFormat';
-import { VoiceFormatResponseType } from '../processors';
+import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../processors';
 
 export default class URLFormat extends BaseFormat {
   public regex =
@@ -60,7 +60,7 @@ export default class URLFormat extends BaseFormat {
       ]);
 
       child.stdout.on('data', (data) => {
-        let duration: number;
+        let duration: number = -1;
         let isVideo = false;
         for (const line of data.toString().split('\n')) {
           const [key, value] = line.split('=');
@@ -101,6 +101,6 @@ export default class URLFormat extends BaseFormat {
         duration,
         image,
       },
-    };
+    } as VoiceFormatResponseURL;
   }
 }

@@ -1,4 +1,4 @@
-import BaseEffect from '../foundation/BaseEffect';
+import { BaseEffect } from '../foundation/BaseEffect';
 
 export default class ReverbEffect extends BaseEffect {
   public name = 'reverb';
@@ -8,7 +8,6 @@ export default class ReverbEffect extends BaseEffect {
     roomScale: 50,
     stereoDepth: 100,
   };
-
   public optionsRange = {
     reverberance: [1, 100],
     hfDamping: [1, 100],

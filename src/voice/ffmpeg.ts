@@ -1,12 +1,10 @@
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import { Transform, Writable } from 'stream';
 
 export default class FFMpeg extends Transform {
-  public instance: ChildProcessWithoutNullStreams;
+  public instance!: ChildProcess;
   public offsetTime: number = 0;
-  public pauseTime: number;
   private readonly args: string[];
-  private readonly bufferContainer: Buffer[] = [];
   private readonly pre: string[];
   private readonly url?: string;
 
@@ -39,18 +37,17 @@ export default class FFMpeg extends Transform {
       stdio: ['inherit', 'pipe', 'inherit', 'pipe', 'pipe'],
     });
 
-    this.instance.stdio[1].on('data', (chunk) => chunk && this.push(chunk));
+    (this.instance.stdio[1] as NodeJS.ReadableStream).on('data', (chunk) => chunk && this.push(chunk));
     this.instance.on('close', this.ffmpegClose);
   }
 
   public _write(
     chunk: any,
     encoding: BufferEncoding,
-    callback: (error?: Error) => void
+    callback: (error?: Error | null) => void
   ): void {
     if ((this.instance.stdio[3] as Writable).writableEnded) return;
-    (this.instance.stdio[3] as Writable).write(chunk, encoding, callback);
-    this.bufferContainer.push(chunk);
+    (this.instance.stdio[3] as NodeJS.WritableStream).write(chunk, encoding, callback);
   }
 
   private ffmpegClose() {
@@ -59,7 +56,6 @@ export default class FFMpeg extends Transform {
 
   private onEnd() {
     (this.instance.stdio[3] as Writable).end();
-    this.bufferContainer.push(null);
   }
 
   public destroy(error?: Error): void {

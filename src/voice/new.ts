@@ -12,15 +12,15 @@ import FFMpeg from './ffmpeg';
 import VoiceQueue from './queue';
 
 export default class NewVoice extends EventEmitter {
-  public effects: VoiceEffectProcessor;
+  public effects!: VoiceEffectProcessor;
   public initialized = false;
-  public queue: VoiceQueue;
+  public queue!: VoiceQueue;
   public readonly application: Application;
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
   private channel: ChannelGuildVoice;
   private ffmpeg?: FFMpeg;
-  private pipeline: VoicePipeline;
+  private pipeline!: VoicePipeline;
 
   constructor(
     application: Application,
@@ -41,8 +41,10 @@ export default class NewVoice extends EventEmitter {
     try {
       this.pipeline = new VoicePipeline(this, this.channel);
     } catch (err) {
-      await logChannel.createMessage(err.message);
-      return this.kill();
+      if (err instanceof Error) {
+        await logChannel.createMessage(err.message);
+        return this.kill();
+      }
     }
 
     this.effects = new VoiceEffectProcessor(this);
@@ -75,7 +77,7 @@ export default class NewVoice extends EventEmitter {
         's16le',
       ],
       [ '-re' ],
-      fromURL && stream
+      fromURL ? stream : undefined
     );
 
     this.effects.createAudioEffectProcessor();
@@ -94,8 +96,10 @@ export default class NewVoice extends EventEmitter {
   }
 
   private cleanUp() {
-    this.ffmpeg.unpipe(this.effects);
-    this.ffmpeg.destroy();
+    if (this.ffmpeg) {
+      this.ffmpeg.unpipe(this.effects);
+      this.ffmpeg.destroy();
+    }
     this.ffmpeg = undefined;
     this.pipeline.playSilence();
 

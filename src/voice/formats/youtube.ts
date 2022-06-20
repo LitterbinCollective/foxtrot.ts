@@ -2,7 +2,7 @@ import fs from 'fs';
 import ytdl from 'ytdl-core';
 
 import BaseFormat from '../foundation/BaseFormat';
-import { VoiceFormatResponseType } from '../processors';
+import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../processors';
 
 export default class YouTubeFormat extends BaseFormat {
   public regex =
@@ -64,7 +64,7 @@ export default class YouTubeFormat extends BaseFormat {
             cookies: this.cookies
           }
         },*/
-        IPv6Block,
+        IPv6Block: IPv6Block || undefined,
       });
       return stream;
     }
@@ -78,6 +78,6 @@ export default class YouTubeFormat extends BaseFormat {
         duration: Number(info.videoDetails.lengthSeconds),
         image,
       },
-    };
+    } as VoiceFormatResponseFetch;
   }
 }

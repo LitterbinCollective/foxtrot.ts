@@ -1,4 +1,4 @@
-import BaseEffect from '../foundation/BaseEffect';
+import { BaseEffect } from '../foundation/BaseEffect';
 
 export default class TremoloEffect extends BaseEffect {
   public name = 'tremolo';

@@ -14,6 +14,7 @@ export default class IssueCommand extends BaseCommand {
   public async run(ctx: Context) {
     const { bugs } = this.commandClient.application.pkg;
     const url = typeof bugs === 'object' && bugs.url ? bugs.url : bugs;
+    if (!url) return; // what the fuck?
     ctx.reply(url.toString());
   }
 }

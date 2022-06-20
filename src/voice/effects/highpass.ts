@@ -1,11 +1,10 @@
-import BaseEffect from '../foundation/BaseEffect';
+import { BaseEffect } from '../foundation/BaseEffect';
 
 export default class HighPassEffect extends BaseEffect {
   public name = 'highpass';
   public options = {
     frequency: 3700,
   };
-
   public optionsRange = {
     frequency: [1, 12000],
   };

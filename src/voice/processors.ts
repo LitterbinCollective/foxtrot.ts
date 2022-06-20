@@ -5,7 +5,7 @@ import { Transform } from 'stream';
 
 import { Application } from '../Application';
 import { FILENAME_REGEX } from '../constants';
-import BaseEffect from './foundation/BaseEffect';
+import { BaseEffect, BaseEffectOptions, BaseEffectOptionsRange } from './foundation/BaseEffect';
 import BaseFormat from './foundation/BaseFormat';
 import NewVoice from './new';
 
@@ -24,7 +24,10 @@ class BaseVoiceProcessor extends Transform {
       const name = fileName.replace(FILENAME_REGEX, '');
       const any: any = require('./' + options.scanPath + fileName).default;
       if (options.create)
-        this.processors[name] = new any(...options.constructorArgs)
+        if (options.constructorArgs)
+          this.processors[name] = new any(...options.constructorArgs)
+        else
+          this.processors[name] = new any()
       else
         this.processors[name] = any;
     }
@@ -42,19 +45,31 @@ export interface VoiceFormatResponseInfo {
 export enum VoiceFormatResponseType {
   URL = 'url',
   READABLE = 'readable',
-  FETCH = 'fetch',
+  FETCH = 'fetch'
 }
 
 export interface VoiceFormatResponse {
-  fetch?: () => Promise<NodeJS.ReadableStream> | NodeJS.ReadableStream;
   info: VoiceFormatResponseInfo;
-  readable?: NodeJS.ReadableStream;
   type: VoiceFormatResponseType;
-  url?: string;
+}
+
+export interface VoiceFormatResponseURL extends VoiceFormatResponse {
+  url: string;
+  type: VoiceFormatResponseType.URL;
+}
+
+export interface VoiceFormatResponseFetch extends VoiceFormatResponse {
+  fetch: () => Promise<NodeJS.ReadableStream> | NodeJS.ReadableStream;
+  type: VoiceFormatResponseType.FETCH;
+}
+
+export interface VoiceFormatResponseReadable extends VoiceFormatResponse {
+  readable: NodeJS.ReadableStream;
+  type: VoiceFormatResponseType.READABLE;
 }
 
 export class VoiceFormatProcessor extends BaseVoiceProcessor {
-  public readonly processors: Record<string, BaseFormat>;
+  public readonly processors!: Record<string, BaseFormat>;
 
   constructor(application: Application) {
     super({
@@ -65,7 +80,7 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
   }
 
   public async fromURL(url: string) {
-    let result: VoiceFormatResponse[] | VoiceFormatResponse | false;
+    let result: VoiceFormatResponse[] | VoiceFormatResponse | false = false;
 
     for (const formatName in this.processors) {
       const format = this.processors[formatName];
@@ -88,7 +103,7 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
 }
 
 export class VoiceEffectProcessor extends BaseVoiceProcessor {
-  public readonly processors: Record<string, new () => BaseEffect>;
+  public readonly processors!: Record<string, new () => BaseEffect>;
   public readonly STACK_LIMIT = 8;
   private sox?: ChildProcessWithoutNullStreams;
   private stack: BaseEffect[] = [];
@@ -132,9 +147,11 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
   public setValue(id: number, name: string, value: any) {
     if (!this.stack[id]) throw new Error('effect not found');
     const afx = this.stack[id];
-    if (afx.options[name] === undefined)
+    const option = afx.options[name as keyof BaseEffectOptions];
+    if (option === undefined)
       throw new Error('effect option not found');
-    const type = typeof afx.options[name];
+
+    const type = typeof option;
     switch (type) {
       case 'number':
         value = Number(value);
@@ -151,13 +168,14 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     if (type !== typeof value)
       throw new Error('the type of value is not equal to the type of a specified setting');
 
-    if (typeof value === 'number' && afx.optionsRange[name]) {
-      const [min, max] = afx.optionsRange[name];
+    const range: number[] | undefined = afx.optionsRange[name as keyof BaseEffectOptionsRange];
+    if (typeof value === 'number' && range) {
+      const [min, max] = range;
       if (value < min || value > max)
         throw new Error(`given value out of range (${min} - ${max})`)
     }
 
-    afx.options[name] = value;
+    afx.options[name as keyof BaseEffectOptions] = value;
     if (this.sox) this.createAudioEffectProcessor();
   }
 
@@ -167,10 +185,10 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
   }
 
   private get args() {
-    let result = [];
+    let result: string[] = [];
     for (const effect of this.stack)
       if (effect.enabled !== false && typeof effect.args !== 'boolean')
-        result = result.concat([effect.name, ...effect.args]);
+        result = result.concat([effect.name, ...effect.args.map((x: string | number) => x.toString())]);
     return result;
   }
 

@@ -4,7 +4,7 @@ import { GMCommandClient } from '../../Application';
 import { BaseCommand } from '../../BaseCommand';
 
 export default class RestartCommand extends BaseCommand {
-  private notRun: boolean;
+  private notRun: boolean = false;
 
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {

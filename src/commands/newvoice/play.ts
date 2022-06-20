@@ -17,6 +17,7 @@ export default class NPlayCommand extends BaseCommand {
   }
 
   public async run(ctx: Context, { url }: ParsedArgs) {
+    if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
       return await ctx.reply('You are not in the voice channel.');
 

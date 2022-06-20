@@ -2,7 +2,7 @@ import { ChannelTextType, User } from 'detritus-client/lib/structures';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from './new';
-import { VoiceFormatResponse, VoiceFormatResponseType, VoiceFormatProcessor } from './processors';
+import { VoiceFormatResponse, VoiceFormatResponseType, VoiceFormatProcessor, VoiceFormatResponseURL, VoiceFormatResponseReadable, VoiceFormatResponseFetch } from './processors';
 
 export default class VoiceQueue {
   public readonly announcer: VoiceQueueAnnouncer;
@@ -37,16 +37,17 @@ export default class VoiceQueue {
     if (this.voice.isPlaying) return;
     if (this.queue.length === 0) return this.announcer.reset();
     const singleResponse = this.queue.shift();
+    if (!singleResponse) return this.announcer.reset();
     this.announcer.play(singleResponse.info);
     switch (singleResponse.type) {
       case VoiceFormatResponseType.URL:
-        this.voice.play(singleResponse.url);
+        this.voice.play((singleResponse as VoiceFormatResponseURL).url);
         break;
       case VoiceFormatResponseType.READABLE:
-        this.voice.play(singleResponse.readable);
+        this.voice.play((singleResponse as VoiceFormatResponseReadable).readable);
         break;
       case VoiceFormatResponseType.FETCH:
-        this.voice.play(await singleResponse.fetch());
+        this.voice.play(await (singleResponse as VoiceFormatResponseFetch).fetch());
         break;
       default:
         throw new Error('Unknown VoiceFormatResponseType');

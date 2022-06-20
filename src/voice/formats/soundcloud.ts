@@ -1,6 +1,6 @@
 import scdl from 'soundcloud-downloader';
 
-import { VoiceFormatResponseType } from '../processors';
+import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../processors';
 import BaseFormat from '../foundation/BaseFormat';
 
 export default class SoundcloudFormat extends BaseFormat {
@@ -29,6 +29,6 @@ export default class SoundcloudFormat extends BaseFormat {
         url: matched,
         duration: info.full_duration / 1000,
       },
-    };
+    } as VoiceFormatResponseFetch;
   }
 }

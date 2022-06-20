@@ -43,11 +43,11 @@ export default class EvalCommand extends BaseCommand {
         message = await funct(ctx);
       } else message = await Promise.resolve(eval(code));
 
-      if (typeof message === 'object') {
+      if (typeof message === 'object')
         (message = JSON.stringify(message, null, 2)), (language = 'json');
-      }
     } catch (err) {
-      message = err.toString();
+      if (err instanceof Error)
+        message = err.toString();
     }
 
     ctx.user.createMessage(Markup.codeblock(String(message), { language }));

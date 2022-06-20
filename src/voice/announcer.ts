@@ -8,8 +8,8 @@ import NewVoice from './new';
 
 export default class VoiceQueueAnnouncer {
   private channel: ChannelTextType;
-  private current: VoiceFormatResponseInfo;
-  private startTime: number;
+  private current?: VoiceFormatResponseInfo;
+  private startTime?: number;
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice, channel: ChannelTextType) {
@@ -27,6 +27,7 @@ export default class VoiceQueueAnnouncer {
   }
 
   private playProgress(duration?: number) {
+    if (!this.startTime) return;
     if (!duration) {
       if (this.current) duration = this.current.duration;
       else throw new Error('Duration not provided');
@@ -47,7 +48,7 @@ export default class VoiceQueueAnnouncer {
     return Markup.codestring(`${progressStr} ${progressBar} ${durationStr}`);
   }
 
-  public play(streamInfo: VoiceFormatResponseInfo = this.current) {
+  public play(streamInfo: VoiceFormatResponseInfo | undefined = this.current) {
     if (!streamInfo) throw new Error('No stream info provided');
     if (!this.current) {
       this.startTime = Date.now();

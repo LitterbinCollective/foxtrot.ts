@@ -11,7 +11,7 @@ import {
 } from 'detritus-client/lib/constants';
 
 export class BaseCommand extends Command.Command {
-  public readonly commandClient: GMCommandClient;
+  public readonly commandClient!: GMCommandClient;
   public readonly disableDm = true;
 
   // public onBeforeRun(ctx: Command.Context, _args: any) {
@@ -59,7 +59,7 @@ export class BaseCommand extends Command.Command {
 }
 
 export class InteractionContextExtended extends Interaction.InteractionContext {
-  public interactionCommandClient: GMInteractionCommandClient;
+  public interactionCommandClient!: GMInteractionCommandClient;
 }
 
 export class BaseInteractionCommand<

@@ -12,10 +12,10 @@ export default class SkipCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
+    if (!ctx.guild) return;
     const voice = this.commandClient.application.newvoices.get(ctx.guild.id);
-    if (!voice) {
+    if (!voice)
       return await ctx.reply('Not in the voice channel.');
-    }
     if (!voice.initialized)
       return await ctx.reply('Voice not yet initialized!');
 

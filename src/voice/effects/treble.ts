@@ -1,4 +1,4 @@
-import BaseEffect from '../foundation/BaseEffect';
+import { BaseEffect } from '../foundation/BaseEffect';
 
 export default class TrebleEffect extends BaseEffect {
   public name = 'treble';
@@ -7,7 +7,6 @@ export default class TrebleEffect extends BaseEffect {
     frequency: 3000,
     width: 50,
   };
-
   public optionsRange = {
     gain: [-20, 20],
     frequency: [2000, 12000],

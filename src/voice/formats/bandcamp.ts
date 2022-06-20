@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { VoiceFormatResponse, VoiceFormatResponseType } from '../processors';
+import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../processors';
 import BaseFormat from '../foundation/BaseFormat';
 
 export default class BandcampFormat extends BaseFormat {
@@ -11,7 +11,7 @@ export default class BandcampFormat extends BaseFormat {
   private readonly CHARS = { quot: '"', amp: '&' };
 
   private decodeHTML(str: string) {
-    return str.replaceAll(/&(.+?);/g, (m) => this.CHARS[m.slice(1, -1)]);
+    return str.replaceAll(/&(.+?);/g, (m) => this.CHARS[m.slice(1, -1) as keyof typeof this.CHARS]);
   }
 
   public async process(matched: string) {
@@ -37,6 +37,6 @@ export default class BandcampFormat extends BaseFormat {
       })
     );
 
-    return array as VoiceFormatResponse[];
+    return array as VoiceFormatResponseURL[];
   }
 }

@@ -1,4 +1,4 @@
-import BaseEffect from '../foundation/BaseEffect';
+import { BaseEffect } from '../foundation/BaseEffect';
 
 export default class BassEffect extends BaseEffect {
   public name = 'bass';
@@ -7,7 +7,6 @@ export default class BassEffect extends BaseEffect {
     frequency: 100,
     width: 50,
   };
-
   public optionsRange = {
     gain: [-20, 20],
     frequency: [0, 300],

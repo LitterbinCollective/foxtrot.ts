@@ -47,7 +47,7 @@ export default class FeedbackCommand extends BaseInteractionCommand {
       username: anonymous
         ? 'Anonymous#0000'
         : ctx.user.tag + ' (' + ctx.user.id + ')',
-      avatarUrl: anonymous ? null : ctx.user.avatarUrl,
+      avatarUrl: anonymous ? undefined : ctx.user.avatarUrl,
     });
     ctx.editOrRespond('Your feedback has been sent to our server, thank you!');
   }

@@ -13,16 +13,16 @@ export default class NJoinCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
+    if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel) {
       return await ctx.reply('You are not in the voice channel.');
     }
 
-    let voice = this.commandClient.application.newvoices.get(ctx.guild.id);
-    if (voice) {
+    if (this.commandClient.application.newvoices.has(ctx.guild.id)) {
       return await ctx.reply('Already in a voice channel on this server.');
     }
 
-    voice = new NewVoice(
+    new NewVoice(
       this.commandClient.application,
       ctx.member.voiceChannel,
       ctx.channel

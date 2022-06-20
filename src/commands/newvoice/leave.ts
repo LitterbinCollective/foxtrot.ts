@@ -12,15 +12,14 @@ export default class NLeaveCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
+    if (!ctx.member || !ctx.guild) return;
     const voice = this.commandClient.application.newvoices.get(ctx.guild.id);
-    if (!voice) {
+    if (!voice)
       return await ctx.reply('Already gone.');
-    }
-    if (!voice.canLeave(ctx.member)) {
+    if (!voice.canLeave(ctx.member))
       return await ctx.reply(
         'You are not in the voice channel this bot is currently in.'
       );
-    }
 
     voice.kill();
     return await ctx.reply('Gone.');
