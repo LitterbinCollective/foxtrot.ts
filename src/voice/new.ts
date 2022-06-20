@@ -90,6 +90,10 @@ export default class NewVoice extends EventEmitter {
       .pipe(this.pipeline, { end: false });
   }
 
+  public setVolume(value: number) {
+    this.pipeline.setVolume(value);
+  }
+
   public set bitrate(value: number) {
     this.pipeline.bitrate = value * 1000;
   }
