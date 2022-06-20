@@ -104,13 +104,13 @@ export default class VoicePipeline extends PassThrough {
   public readonly OPUS_FRAME_LENGTH = 20;
   public readonly OPUS_FRAME_SIZE = 960;
   public readonly SAMPLE_BYTE_LEN = 2;
-
-  private silenceInterval?: NodeJS.Timeout;
+  private silent: boolean = false;
   private opusPacketsReceived = 0;
   private opusPacketCheck = 0;
   private readonly connection: VoiceSafeConnection;
   private readonly opus: opus.Decoder;
   private readonly voice: NewVoice;
+  private readonly PCM_OPUS_FRAME: Buffer;
 
   constructor(voice: NewVoice, voiceChannel: ChannelGuildVoice) {
     super();
@@ -129,6 +129,10 @@ export default class VoicePipeline extends PassThrough {
       stdin: true,
       stdout: true,
     });
+
+    this.PCM_OPUS_FRAME = Buffer.alloc(
+      this.OPUS_FRAME_SIZE * this.AUDIO_CHANNELS * this.SAMPLE_BYTE_LEN
+    );
 
     this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
 
@@ -153,6 +157,9 @@ export default class VoicePipeline extends PassThrough {
       this.opusPacketsReceived++;
     }
 
+    if (this.silent)
+      this.write(this.PCM_OPUS_FRAME);
+
     const time = Date.now() - this.opusPacketCheck;
     if (time >= 1000) {
       debug('received', this.opusPacketsReceived, 'over', time, 'ms');
@@ -171,24 +178,12 @@ export default class VoicePipeline extends PassThrough {
 
   public playSilence() {
     debug('playSilence()');
-    if (!this.silenceInterval)
-      this.silenceInterval = setInterval(
-        () =>
-          this.write(
-            Buffer.alloc(
-              this.OPUS_FRAME_SIZE * this.AUDIO_CHANNELS * this.SAMPLE_BYTE_LEN
-            )
-          ),
-        this.OPUS_FRAME_LENGTH
-      );
+    this.silent = true;
   }
 
   public stopSilence() {
     debug('stopSilence()');
-    if (this.silenceInterval) {
-      clearInterval(this.silenceInterval);
-      delete this.silenceInterval;
-    }
+    this.silent = false;
   }
 
   public addReadable(readable: Readable) {
