@@ -49,6 +49,8 @@ class VoiceSafeConnection extends EventEmitter {
       voice: true,
     });
     this.voiceConnection.sendAudioSilenceFrame();
+    if (this.voiceConnection.gateway.socket)
+      this.voiceConnection.gateway.socket.socket.onclose = () => {};
     this.emit('connected');
   }
 
@@ -59,11 +61,10 @@ class VoiceSafeConnection extends EventEmitter {
   private async onVoiceServerUpdate(payload: GatewayClientEvents.VoiceServerUpdate) {
     if (!this.channel) return;
     if (payload.guildId !== this.channel.guildId) return;
-    if (this.voiceConnection.gateway.socket)
-      // to avoid reconnect, we must make the onclose event noop
-      this.voiceConnection.gateway.socket.socket.onclose = () => {};
     this.voiceConnection.gateway.setEndpoint(payload.endpoint);
     this.voiceConnection.gateway.setToken(payload.token);
+    if (this.voiceConnection.gateway.socket)
+      this.voiceConnection.gateway.socket.socket.onclose = () => {};
     this.voiceConnection.gateway.once('transportReady', () => {
       debug('gateway says ready');
       this.voiceConnection.setSpeaking({
@@ -129,9 +130,16 @@ export default class VoicePipeline extends PassThrough {
       stdout: true,
     });
 
+    this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
+
     this.connection.on('connected', () => this.emit('connected'));
+    this.connection.on('destroy', this.onConnectionDestroy);
     this.pipe(this.mixer.stdin as NodeJS.WritableStream, { end: false })
     this.mixer.stdout.pipe(this.opus, { end: false });
+  }
+
+  private onConnectionDestroy() {
+    this.voice.kill(true);
   }
 
   public update() {
@@ -227,6 +235,7 @@ export default class VoicePipeline extends PassThrough {
     this.mixer.terminate();
     this.unpipe(this.mixer.stdin as NodeJS.WritableStream)
     this.mixer.stdout.unpipe(this.opus);
+    this.connection.off('destroy', this.onConnectionDestroy);
     this.connection.destroy();
     this.opus.destroy();
     super.destroy();

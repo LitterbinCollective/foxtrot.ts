@@ -129,7 +129,9 @@ export default class NewVoice extends EventEmitter {
     this.pipeline.addReadable(stream);
   }
 
-  public kill() {
+  public kill(unexpected: boolean = false) {
+    if (unexpected)
+      this.queue.announcer.unexpectedLeave();
     this.cleanUp();
     this.pipeline.destroy();
     this.application.newvoices.delete(this.channel.guildId);

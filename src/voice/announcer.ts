@@ -84,6 +84,10 @@ export default class VoiceQueueAnnouncer {
     return this.channel.createMessage(options);
   }
 
+  public unexpectedLeave() {
+    return this.channel.createMessage('what is wrong with you?');
+  }
+
   public reset() {
     this.current = undefined;
     this.startTime = undefined;
