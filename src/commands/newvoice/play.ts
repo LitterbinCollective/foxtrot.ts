@@ -6,20 +6,27 @@ import { BaseCommand } from '../../BaseCommand';
 import NewVoice from '../../voice/new';
 
 export default class NPlayCommand extends BaseCommand {
+  private readonly CONTENT_TYPE_REGEX = /(audio|video)\/.+/;
+
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'play',
       aliases: ['p'],
       label: 'url',
       type: CommandArgumentTypes.STRING,
-      required: true
     });
   }
 
-  public async run(ctx: Context, { url }: { url: string }) {
+  public async run(ctx: Context, { url }: { url?: string }) {
     if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
       return await ctx.reply('You are not in the voice channel.');
+    if (!url) {
+      const attachment = ctx.message.attachments.first();
+      if (!attachment || attachment.contentType?.match(this.CONTENT_TYPE_REGEX)?.length === 0 || !attachment.url)
+        return this.onTypeError(ctx, { url }, { url: { message: 'Missing required parameter' } });
+      url = attachment.url;
+    }
 
     let voice = this.commandClient.application.newvoices.get(ctx.guild.id);
     if (!voice) {
