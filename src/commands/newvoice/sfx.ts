@@ -1,4 +1,4 @@
-import { Context, ParsedArgs } from 'detritus-client/lib/command';
+import { Context } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
 import { GMCommandClient } from '../../Application';
@@ -14,7 +14,7 @@ export default class NSfxCommand extends BaseCommand {
     });
   }
 
-  public async run(ctx: Context, { nsfx }: ParsedArgs) {
+  public async run(ctx: Context, { sfx }: { sfx: string }) {
     if (!ctx.member || !ctx.guild) return;
     if (!ctx.member.voiceChannel) {
       return await ctx.reply('You are not in the voice channel.');
@@ -25,6 +25,6 @@ export default class NSfxCommand extends BaseCommand {
     if (!voice.canExecuteVoiceCommands(ctx.member))
       return await ctx.reply('You are not in the voice channel this bot is currently in.');
 
-    voice.playSoundeffect(nsfx);
+    voice.playSoundeffect(sfx);
   }
 }
