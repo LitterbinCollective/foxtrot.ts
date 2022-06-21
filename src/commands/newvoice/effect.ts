@@ -1,5 +1,6 @@
 import Table from 'cli-table';
-import { Context, ParsedArgs } from 'detritus-client/lib/command';
+import { Context } from 'detritus-client/lib/command';
+import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 import { Embed, EmbedFooter, Markup } from 'detritus-client/lib/utils';
 
 import { GMCommandClient } from '../../Application';
@@ -12,9 +13,9 @@ export default class SkipCommand extends BaseCommand {
       name: 'e',
       aliases: ['effect'],
       type: [
-        { name: 'command', type: 'string', required: true },
-        { name: 'effect', type: 'string' },
-        { name: 'keyvalue', type: 'string'},
+        { name: 'command', type: CommandArgumentTypes.STRING, required: true },
+        { name: 'effect', type: CommandArgumentTypes.STRING },
+        { name: 'keyvalue', type: CommandArgumentTypes.STRING },
       ]
     });
   }
@@ -48,7 +49,7 @@ export default class SkipCommand extends BaseCommand {
     });
   }
 
-  public async run(ctx: Context, { command, effect, keyvalue }: ParsedArgs) {
+  public async run(ctx: Context, { command, effect, keyvalue }: { command: string, effect: string, keyvalue: string }) {
     if (!ctx.guild) return;
     const voice = this.commandClient.application.newvoices.get(ctx.guild.id);
     if (!voice)
