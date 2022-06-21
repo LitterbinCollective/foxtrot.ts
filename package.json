@@ -1,5 +1,5 @@
 {
-  "name": "glowing-memory",
+  "name": "catvox",
   "version": "1.0.0",
   "description": "Discord bot made for playing media in the voice channels.",
   "main": "index.js",
@@ -37,10 +37,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LitterbinCollective/glowing-memory.git"
+    "url": "git+https://github.com/LitterbinCollective/catvox.git"
   },
   "bugs": {
-    "url": "https://github.com/LitterbinCollective/glowing-memory/issues"
+    "url": "https://github.com/LitterbinCollective/catvox/issues"
   },
-  "homepage": "https://github.com/LitterbinCollective/glowing-memory"
+  "homepage": "https://github.com/LitterbinCollective/catvox"
 }
