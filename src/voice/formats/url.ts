@@ -59,10 +59,15 @@ export default class URLFormat extends BaseFormat {
         url,
       ]);
 
+      let buffer = Buffer.alloc(0);
       child.stdout.on('data', (data) => {
+        buffer = Buffer.concat([buffer, data]);
+      });
+
+      child.stdout.on('end', () => {
         let duration: number = -1;
         let isVideo = false;
-        for (const line of data.toString().split('\n')) {
+        for (const line of buffer.toString().split('\n')) {
           const [key, value] = line.split('=');
           if (key === 'duration') {
             duration = parseFloat(value);
