@@ -7,7 +7,7 @@ import { GMCommandClient } from '../../Application';
 import { BaseCommand } from '../../BaseCommand';
 import { COLOR_REGEX, EMBED_COLORS, EMOJIS } from '../../constants';
 
-export default class SkipCommand extends BaseCommand {
+export default class EffectCommand extends BaseCommand {
   constructor(commandClient: GMCommandClient) {
     super(commandClient, {
       name: 'e',
