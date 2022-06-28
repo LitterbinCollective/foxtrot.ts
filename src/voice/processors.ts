@@ -144,12 +144,14 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     if (this.sox) this.createAudioEffectProcessor();
   }
 
-  public setValue(id: number, name: string, value: any) {
+  public setValue(id: number, name: string, value?: any) {
     if (!this.stack[id]) throw new Error('effect not found');
     const afx = this.stack[id];
     const option = afx.options[name as keyof BaseEffectOptions];
     if (option === undefined)
       throw new Error('effect option not found');
+    if (value === undefined)
+      throw new Error('value has to be provided');
 
     const type = typeof option;
     switch (type) {
