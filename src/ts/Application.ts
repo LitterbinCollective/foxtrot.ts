@@ -159,6 +159,9 @@ export class Application {
       });
       this.commandClient.addMultipleIn('dist/commands/', {
         subdirectories: true,
+      }).catch(err => {
+        console.error(err);
+        process.exit(1);
       });
     }
 
@@ -167,7 +170,12 @@ export class Application {
         this,
         this.clusterClient
       );
-      this.interactionCommandClient.addMultipleIn('dist/interactionCommands/');
+      this.interactionCommandClient.addMultipleIn('dist/interactions/', {
+        subdirectories: true
+      }).catch(err => {
+        console.error(err);
+        process.exit(1);
+      });;
     }
 
     this.sequelize = new Sequelize(this.config.databaseURL, {

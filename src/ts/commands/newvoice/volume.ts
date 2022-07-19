@@ -23,6 +23,6 @@ export default class SkipCommand extends BaseCommand {
     if (!voice.initialized)
       return await ctx.reply('Voice not yet initialized!');
 
-   voice.setVolume(volume);
+   voice.volume = volume;
   }
 }

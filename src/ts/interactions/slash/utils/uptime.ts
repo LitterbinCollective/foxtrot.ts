@@ -3,8 +3,8 @@ import prettyMilliseconds from 'pretty-ms';
 import {
   BaseInteractionCommand,
   InteractionContextExtended,
-} from '../../BaseCommand';
-import { EMBED_COLORS, EMOJIS } from '../../constants';
+} from '../../../BaseCommand';
+import { EMBED_COLORS, EMOJIS } from '../../../constants';
 
 export default class UptimeCommand extends BaseInteractionCommand {
   public name = 'uptime';

@@ -3,6 +3,7 @@ node_modules/
 
 # Directory with compiled files
 dist/
+build/
 
 # Files with credentials
 config.json

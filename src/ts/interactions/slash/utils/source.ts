@@ -1,7 +1,7 @@
 import {
   BaseInteractionCommand,
   InteractionContextExtended,
-} from '../../BaseCommand';
+} from '../../../BaseCommand';
 
 export default class SourceCommand extends BaseInteractionCommand {
   public name = 'source';

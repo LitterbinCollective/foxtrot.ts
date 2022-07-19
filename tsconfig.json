@@ -1,5 +1,5 @@
 {
-  "include": ["src", "index.temp.ts"],
+  "include": ["src/ts/"],
   "compilerOptions": {
     "outDir": "dist/",
     "target": "es2021",

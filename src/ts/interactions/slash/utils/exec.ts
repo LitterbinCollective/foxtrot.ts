@@ -10,8 +10,8 @@ import { Markup } from 'detritus-client/lib/utils';
 import {
   BaseInteractionCommand,
   InteractionContextExtended,
-} from '../../BaseCommand';
-import { EMBED_COLORS } from '../../constants';
+} from '../../../BaseCommand';
+import { EMBED_COLORS } from '../../../constants';
 
 export default class ExecCommand extends BaseInteractionCommand {
   public name = 'exec';

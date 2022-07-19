@@ -4,7 +4,7 @@ import { ApplicationCommandOptionTypes } from 'detritus-client/lib/constants';
 import {
   BaseInteractionCommand,
   InteractionContextExtended,
-} from '../../BaseCommand';
+} from '../../../BaseCommand';
 
 export default class FeedbackCommand extends BaseInteractionCommand {
   public name = 'feedback';
