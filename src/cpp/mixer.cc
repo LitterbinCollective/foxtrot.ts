@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cmath>
 #include "mixer.h"
 
 Napi::Object Mixer::Init(Napi::Env env, Napi::Object exports) {
