@@ -45,6 +45,10 @@ export default class FFMpeg extends Transform {
       'end',
       this.ffmpegClose
     );
+    (this.instance.stdio[3] as NodeJS.WritableStream).on(
+      'error',
+      (error) => !this.instance.killed && console.error(error)
+    );
     this.instance.on('close', this.ffmpegClose);
   }
 
@@ -53,7 +57,7 @@ export default class FFMpeg extends Transform {
     encoding: BufferEncoding,
     callback: (error?: Error | null) => void
   ): void {
-    if ((this.instance.stdio[3] as Writable).writableEnded) return;
+    if (this.instance.killed || (this.instance.stdio[3] as Writable).writableEnded) return;
     (this.instance.stdio[3] as NodeJS.WritableStream).write(
       chunk,
       encoding,
@@ -73,7 +77,7 @@ export default class FFMpeg extends Transform {
   public destroy(error?: Error): void {
     super.destroy(error);
     if (!this.instance.killed) {
-      this.instance.kill(9);
+      this.instance.kill();
     }
   }
 }
