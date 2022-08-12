@@ -1,4 +1,4 @@
-import { BaseEffect } from '../foundation/BaseEffect';
+import { BaseEffect } from './baseeffect';
 
 export default class BassEffect extends BaseEffect {
   public name = 'bass';

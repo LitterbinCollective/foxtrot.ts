@@ -2,18 +2,25 @@ import { ChannelTextType, User } from 'detritus-client/lib/structures';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from './new';
-import { VoiceFormatResponse, VoiceFormatResponseType, VoiceFormatProcessor, VoiceFormatResponseURL, VoiceFormatResponseReadable, VoiceFormatResponseFetch } from './processors';
+import {
+  VoiceFormatResponse,
+  VoiceFormatResponseType,
+  VoiceFormatManager,
+  VoiceFormatResponseURL,
+  VoiceFormatResponseReadable,
+  VoiceFormatResponseFetch,
+} from './managers';
 
 export default class VoiceQueue {
   public readonly announcer: VoiceQueueAnnouncer;
-  private formats: VoiceFormatProcessor;
+  private formats: VoiceFormatManager;
   private queue: VoiceFormatResponse[] = [];
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice, logChannel: ChannelTextType) {
     this.voice = voice;
     this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
-    this.formats = new VoiceFormatProcessor(voice.application);
+    this.formats = new VoiceFormatManager(voice.application);
   }
 
   public async push(url: string, user?: User) {
@@ -35,19 +42,27 @@ export default class VoiceQueue {
 
   public async next() {
     if (this.voice.isPlaying) return;
-    if (this.queue.length === 0) return this.announcer.reset();
+    this.announcer.reset();
+
+    if (this.queue.length === 0) return;
+
     const singleResponse = this.queue.shift();
-    if (!singleResponse) return this.announcer.reset();
+    if (!singleResponse) return;
+
     this.announcer.play(singleResponse.info);
     switch (singleResponse.type) {
       case VoiceFormatResponseType.URL:
         this.voice.play((singleResponse as VoiceFormatResponseURL).url);
         break;
       case VoiceFormatResponseType.READABLE:
-        this.voice.play((singleResponse as VoiceFormatResponseReadable).readable);
+        this.voice.play(
+          (singleResponse as VoiceFormatResponseReadable).readable
+        );
         break;
       case VoiceFormatResponseType.FETCH:
-        this.voice.play(await (singleResponse as VoiceFormatResponseFetch).fetch());
+        this.voice.play(
+          await (singleResponse as VoiceFormatResponseFetch).fetch()
+        );
         break;
       default:
         throw new Error('Unknown VoiceFormatResponseType');

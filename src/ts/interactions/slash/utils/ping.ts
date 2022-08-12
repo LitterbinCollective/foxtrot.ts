@@ -1,7 +1,4 @@
-import {
-  BaseInteractionCommand,
-  InteractionContextExtended,
-} from '../../../BaseCommand';
+import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
 
 export default class PingCommand extends BaseInteractionCommand {
   public name = 'ping';

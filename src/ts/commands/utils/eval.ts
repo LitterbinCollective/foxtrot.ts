@@ -1,18 +1,19 @@
+import axios from 'axios';
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import {
   CommandArgumentTypes,
   DiscordRegexNames,
 } from 'detritus-client/lib/constants';
 import { Markup, regex } from 'detritus-client/lib/utils';
-import axios from 'axios';
+import { inspect } from 'util';
 
-import { BaseCommand } from '../../BaseCommand';
-import { GMCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
+import { CatvoxCommandClient } from '../../Application';
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 export default class EvalCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'eval',
       type: (value) => {
@@ -44,10 +45,9 @@ export default class EvalCommand extends BaseCommand {
       } else message = await Promise.resolve(eval(code));
 
       if (typeof message === 'object')
-        (message = JSON.stringify(message, null, 2)), (language = 'json');
+        (message = inspect(message)), (language = 'js');
     } catch (err) {
-      if (err instanceof Error)
-        message = err.toString();
+      if (err instanceof Error) message = err.toString();
     }
 
     ctx.user.createMessage(Markup.codeblock(String(message), { language }));

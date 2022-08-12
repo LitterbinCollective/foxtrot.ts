@@ -1,16 +1,10 @@
 import { exec } from 'child_process';
 import { ParsedArgs } from 'detritus-client/lib/command';
-import {
-  ApplicationCommandOptionTypes,
-  MessageFlags,
-} from 'detritus-client/lib/constants';
+import { ApplicationCommandOptionTypes } from 'detritus-client/lib/constants';
 import { InteractionEditOrRespond } from 'detritus-client/lib/structures';
 import { Markup } from 'detritus-client/lib/utils';
 
-import {
-  BaseInteractionCommand,
-  InteractionContextExtended,
-} from '../../../BaseCommand';
+import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
 import { EMBED_COLORS } from '../../../constants';
 
 export default class ExecCommand extends BaseInteractionCommand {

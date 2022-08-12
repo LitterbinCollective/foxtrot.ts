@@ -1,14 +1,14 @@
 import { Context } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
 import NewVoice from '../../voice/new';
 
 export default class NPlayCommand extends BaseCommand {
   private readonly CONTENT_TYPE_REGEX = /(audio|video)\/.+/;
 
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'play',
       aliases: ['p'],
@@ -23,15 +23,22 @@ export default class NPlayCommand extends BaseCommand {
       return await ctx.reply('You are not in the voice channel.');
     if (!url) {
       const attachment = ctx.message.attachments.first();
-      if (!attachment || attachment.contentType?.match(this.CONTENT_TYPE_REGEX)?.length === 0 || !attachment.url)
-        return this.onTypeError(ctx, { url }, { url: { message: 'Missing required parameter' } });
+      if (
+        !attachment ||
+        attachment.mimetype.match(this.CONTENT_TYPE_REGEX)?.length === 0 ||
+        !attachment.url
+      )
+        return this.onTypeError(
+          ctx,
+          { url },
+          { url: { message: 'Missing required parameter' } }
+        );
       url = attachment.url;
     }
 
     let voice = this.commandClient.application.newvoices.get(ctx.guild.id);
     if (!voice) {
-      voice = new NewVoice(
-        this.commandClient.application,
+      voice = this.commandClient.application.newvoices.create(
         ctx.member.voiceChannel,
         ctx.channel
       );

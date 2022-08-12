@@ -1,11 +1,11 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
 
 export default class FeedbackCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'feedback',
       aliases: ['fb'],

@@ -7,12 +7,12 @@ import { EventEmitter } from 'events';
 
 import { Application } from '../Application';
 import VoicePipeline from './pipeline';
-import { VoiceEffectProcessor } from './processors';
+import { VoiceEffectManager } from './managers';
 import FFMpeg from './ffmpeg';
 import VoiceQueue from './queue';
 
 export default class NewVoice extends EventEmitter {
-  public effects!: VoiceEffectProcessor;
+  public effects!: VoiceEffectManager;
   public initialized = false;
   public queue!: VoiceQueue;
   public readonly application: Application;
@@ -47,16 +47,17 @@ export default class NewVoice extends EventEmitter {
       }
     }
 
-    this.effects = new VoiceEffectProcessor(this);
+    this.effects = new VoiceEffectManager(this);
     this.queue = new VoiceQueue(this, logChannel);
     this.pipeline.playSilence();
 
-    this.application.newvoices.set(this.channel.guildId, this);
     this.emit('initialized');
     this.initialized = true;
   }
 
-  public update() { this.pipeline.update(); }
+  public update() {
+    this.pipeline.update();
+  }
 
   public play(stream: NodeJS.ReadableStream | string) {
     if (this.ffmpeg) this.cleanUp();
@@ -76,11 +77,11 @@ export default class NewVoice extends EventEmitter {
         '-f',
         's16le',
       ],
-      [ '-re' ],
+      ['-re'],
       fromURL ? stream : undefined
     );
 
-    this.effects.createAudioEffectProcessor();
+    this.effects.createAudioEffectManager();
     this.ffmpeg.on('end', () => this.skip());
 
     if (!fromURL) stream.pipe(this.ffmpeg, { end: false });
@@ -111,7 +112,7 @@ export default class NewVoice extends EventEmitter {
     this.ffmpeg = undefined;
     this.pipeline.playSilence();
 
-    this.effects.destroyAudioEffectProcessor();
+    this.effects.destroyAudioEffectManager();
     this.effects.unpipe(this.pipeline);
   }
 
@@ -138,8 +139,7 @@ export default class NewVoice extends EventEmitter {
   }
 
   public kill(unexpected: boolean = false) {
-    if (unexpected)
-      this.queue.announcer.unexpectedLeave();
+    if (unexpected) this.queue.announcer.unexpectedLeave();
     this.cleanUp();
     this.pipeline.destroy();
     this.application.newvoices.delete(this.channel.guildId);

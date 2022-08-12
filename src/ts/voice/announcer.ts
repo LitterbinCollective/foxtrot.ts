@@ -2,7 +2,7 @@ import { ChannelTextType } from 'detritus-client/lib/structures';
 import { Embed, Markup } from 'detritus-client/lib/utils';
 import { RequestTypes } from 'detritus-client-rest';
 
-import { VoiceFormatResponseInfo } from './processors';
+import { VoiceFormatResponseInfo } from './managers';
 import { EMBED_COLORS, EMOJIS } from '../constants';
 import NewVoice from './new';
 

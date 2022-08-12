@@ -1,14 +1,19 @@
+import { ClusterClient } from 'detritus-client';
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
+import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { EXTERNAL_IPC_OP_CODES } from '../../constants';
+import { BaseCommand } from '../base';
 
 export default class RestartCommand extends BaseCommand {
   private notRun: boolean = false;
 
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'restart',
+      label: 'self',
+      type: CommandArgumentTypes.BOOL,
     });
   }
 
@@ -18,7 +23,9 @@ export default class RestartCommand extends BaseCommand {
     return letRun && ctx.user.isClientOwner;
   }
 
-  public async run(_ctx: Context) {
-    process.exit(0);
+  public async run(_ctx: Context, { self }: { self: boolean }) {
+    const manager = (this.commandClient.client as ClusterClient).manager;
+    if (manager && !self) manager.sendIPC(EXTERNAL_IPC_OP_CODES.STOP_MGR);
+    else process.exit(0);
   }
 }

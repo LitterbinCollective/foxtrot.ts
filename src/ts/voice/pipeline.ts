@@ -1,4 +1,3 @@
-import _debug from 'debug';
 import { GatewayClientEvents, ShardClient } from 'detritus-client';
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
 import { ChannelGuildVoice } from 'detritus-client/lib/structures';
@@ -8,18 +7,16 @@ import { Readable, Transform, TransformCallback } from 'stream';
 
 import NewVoice from './new';
 import { Mixer } from './mixer';
-
-const debug = _debug('catvox/pipeline');
+import Logger from '../logger';
 
 class VoiceSafeConnection extends EventEmitter {
   public voiceConnection!: VoiceConnection;
   private readonly shard: ShardClient;
+  private readonly logger: Logger;
 
-  constructor(
-    voiceChannel: ChannelGuildVoice,
-    shard: ShardClient
-  ) {
+  constructor(voiceChannel: ChannelGuildVoice, shard: ShardClient) {
     super();
+    this.logger = new Logger(`Voice safe connection [${voiceChannel.guildId}]`);
     this.shard = shard;
     this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
     this.onVoiceServerUpdate = this.onVoiceServerUpdate.bind(this);
@@ -35,7 +32,7 @@ class VoiceSafeConnection extends EventEmitter {
       );
     const voiceConnectObj = await voiceChannel.join({ receive: true });
     if (!voiceConnectObj) {
-      debug('failed to connect, destroying');
+      this.logger.debug('failed to connect, destroying');
       return this.destroy();
     }
     this.voiceConnection = voiceConnectObj.connection;
@@ -53,7 +50,9 @@ class VoiceSafeConnection extends EventEmitter {
     return this.voiceConnection ? this.voiceConnection.channel : undefined;
   }
 
-  private async onVoiceServerUpdate(payload: GatewayClientEvents.VoiceServerUpdate) {
+  private async onVoiceServerUpdate(
+    payload: GatewayClientEvents.VoiceServerUpdate
+  ) {
     if (!this.channel) return;
     if (payload.guildId !== this.channel.guildId) return;
     this.voiceConnection.gateway.setEndpoint(payload.endpoint);
@@ -61,7 +60,7 @@ class VoiceSafeConnection extends EventEmitter {
     if (this.voiceConnection.gateway.socket)
       this.voiceConnection.gateway.socket.socket.onclose = () => {};
     this.voiceConnection.gateway.once('transportReady', () => {
-      debug('gateway says ready');
+      this.logger.debug('gateway says ready');
       this.voiceConnection.setSpeaking({
         voice: true,
       });
@@ -73,7 +72,11 @@ class VoiceSafeConnection extends EventEmitter {
     payload: GatewayClientEvents.VoiceStateUpdate
   ) {
     if (!this.channel) return;
-    if (payload.voiceState.userId === this.shard.userId && payload.voiceState.guildId === this.channel.guildId && payload.leftChannel)
+    if (
+      payload.voiceState.userId === this.shard.userId &&
+      payload.voiceState.guildId === this.channel.guildId &&
+      payload.leftChannel
+    )
       return this.destroy();
   }
 
@@ -105,6 +108,7 @@ export default class VoicePipeline extends Transform {
   private opusPacketsReceived = 0;
   private opusPacketCheck = 0;
   private readonly connection: VoiceSafeConnection;
+  private readonly logger: Logger;
   private readonly voice: NewVoice;
   private readonly REQUIRED_SAMPLES: number;
 
@@ -112,17 +116,18 @@ export default class VoicePipeline extends Transform {
     super({ readableObjectMode: true });
 
     this.voice = voice;
+    this.logger = new Logger(`Voice pipeline [${voiceChannel.guildId}]`);
     this.connection = new VoiceSafeConnection(
       voiceChannel,
-      this.voice.application.clusterClient.shards.get(voiceChannel.shardId) as ShardClient
+      this.voice.application.clusterClient.shards.get(
+        voiceChannel.shardId
+      ) as ShardClient
     );
     this.mixer = new Mixer();
-    this.opus = new OpusEncoder(
-      this.SAMPLE_RATE,
-      this.AUDIO_CHANNELS
-    );
+    this.opus = new OpusEncoder(this.SAMPLE_RATE, this.AUDIO_CHANNELS);
 
-    this.REQUIRED_SAMPLES = this.AUDIO_CHANNELS * this.OPUS_FRAME_SIZE * this.SAMPLE_BYTE_LEN;
+    this.REQUIRED_SAMPLES =
+      this.AUDIO_CHANNELS * this.OPUS_FRAME_SIZE * this.SAMPLE_BYTE_LEN;
 
     this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
 
@@ -131,8 +136,7 @@ export default class VoicePipeline extends Transform {
   }
 
   public set bitrate(value: number) {
-    if (this.opus)
-      this.opus.setBitrate(Math.min(128e3, Math.max(16e3, value)));
+    if (this.opus) this.opus.setBitrate(Math.min(128e3, Math.max(16e3, value)));
   }
 
   private onConnectionDestroy() {
@@ -146,22 +150,31 @@ export default class VoicePipeline extends Transform {
       this.opusPacketsReceived++;
     }
 
-    if (this.silent)
-      this.write(Buffer.alloc(this.REQUIRED_SAMPLES));
+    if (this.silent) this.write(Buffer.alloc(this.REQUIRED_SAMPLES));
 
     const time = Date.now() - this.opusPacketCheck;
     if (time >= 1000) {
-      debug('received', this.opusPacketsReceived, 'over', time, 'ms');
+      this.logger.debug(
+        'received',
+        this.opusPacketsReceived,
+        'over',
+        time,
+        'ms'
+      );
       this.opusPacketsReceived = 0;
       this.opusPacketCheck = Date.now();
     }
   }
 
-  public _transform(chunk: any, _: BufferEncoding, callback: TransformCallback): void {
+  public _transform(
+    chunk: any,
+    _: BufferEncoding,
+    callback: TransformCallback
+  ): void {
     if (!this.opus || !this.opusLeftover || !this.mixer) return callback();
     const buffer = this.mixer.Process(chunk);
 
-    this.opusLeftover = Buffer.concat([ this.opusLeftover, buffer ]);
+    this.opusLeftover = Buffer.concat([this.opusLeftover, buffer]);
 
     let n = 0;
     while (this.opusLeftover.length >= this.REQUIRED_SAMPLES * (n + 1)) {
@@ -174,7 +187,7 @@ export default class VoicePipeline extends Transform {
       this.push(frame);
       n++;
     }
-    debug('converted opus frames ', n);
+    this.logger.debug('converted opus frames ', n);
     if (n > 0)
       this.opusLeftover = this.opusLeftover.slice(n * this.REQUIRED_SAMPLES);
     return callback();
@@ -189,39 +202,32 @@ export default class VoicePipeline extends Transform {
   }
 
   public playSilence() {
-    debug('playSilence()');
+    this.logger.debug('playSilence()');
     this.silent = true;
   }
 
   public stopSilence() {
-    debug('stopSilence()');
+    this.logger.debug('stopSilence()');
     this.silent = false;
   }
 
   public addReadable(readable: Readable) {
     let buffer = Buffer.alloc(0);
-    readable.on('data', (chunk) =>
-      buffer = Buffer.concat([buffer, chunk])
-    );
+    readable.on('data', (chunk) => (buffer = Buffer.concat([buffer, chunk])));
 
-    readable.on('end', () =>
-      this.mixer && this.mixer.AddReadable(buffer)
-    );
+    readable.on('end', () => this.mixer && this.mixer.AddReadable(buffer));
   }
 
   public clearReadableArray() {
-    if (this.mixer)
-      this.mixer.ClearReadables();
+    if (this.mixer) this.mixer.ClearReadables();
   }
 
   public set volume(volume: number) {
-    if (this.mixer)
-      this.mixer.SetVolume(volume);
+    if (this.mixer) this.mixer.SetVolume(volume);
   }
 
   public get volume(): number {
-    if (this.mixer)
-      return this.mixer.GetVolume();
+    if (this.mixer) return this.mixer.GetVolume();
     return -1;
   }
 

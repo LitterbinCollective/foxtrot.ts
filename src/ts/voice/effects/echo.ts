@@ -1,4 +1,4 @@
-import { BaseEffect } from '../foundation/BaseEffect';
+import { BaseEffect } from './baseeffect';
 
 export default class EchoEffect extends BaseEffect {
   public name = 'echos';

@@ -2,8 +2,8 @@ import { spawn } from 'child_process';
 import { lookup } from 'dns';
 import { URL } from 'url';
 
-import BaseFormat from '../foundation/BaseFormat';
-import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../processors';
+import { BaseFormat } from './baseformat';
+import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../managers';
 
 export default class URLFormat extends BaseFormat {
   public regex =

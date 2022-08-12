@@ -1,17 +1,13 @@
 import axios from 'axios';
-import { exec } from 'child_process';
 import { ParsedArgs } from 'detritus-client/lib/command';
 import {
   ApplicationCommandOptionTypes,
   MessageFlags,
 } from 'detritus-client/lib/constants';
-import { InteractionEditOrRespond } from 'detritus-client/lib/structures';
 import { Markup } from 'detritus-client/lib/utils';
+import { inspect } from 'util';
 
-import {
-  BaseInteractionCommand,
-  InteractionContextExtended,
-} from '../../../BaseCommand';
+import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
@@ -53,7 +49,10 @@ export default class EvalCommand extends BaseInteractionCommand {
     return true;
   }
 
-  public async run(ctx: InteractionContextExtended, { code, async, url }: ParsedArgs) {
+  public async run(
+    ctx: InteractionContextExtended,
+    { code, async, url }: ParsedArgs
+  ) {
     if (url) code = (await axios(url)).data;
 
     let message = '';
@@ -65,10 +64,9 @@ export default class EvalCommand extends BaseInteractionCommand {
       } else message = await Promise.resolve(eval(code));
 
       if (typeof message === 'object')
-        (message = JSON.stringify(message, null, 2)), (language = 'json');
+        (message = inspect(message)), (language = 'js');
     } catch (err) {
-      if (err instanceof Error)
-        message = err.toString();
+      if (err instanceof Error) message = err.toString();
     }
 
     ctx.editOrRespond({

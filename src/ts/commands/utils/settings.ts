@@ -4,15 +4,17 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 import { Markup } from 'detritus-client/lib/utils';
 import { DataTypes } from 'sequelize';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
-import { ADMINISTRATOR_PERMISSION, COLOR_REGEX } from '../../constants';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
+import { ADMINISTRATOR_PERMISSION } from '../../constants';
 import { attributes } from '../../models/settings';
+import { COLOR_REGEX } from '../../logger/constants';
 
+// TODO: redo pls
 export default class SettingsCommand extends BaseCommand {
   private readonly ATTR_BLACKLIST = ['createdAt', 'updatedAt', 'serverId'];
 
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'settings',
       label: 'selection',
@@ -69,7 +71,10 @@ export default class SettingsCommand extends BaseCommand {
 
         for (const name in attributes)
           this.ATTR_BLACKLIST.indexOf(name) === -1 &&
-            tbl.push([name, settings[name as keyof typeof settings] || '[no value]']);
+            tbl.push([
+              name,
+              settings[name as keyof typeof settings] || '[no value]',
+            ]);
 
         ctx.reply(Markup.codeblock(tbl.toString().split(COLOR_REGEX).join('')));
       },
@@ -108,10 +113,7 @@ export default class SettingsCommand extends BaseCommand {
       },
       ['g_' + get]: () => {
         if (!settings) return ctx.reply('No settings have been set yet.');
-        if (
-          !selectedAttribute ||
-          this.ATTR_BLACKLIST.indexOf(selection) !== -1
-        )
+        if (!selectedAttribute || this.ATTR_BLACKLIST.indexOf(selection) !== -1)
           return ctx.reply('Unknown setting!');
         ctx.reply(
           Markup.codestring(selection) +
@@ -121,10 +123,7 @@ export default class SettingsCommand extends BaseCommand {
       },
       ['r_' + remove]: async () => {
         if (!settings) return ctx.reply('No settings have been set yet.');
-        if (
-          !selectedAttribute ||
-          this.ATTR_BLACKLIST.indexOf(selection) !== -1
-        )
+        if (!selectedAttribute || this.ATTR_BLACKLIST.indexOf(selection) !== -1)
           return ctx.reply('Unknown setting!');
         await settings.update({ [selection]: null });
         ctx.reply(

@@ -1,49 +1,45 @@
 {
-  // Discord bot token.
   "token": "",
 
-  // Sentry DSN URL for catching errors.
-  "sentryDSN": "",
+  "databaseDSN": "",
+  "prefix": "~",
 
-  // Feedback Discord webhook.
+  "shatLists": {
+    "PAC3-Server/chatsounds-valve-games": {
+      "bases": [
+        "csgo",
+        "css",
+        "ep1",
+        "ep2",
+        "hl1",
+        "hl2",
+        "l4d",
+        "l4d2",
+        "portal",
+        "tf2"
+      ],
+      "useMsgPack": true
+    },
+    "Metastruct/garrysmod-chatsounds": {
+      "bases": ["sound/chatsounds/autoadd"],
+      "useMsgPack": false
+    },
+    "PAC3-Server/chatsounds": {
+      "bases": false,
+      "useMsgPack": false
+    }
+  },
+
+  "shardCount": 1,
+  "shardsPerCluster": 4,
+
   "feedbackWebhook": {
     "id": "",
     "token": ""
   },
 
-  // Google Assistant settings.
-  "googleAssistantSettings": {
-    // Google Assistant OAuth authentication.
-    "auth": {
-      // Full path to the Google Assistant credentials file.
-      "keyFilePath": "/home/wicopee/glowing-memory/googleAssistantCredentials.json",
-      // Full path to the Google Assistant token storage file.
-      "savedTokensPath": "/home/wicopee/glowing-memory/googleAssistantTokens.json"
-    },
-
-    // Google Assistant Conversation settings.
-    "conversation": {
-      "lang": "en-US",               // GA Conversation language.
-      "screen": { "isOn": false },   // GA Conversation flag for screen data (recommended to keep it as is).
-
-      // USE THIS ONLY IF YOU WENT THROUGH DEVICE REGISTRATION
-      // PROCESS.
-      "deviceModelId": "glowing-memory-device",
-      "deviceId": "glowmem",
-
-      // Device location.
-      "deviceLocation": {
-        "coordinates": {
-          "latitude": 37.422070403830226,
-          "longitude": -122.08408713606059
-        }
-      }
-    }
-  },
-
   "formatCredentials": {
     "youtube": {
-      // IPv6 Block
       "ipv6": ""
     }
   }

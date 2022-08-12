@@ -8,8 +8,8 @@ export interface Mixer {
   ClearReadables(): void;
 
   Process(data: Buffer): Buffer;
-};
+}
 
 export const Mixer: {
-  new(): Mixer
+  new (): Mixer;
 } = mixer.Mixer;

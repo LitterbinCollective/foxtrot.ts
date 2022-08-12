@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../processors';
-import BaseFormat from '../foundation/BaseFormat';
+import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../managers';
+import { BaseFormat } from './baseformat';
 
 export default class BandcampFormat extends BaseFormat {
   public regex = /^https?:\/\/(.*).bandcamp.com\/(track|album)\/(.*)$/g;
@@ -11,7 +11,10 @@ export default class BandcampFormat extends BaseFormat {
   private readonly CHARS = { quot: '"', amp: '&' };
 
   private decodeHTML(str: string) {
-    return str.replaceAll(/&(.+?);/g, (m) => this.CHARS[m.slice(1, -1) as keyof typeof this.CHARS]);
+    return str.replaceAll(
+      /&(.+?);/g,
+      (m) => this.CHARS[m.slice(1, -1) as keyof typeof this.CHARS]
+    );
   }
 
   public async process(matched: string) {

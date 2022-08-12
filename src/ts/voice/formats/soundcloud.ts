@@ -1,7 +1,10 @@
 import scdl from 'soundcloud-downloader';
 
-import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../processors';
-import BaseFormat from '../foundation/BaseFormat';
+import {
+  VoiceFormatResponseFetch,
+  VoiceFormatResponseType,
+} from '../managers';
+import { BaseFormat } from './baseformat';
 
 export default class SoundcloudFormat extends BaseFormat {
   public regex = /^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/g;

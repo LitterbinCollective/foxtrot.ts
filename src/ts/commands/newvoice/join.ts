@@ -1,11 +1,11 @@
 import { Context } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
 import NewVoice from '../../voice/new';
 
 export default class NJoinCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'join',
       aliases: ['connect', 'j'],
@@ -14,19 +14,19 @@ export default class NJoinCommand extends BaseCommand {
 
   public async run(ctx: Context) {
     if (!ctx.member || !ctx.guild || !ctx.channel) return;
-    if (!ctx.member.voiceChannel) {
-      return await ctx.reply('You are not in the voice channel.');
+    if (!ctx.member.voiceChannel)
+      return ctx.reply(
+        'You are not connected to any voice channel on this server.'
+      );
+    try {
+      this.commandClient.application.newvoices.create(
+        ctx.member.voiceChannel,
+        ctx.channel
+      );
+    } catch (err: any) {
+      if (err instanceof Error) return ctx.reply(err.message);
+      else throw err;
     }
-
-    if (this.commandClient.application.newvoices.has(ctx.guild.id)) {
-      return await ctx.reply('Already in a voice channel on this server.');
-    }
-
-    new NewVoice(
-      this.commandClient.application,
-      ctx.member.voiceChannel,
-      ctx.channel
-    );
     return await ctx.reply(Math.random() > 0.95 ? 'Oh hi Mark.' : 'Hi.');
   }
 }

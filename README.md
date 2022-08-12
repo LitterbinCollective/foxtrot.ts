@@ -3,7 +3,7 @@ An experimental Discord bot made with detritusjs/client library.
 
 ## Prerequisites
 - Node.js
-- C++ build tools
+- [C++ build tools](https://github.com/nodejs/node-gyp#installation)
 - ffmpeg
 - sox
 

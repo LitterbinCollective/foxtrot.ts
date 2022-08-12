@@ -1,12 +1,12 @@
 import { Context } from 'detritus-client/lib/command';
 import prettyMilliseconds from 'pretty-ms';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
 import { EMBED_COLORS, EMOJIS } from '../../constants';
 
 export default class UptimeCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'uptime',
       aliases: ['ut'],

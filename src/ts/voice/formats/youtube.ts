@@ -1,8 +1,11 @@
 import fs from 'fs';
 import ytdl from 'ytdl-core';
 
-import BaseFormat from '../foundation/BaseFormat';
-import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../processors';
+import { BaseFormat } from './baseformat';
+import {
+  VoiceFormatResponseFetch,
+  VoiceFormatResponseType,
+} from '../managers';
 
 export default class YouTubeFormat extends BaseFormat {
   public regex =

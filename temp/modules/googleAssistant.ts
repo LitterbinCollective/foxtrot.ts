@@ -9,7 +9,6 @@ import { Embed, Markup } from 'detritus-client/lib/utils';
 import fs from 'fs';
 import GoogleAssistant from 'google-assistant';
 import prism from 'prism-media';
-import * as Sentry from '@sentry/node';
 import { Readable } from 'stream';
 
 import { Voice } from '..';

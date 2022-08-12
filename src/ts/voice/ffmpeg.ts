@@ -37,7 +37,14 @@ export default class FFMpeg extends Transform {
       stdio: ['inherit', 'pipe', 'inherit', 'pipe', 'pipe'],
     });
 
-    (this.instance.stdio[1] as NodeJS.ReadableStream).on('data', (chunk) => chunk && this.push(chunk));
+    (this.instance.stdio[1] as NodeJS.ReadableStream).on(
+      'data',
+      (chunk) => chunk && this.push(chunk)
+    );
+    (this.instance.stdio[1] as NodeJS.ReadableStream).on(
+      'end',
+      this.ffmpegClose
+    );
     this.instance.on('close', this.ffmpegClose);
   }
 
@@ -47,11 +54,16 @@ export default class FFMpeg extends Transform {
     callback: (error?: Error | null) => void
   ): void {
     if ((this.instance.stdio[3] as Writable).writableEnded) return;
-    (this.instance.stdio[3] as NodeJS.WritableStream).write(chunk, encoding, callback);
+    (this.instance.stdio[3] as NodeJS.WritableStream).write(
+      chunk,
+      encoding,
+      callback
+    );
   }
 
   private ffmpegClose() {
     this.end();
+    this.destroy();
   }
 
   private onEnd() {
@@ -60,6 +72,8 @@ export default class FFMpeg extends Transform {
 
   public destroy(error?: Error): void {
     super.destroy(error);
-    if (this.instance.connected) this.instance.kill(9);
+    if (!this.instance.killed) {
+      this.instance.kill(9);
+    }
   }
 }

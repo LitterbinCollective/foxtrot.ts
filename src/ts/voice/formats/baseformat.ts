@@ -1,6 +1,6 @@
-import { VoiceFormatResponse } from '../processors';
+import { VoiceFormatResponse } from '../managers';
 
-export default class BaseFormat {
+export class BaseFormat {
   public regex = /.+/g;
   public printName = 'unknown';
   public readonly formatCredentials: IConfigFormatCredentials;

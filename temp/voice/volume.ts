@@ -1,11 +1,11 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
-import { GMCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../Application';
 import { BaseCommand } from '../../BaseCommand';
 
 export default class VolumeCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'volume',
       aliases: ['v', 'vol'],

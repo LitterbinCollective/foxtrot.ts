@@ -1,10 +1,10 @@
 import { Context } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
 
 export default class HelpCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'help',
       aliases: ['?'],
@@ -12,7 +12,7 @@ export default class HelpCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
-    const { homepage } = this.commandClient.application.pkg;
+    const { homepage } = this.commandClient.application.packageJson;
     ctx.reply(homepage + '/wiki');
   }
 }

@@ -1,21 +1,20 @@
 import { ClusterClient } from 'detritus-client';
 import { Context } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseCommand } from '../base';
 
 export default class PingCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'ping',
     });
   }
 
   public async run(ctx: Context) {
-    const pingResult = await (
-      this.commandClient.client as ClusterClient
-    ).shards
-      .get(ctx.shardId)?.ping();
+    const pingResult = await (this.commandClient.client as ClusterClient).shards
+      .get(ctx.shardId)
+      ?.ping();
     if (!pingResult) return;
     const { rest, gateway } = pingResult;
     const text: string[] = [

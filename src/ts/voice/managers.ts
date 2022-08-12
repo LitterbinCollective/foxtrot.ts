@@ -5,31 +5,38 @@ import { Transform } from 'stream';
 
 import { Application } from '../Application';
 import { FILENAME_REGEX } from '../constants';
-import { BaseEffect, BaseEffectOptions, BaseEffectOptionsRange } from './foundation/BaseEffect';
-import BaseFormat from './foundation/BaseFormat';
+import Logger from '../logger';
+import {
+  BaseEffect,
+  BaseEffectOptions,
+  BaseEffectOptionsRange,
+} from './effects/baseeffect';
+import { BaseFormat } from './formats/baseformat';
 import NewVoice from './new';
 
-interface BaseVoiceProcessorOptions {
-  create?: boolean,
-  constructorArgs?: any[],
-  scanPath: string
+interface BaseVoiceManagerOptions {
+  create?: boolean;
+  constructorArgs?: any[];
+  scanPath: string;
+  loggerTag: string;
 }
 
-class BaseVoiceProcessor extends Transform {
+class BaseVoiceManager extends Transform {
+  public readonly logger: Logger;
   public readonly processors: Record<string, any> = {};
 
-  constructor(options: BaseVoiceProcessorOptions) {
+  constructor(options: BaseVoiceManagerOptions) {
     super();
+    this.logger = new Logger(options.loggerTag);
     for (const fileName of fs.readdirSync(__dirname + '/' + options.scanPath)) {
       const name = fileName.replace(FILENAME_REGEX, '');
       const any: any = require('./' + options.scanPath + fileName).default;
+      if (!any) continue;
       if (options.create)
         if (options.constructorArgs)
-          this.processors[name] = new any(...options.constructorArgs)
-        else
-          this.processors[name] = new any()
-      else
-        this.processors[name] = any;
+          this.processors[name] = new any(...options.constructorArgs);
+        else this.processors[name] = new any();
+      else this.processors[name] = any;
     }
   }
 }
@@ -45,7 +52,7 @@ export interface VoiceFormatResponseInfo {
 export enum VoiceFormatResponseType {
   URL = 'url',
   READABLE = 'readable',
-  FETCH = 'fetch'
+  FETCH = 'fetch',
 }
 
 export interface VoiceFormatResponse {
@@ -68,14 +75,15 @@ export interface VoiceFormatResponseReadable extends VoiceFormatResponse {
   type: VoiceFormatResponseType.READABLE;
 }
 
-export class VoiceFormatProcessor extends BaseVoiceProcessor {
+export class VoiceFormatManager extends BaseVoiceManager {
   public readonly processors!: Record<string, BaseFormat>;
 
   constructor(application: Application) {
     super({
       create: true,
       constructorArgs: [application.config.formatCredentials],
-      scanPath: 'formats/'
+      scanPath: 'formats/',
+      loggerTag: 'Voice format manager',
     });
   }
 
@@ -91,7 +99,8 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
         result = await format.process(url);
         if (!result) continue;
       } catch (err) {
-        console.error('VoiceFormatProcessor/' + format.printName, err);
+        this.logger.error(format.printName, 'spew an error: ', err);
+        this.logger.error('url used:', url);
         continue;
       }
 
@@ -102,7 +111,7 @@ export class VoiceFormatProcessor extends BaseVoiceProcessor {
   }
 }
 
-export class VoiceEffectProcessor extends BaseVoiceProcessor {
+export class VoiceEffectManager extends BaseVoiceManager {
   public readonly processors!: Record<string, new () => BaseEffect>;
   public readonly STACK_LIMIT = 8;
   private sox?: ChildProcessWithoutNullStreams;
@@ -110,20 +119,19 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice) {
-    super({ scanPath: 'effects/' });
+    super({ scanPath: 'effects/', loggerTag: 'Voice effect manager' });
     this.voice = voice;
   }
 
   public addEffect(name: string, start?: number) {
     start = start || this.stack.length;
-    if (!this.processors[name])
-      throw new Error('effect not found');
+    if (!this.processors[name]) throw new Error('effect not found');
     if (this.stack.length === this.STACK_LIMIT)
       throw new Error('effect stack overflow');
-    const effect = new this.processors[name];
+    const effect = new this.processors[name]();
     effect.enabled = true;
     this.stack.splice(start, 0, effect);
-    if (this.sox) this.createAudioEffectProcessor();
+    if (this.sox) this.createAudioEffectManager();
     return start;
   }
 
@@ -131,27 +139,29 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     if (!this.stack[id]) throw new Error('effect not found');
     if (this.stack.length === 0) throw new Error('effect stack underflow');
     this.stack.splice(id, 1);
-    if (this.sox) this.createAudioEffectProcessor();
+    if (this.sox) this.createAudioEffectManager();
   }
 
-  public getEffectInfo(id: number): any[] {
+  public getEffectInfo(id: number) {
     if (!this.stack[id]) throw new Error('effect not found');
-    return [ this.stack[id].name, this.stack[id].options, this.stack[id].optionsRange ];
+    return {
+      name: this.stack[id].name,
+      options: this.stack[id].options,
+      optionsRange: this.stack[id].optionsRange,
+    };
   }
 
   public clearEffects() {
     this.stack = [];
-    if (this.sox) this.createAudioEffectProcessor();
+    if (this.sox) this.createAudioEffectManager();
   }
 
   public setValue(id: number, name: string, value?: any) {
     if (!this.stack[id]) throw new Error('effect not found');
     const afx = this.stack[id];
     const option = afx.options[name as keyof BaseEffectOptions];
-    if (option === undefined)
-      throw new Error('effect option not found');
-    if (value === undefined)
-      throw new Error('value has to be provided');
+    if (option === undefined) throw new Error('effect option not found');
+    if (value === undefined) throw new Error('value has to be provided');
 
     const type = typeof option;
     switch (type) {
@@ -168,17 +178,20 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     }
 
     if (type !== typeof value)
-      throw new Error('the type of value is not equal to the type of a specified setting');
+      throw new Error(
+        'the type of value is not equal to the type of a specified setting'
+      );
 
-    const range: number[] | undefined = afx.optionsRange[name as keyof BaseEffectOptionsRange];
+    const range: number[] | undefined =
+      afx.optionsRange[name as keyof BaseEffectOptionsRange];
     if (typeof value === 'number' && range) {
       const [min, max] = range;
       if (value < min || value > max)
-        throw new Error(`given value out of range (${min} - ${max})`)
+        throw new Error(`given value out of range (${min} - ${max})`);
     }
 
     afx.options[name as keyof BaseEffectOptions] = value;
-    if (this.sox) this.createAudioEffectProcessor();
+    if (this.sox) this.createAudioEffectManager();
   }
 
   public getValue(id: number, option: string) {
@@ -190,7 +203,10 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     let result: string[] = [];
     for (const effect of this.stack)
       if (effect.enabled !== false && typeof effect.args !== 'boolean')
-        result = result.concat([effect.name, ...effect.args.map((x: string | number) => x.toString())]);
+        result = result.concat([
+          effect.name,
+          ...effect.args.map((x: string | number) => x.toString()),
+        ]);
     return result;
   }
 
@@ -206,7 +222,7 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     return this.stack.map((x) => x.name);
   }
 
-  public destroyAudioEffectProcessor() {
+  public destroyAudioEffectManager() {
     if (this.sox) this.sox.kill(9);
   }
 
@@ -219,8 +235,8 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
     callback();
   }
 
-  public createAudioEffectProcessor() {
-    this.destroyAudioEffectProcessor();
+  public createAudioEffectManager() {
+    this.destroyAudioEffectManager();
 
     this.sox = spawn('sox', [
       '-r',
@@ -248,10 +264,11 @@ export class VoiceEffectProcessor extends BaseVoiceProcessor {
       ...this.args,
     ]);
 
-    console.log(this.args);
-
     this.sox.stdout.on('data', (chunk) => this.push(chunk));
     this.sox.stderr.on('data', (data) => console.log(data.toString()));
-    this.sox.stdout.on('error', (e) => console.error('sox.stdout'));
+    this.sox.stdout.on('error', (e) => {
+      this.logger.error('sox.stdout spew an error:', e);
+      this.logger.error('arguments used:', this.args);
+    });
   }
 }

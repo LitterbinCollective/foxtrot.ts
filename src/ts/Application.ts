@@ -1,4 +1,3 @@
-import axios from 'axios';
 import {
   ClusterClient,
   CommandClient,
@@ -8,19 +7,22 @@ import {
   InteractionCommandClientOptions,
   ShardClient,
 } from 'detritus-client';
-import { ActivityTypes, ClientEvents } from 'detritus-client/lib/constants';
+import { ActivityTypes } from 'detritus-client/lib/constants';
+import { Context } from 'detritus-client/lib/command';
+import {
+  ChannelGuildVoice,
+  ChannelTextType,
+} from 'detritus-client/lib/structures';
 import fs from 'fs';
-import { decodeArrayStream } from '@msgpack/msgpack';
-import * as Sentry from '@sentry/node';
 import { PackageJson } from 'type-fest';
 import Sh from 'sh';
 import { Sequelize } from 'sequelize';
 
-import { FILENAME_REGEX } from './constants';
-import { Context } from 'detritus-client/lib/command';
+import { EXTERNAL_IPC_OP_CODES, FILENAME_REGEX } from './constants';
 import NewVoice from './voice/new';
+import Logger from './logger';
 
-export class GMCommandClient extends CommandClient {
+export class CatvoxCommandClient extends CommandClient {
   public readonly application: Application;
 
   constructor(
@@ -42,7 +44,7 @@ export class GMCommandClient extends CommandClient {
   }
 }
 
-export class GMInteractionCommandClient extends InteractionCommandClient {
+export class CatvoxInteractionCommandClient extends InteractionCommandClient {
   public readonly application: Application;
 
   constructor(
@@ -59,7 +61,12 @@ export class VoiceStore {
   private cycleTimeout: NodeJS.Timeout | null = null;
   private nextCycle: number = 0;
   private readonly _map: Map<string, NewVoice> = new Map();
+  private readonly application: Application;
   private readonly OPUS_FRAME_LENGTH = 20;
+
+  constructor(application: Application) {
+    this.application = application;
+  }
 
   private cycleOverVoices(iterator: IterableIterator<NewVoice>) {
     const next = iterator.next().value;
@@ -68,7 +75,7 @@ export class VoiceStore {
       if (this.nextCycle !== -1) {
         this.cycleTimeout = setTimeout(() => {
           this.nextCycle += this.OPUS_FRAME_LENGTH;
-          this.cycleOverVoices(this._map.values())
+          this.cycleOverVoices(this._map.values());
         }, this.nextCycle - Date.now());
       }
       return;
@@ -91,20 +98,38 @@ export class VoiceStore {
     this.nextCycle = -1;
   }
 
+  public create(
+    voiceChannel: ChannelGuildVoice,
+    textChannel: ChannelTextType
+  ): NewVoice {
+    if (voiceChannel.guildId !== textChannel.guildId)
+      throw new Error(
+        'The specified text channel is not in the same ' +
+          'guild as the specified voice channel'
+      );
+
+    if (this.has(voiceChannel.guildId))
+      throw new Error(
+        'Already connected to a voice channel on this ' + 'server'
+      );
+
+    const voice = new NewVoice(this.application, voiceChannel, textChannel);
+    this.set(voiceChannel.guildId, voice);
+    return voice;
+  }
+
   public get(guildId: string): NewVoice | undefined {
     return this._map.get(guildId);
   }
 
   public set(guildId: string, voice: NewVoice): void {
     this._map.set(guildId, voice);
-    if (this._map.size === 1)
-      this.initializeCycle();
+    if (this._map.size === 1) this.initializeCycle();
   }
 
   public delete(guildId: string): void {
     this._map.delete(guildId);
-    if (this._map.size === 0)
-      this.killCycle();
+    if (this._map.size === 0) this.killCycle();
   }
 
   public has(guildId: string): boolean {
@@ -112,7 +137,7 @@ export class VoiceStore {
   }
 
   public clear(): void {
-    this._map.forEach(x => x.kill());
+    this._map.forEach((x) => x.kill());
     this._map.clear();
     this.killCycle();
   }
@@ -120,21 +145,22 @@ export class VoiceStore {
 
 export class Application {
   public config: IConfig;
-  public pkg: PackageJson;
+  public packageJson: PackageJson;
   public sh!: Sh;
   public soundeffects: Record<string, string[]> = {};
   public startAt: number;
-  public newvoices: VoiceStore = new VoiceStore();
-  public readonly commandClient: GMCommandClient;
+  public newvoices: VoiceStore = new VoiceStore(this);
+  public readonly commandClient: CatvoxCommandClient;
   public readonly clusterClient: ClusterClient;
-  public readonly interactionCommandClient: GMInteractionCommandClient;
+  public readonly interactionCommandClient: CatvoxInteractionCommandClient;
+  public readonly logger: Logger;
   public readonly sequelize: Sequelize;
 
-  constructor(config: IConfig, pkg: PackageJson) {
+  constructor(token: string, config: IConfig, packageJson: PackageJson) {
     this.config = config;
-    this.pkg = pkg;
+    this.packageJson = packageJson;
 
-    this.clusterClient = new ClusterClient(this.config.token, {
+    this.clusterClient = new ClusterClient(token, {
       cache: { messages: { expire: 60 * 60 * 1000 } },
       gateway: {
         presence: {
@@ -146,39 +172,56 @@ export class Application {
       },
     });
 
-    this.clusterClient.on(ClientEvents.WARN, ({ error }) =>
-      Sentry.captureException(error, {
-        tags: { loc: 'root' },
-      })
-    );
+    const defaultTitle = `Shard ${this.clusterClient.shardStart} - ${this.clusterClient.shardEnd}`;
+    if (this.clusterClient.manager) {
+      this.clusterClient.manager.on(
+        'ipc',
+        (message: { op: number; data: any }) => {
+          if (message.op === EXTERNAL_IPC_OP_CODES.SHARE_SHAT) {
+            this.logger.info('received shat data from manager');
+            this.sh = new Sh(message.data);
+          }
+        }
+      );
+
+      process.title = `Cluster [${this.clusterClient.clusterId}] - ${defaultTitle}`;
+      this.logger = new Logger(`Cluster [${this.clusterClient.clusterId}]`);
+    } else {
+      process.title = defaultTitle;
+      this.logger = new Logger('Shard');
+    }
 
     {
-      this.commandClient = new GMCommandClient(this, this.clusterClient, {
+      this.commandClient = new CatvoxCommandClient(this, this.clusterClient, {
         prefix: this.config.prefix || '~',
         activateOnEdits: true,
       });
-      this.commandClient.addMultipleIn('dist/commands/', {
-        subdirectories: true,
-      }).catch(err => {
-        console.error(err);
-        process.exit(1);
-      });
+      this.commandClient
+        .addMultipleIn('dist/commands/', {
+          subdirectories: true,
+        })
+        .catch((err) => {
+          this.logger.error(err);
+          process.exit(1);
+        });
     }
 
     {
-      this.interactionCommandClient = new GMInteractionCommandClient(
+      this.interactionCommandClient = new CatvoxInteractionCommandClient(
         this,
         this.clusterClient
       );
-      this.interactionCommandClient.addMultipleIn('dist/interactions/', {
-        subdirectories: true
-      }).catch(err => {
-        console.error(err);
-        process.exit(1);
-      });;
+      this.interactionCommandClient
+        .addMultipleIn('dist/interactions/', {
+          subdirectories: true,
+        })
+        .catch((err) => {
+          this.logger.error(err);
+          process.exit(1);
+        });
     }
 
-    this.sequelize = new Sequelize(this.config.databaseURL, {
+    this.sequelize = new Sequelize(this.config.databaseDSN, {
       logging: false,
     });
     for (const storeFileName of fs.readdirSync('dist/models/')) {
@@ -189,151 +232,22 @@ export class Application {
 
     this.startAt = Date.now();
 
-    Sentry.init({
-      dsn: this.config.sentryDSN,
-    });
-
     this.initialize();
   }
 
   private async initialize() {
-    await this.fetchSoundeffects();
-    this.sh = new Sh(this.soundeffects);
     await this.sequelize.sync();
     await this.clusterClient.run();
     await this.commandClient.run();
     await this.interactionCommandClient.run();
 
-    console.log('Bot online!');
-    console.log(
-      `Loaded shards #(${this.clusterClient.shards
+    this.logger.log('bot online!');
+    this.logger.info(
+      `loaded shards #(${this.clusterClient.shards
         .map((shard) => shard.shardId)
         .join(', ')})`
     );
   }
 
   // Source: https://github.com/Metastruct/Chatsounds-X/blob/master/app/src/ChatsoundsFetcher.ts
-  private async sfxBuildFromGitHub(
-    repo: string,
-    usesMsgPack: boolean,
-    base?: string
-  ) {
-    if (!base) base = 'sounds/chatsounds';
-
-    const baseUrl = `https://raw.githubusercontent.com/${repo}/master/${base}/`;
-    const sounds: Array<Array<string>> = [];
-
-    if (usesMsgPack) {
-      const resp = await axios.get(baseUrl + 'list.msgpack', {
-        responseType: 'stream',
-      });
-      const generator: any = decodeArrayStream(resp.data);
-      for await (const sound of generator) sounds.push(sound);
-    } else {
-      const responseFromGh = await axios.get(
-        `https://api.github.com/repos/${repo}/git/trees/master?recursive=1`
-      );
-      const body: string = JSON.stringify(responseFromGh.data);
-      let i: number = 0;
-      for (const match of body.matchAll(
-        /"path":\s*"([\w\/\s\.]+)"(?:\n|,|})/g
-      )) {
-        let path: string = match[1];
-        if (!path || path.length === 0) continue;
-        if (!path.startsWith(base) || !path.endsWith('.ogg')) continue;
-
-        path = path.substring(base.length + 1);
-        const chunks: Array<string> = path.split('/');
-        const realm: string = chunks[0];
-        let trigger: string = chunks[1];
-
-        if (!chunks[2]) {
-          trigger = trigger.substring(0, trigger.length - '.ogg'.length);
-        }
-
-        sounds[i] = [realm, trigger, path];
-
-        if (trigger.startsWith('-')) {
-          sounds[i][1] = sounds[i][1].substring(1);
-          sounds[i][3] = `${realm}/${trigger}.txt`;
-        }
-
-        i++;
-      }
-    }
-
-    for (const [_realm, name, file] of sounds) {
-      if (!this.soundeffects[name]) this.soundeffects[name] = [];
-      this.soundeffects[name].push(baseUrl + file);
-    }
-  }
-
-  private async fetchSoundeffects() {
-    const exists = fs.existsSync('.shat');
-    const stat = exists && fs.statSync('.shat');
-    if (exists && stat && Date.now() - stat.mtimeMs <= 24 * 60 * 60 * 1000) {
-      this.soundeffects = JSON.parse(fs.readFileSync('.shat').toString());
-    } else {
-      console.log('No shat file or modification lifetime expired! Fetching...');
-
-      const lists = {
-        'PAC3-Server/chatsounds-valve-games': {
-          bases: [
-            'csgo',
-            'css',
-            'ep1',
-            'ep2',
-            'hl1',
-            'hl2',
-            'l4d',
-            'l4d2',
-            'portal',
-            'tf2',
-          ],
-          useMsgPack: true,
-        },
-        'Metastruct/garrysmod-chatsounds': {
-          bases: ['sound/chatsounds/autoadd'],
-          useMsgPack: false,
-        },
-        'PAC3-Server/chatsounds': {
-          bases: false,
-          useMsgPack: false,
-        },
-      };
-
-      let i = 0;
-      console.log(
-        `Loading soundeffects... [0/${Object.entries(lists).length}]`
-      );
-      try {
-        for (const repo in lists) {
-          i++;
-          const cfg = lists[repo as keyof typeof lists];
-          if (cfg.bases)
-            for (const base of cfg.bases as string[])
-              await this.sfxBuildFromGitHub(repo, cfg.useMsgPack, base);
-          else await this.sfxBuildFromGitHub(repo, cfg.useMsgPack);
-          console.log(
-            `Loading soundeffects... [${i}/${Object.entries(lists).length}]`
-          );
-        }
-
-        console.log('Done! Writing...');
-        fs.writeFileSync('.shat', JSON.stringify(this.soundeffects));
-      } catch (err) {
-        console.error(
-          `Something went wrong while loading soundeffects! Halting loading... [${i}/${
-            Object.entries(lists).length
-          }]`
-        );
-        console.error(err);
-
-        if (exists) {
-          console.log('The file does exist, using it instead...');
-          this.soundeffects = JSON.parse(fs.readFileSync('.shat').toString());
-        }
-      }
-    }
-  }
 }

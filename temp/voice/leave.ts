@@ -1,10 +1,10 @@
 import { Context } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../Application';
 import { BaseCommand } from '../../BaseCommand';
 
 export default class LeaveCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'leave',
       aliases: ['l', 'gtfo', 'stop'],

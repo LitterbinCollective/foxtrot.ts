@@ -1,10 +1,10 @@
 import { Context } from 'detritus-client/lib/command';
 
-import { GMCommandClient } from '../../Application';
-import { BaseCommand } from '../../BaseCommand';
+import { CatvoxCommandClient } from '../../Application';
+import { BaseVoiceCommand } from './base';
 
-export default class SkipCommand extends BaseCommand {
-  constructor(commandClient: GMCommandClient) {
+export default class SkipCommand extends BaseVoiceCommand {
+  constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'current',
       aliases: ['c', 'curplay'],
@@ -14,10 +14,7 @@ export default class SkipCommand extends BaseCommand {
   public async run(ctx: Context) {
     if (!ctx.guild) return;
     const voice = this.commandClient.application.newvoices.get(ctx.guild.id);
-    if (!voice)
-      return await ctx.reply('Not in the voice channel.');
-    if (!voice.initialized)
-      return await ctx.reply('Voice not yet initialized!');
+    if (!voice) return;
 
     if (voice.isPlaying) voice.queue.announcer.play();
     else ctx.reply('Nothing is playing right now.');

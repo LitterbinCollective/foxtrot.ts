@@ -1,10 +1,7 @@
 import { ParsedArgs } from 'detritus-client/lib/command';
 import { ApplicationCommandOptionTypes } from 'detritus-client/lib/constants';
 
-import {
-  BaseInteractionCommand,
-  InteractionContextExtended,
-} from '../../../BaseCommand';
+import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
 
 export default class FeedbackCommand extends BaseInteractionCommand {
   public name = 'feedback';

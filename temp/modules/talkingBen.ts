@@ -2,7 +2,6 @@ import * as AudioMixer from 'audio-mixer';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import dbg from 'debug';
 import prism from 'prism-media';
-import * as Sentry from '@sentry/node';
 
 import { Voice } from '..';
 import BaseModule from '../foundation/BaseModule';
