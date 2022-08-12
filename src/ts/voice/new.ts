@@ -107,9 +107,11 @@ export default class NewVoice extends EventEmitter {
   private cleanUp() {
     if (this.ffmpeg) {
       this.ffmpeg.unpipe(this.effects);
-      this.ffmpeg.destroy();
+      setImmediate(() => {
+        this.ffmpeg?.destroy();
+        this.ffmpeg = undefined;
+      });
     }
-    this.ffmpeg = undefined;
     this.pipeline.playSilence();
 
     this.effects.destroyAudioEffectManager();
