@@ -1,6 +1,7 @@
 import { GatewayClientEvents } from 'detritus-client';
 import { ClientEvents } from 'detritus-client/lib/constants';
 import { ChannelGuildVoice, ChannelTextType } from 'detritus-client/lib/structures';
+import Sh from 'sh';
 import { Application } from '../application';
 
 import NewVoice from '../voice/new';
@@ -9,6 +10,7 @@ import { Store } from './store';
 class VoiceStore extends Store<string, NewVoice> {
   private cycleTimeout: NodeJS.Timeout | null = null;
   private nextCycle: number = 0;
+  private sh!: Sh;
   private readonly OPUS_FRAME_LENGTH = 20;
 
   private cycleOverVoices(iterator: IterableIterator<NewVoice>) {
@@ -56,7 +58,7 @@ class VoiceStore extends Store<string, NewVoice> {
         'Already connected to a voice channel on this server'
       );
 
-    const voice = new NewVoice(voiceChannel, textChannel);
+    const voice = new NewVoice(this.sh, voiceChannel, textChannel);
     this.set(voiceChannel.guildId, voice);
     return voice;
   }
@@ -79,7 +81,9 @@ class VoiceStore extends Store<string, NewVoice> {
     return super.clear();
   }
 
-  public onApplication({ clusterClient: cluster }: Application): void {
+  public onApplication({ clusterClient: cluster, sh }: Application): void {
+    this.sh = sh;
+
     cluster.on(ClientEvents.VOICE_SERVER_UPDATE, (payload: GatewayClientEvents.VoiceServerUpdate) => {
       if (!payload.guildId) return;
       if (this.has(payload.guildId))

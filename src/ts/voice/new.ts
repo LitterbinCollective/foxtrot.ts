@@ -12,6 +12,7 @@ import { VoiceEffectManager } from './managers';
 import FFMpeg from './ffmpeg';
 import { VoiceStore } from '../stores';
 import VoiceQueue from './queue';
+import Sh from 'sh';
 
 export default class NewVoice extends EventEmitter {
   public effects!: VoiceEffectManager;
@@ -22,12 +23,15 @@ export default class NewVoice extends EventEmitter {
   private channel: ChannelGuildVoice;
   private ffmpeg?: FFMpeg;
   private pipeline!: VoicePipeline;
+  private readonly sh: Sh;
 
   constructor(
+    sh: Sh,
     channel: ChannelGuildVoice,
     logChannel: ChannelTextType
   ) {
     super();
+    this.sh = sh;
     this.channel = channel;
     this.initialize(logChannel);
   }
@@ -137,17 +141,15 @@ export default class NewVoice extends EventEmitter {
   }
 
   public async playSoundeffect(script: string) {
-    /*
     script = script.toLowerCase();
     for (const word of script.split(' '))
       if (word.split(':')[0].split('#')[0] === 'sh') {
         this.pipeline.clearReadableArray();
         break;
       }
-    const parsedScript = this.application.sh.Parser.parse(script);
-    const stream = await this.application.sh.Audio.run(parsedScript);
+    const parsedScript = this.sh.Parser.parse(script);
+    const stream = await this.sh.Audio.run(parsedScript);
     this.pipeline.addReadable(stream);
-    */
   }
 
   public kill(unexpected: boolean = false) {
