@@ -25,7 +25,7 @@ export default class SettingsRemoveCommand extends BaseCommand {
     const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
     const { properties } = GuildSettings.jsonSchema;
 
-    if (!properties[key as keyof typeof properties])
+    if (!properties[key as keyof typeof properties] || key === GuildSettings.idColumn)
       throw new Error('unknown setting');
 
     await settings.$query().patch({ [key]: null });

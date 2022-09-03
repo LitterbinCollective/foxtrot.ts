@@ -26,7 +26,7 @@ export default class SettingsSetCommand extends BaseCommand {
     const { properties } = GuildSettings.jsonSchema;
 
     const attribute = properties[key as keyof typeof properties];
-    if (!attribute)
+    if (!attribute || key === GuildSettings.idColumn)
       throw new Error('unknown setting');
 
     let type = attribute.type;

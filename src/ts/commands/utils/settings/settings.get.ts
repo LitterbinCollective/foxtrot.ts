@@ -22,7 +22,7 @@ export default class SettingsGetCommand extends BaseCommand {
     const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
     const { properties } = GuildSettings.jsonSchema;
 
-    if (!properties[key as keyof typeof properties])
+    if (!properties[key as keyof typeof properties] || key === GuildSettings.idColumn)
       throw new Error('unknown setting');
 
     const value = settings[key as keyof typeof settings] || NO_VALUE_PLACEHOLDER;

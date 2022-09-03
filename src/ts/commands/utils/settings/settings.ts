@@ -13,7 +13,8 @@ export function listSettings(settings: GuildSettings) {
   const { properties } = GuildSettings.jsonSchema;
   const description = [];
   for (const key in properties)
-    description.push(key + ' = ' + (settings[key as keyof typeof settings] || NO_VALUE_PLACEHOLDER));
+    if (key !== GuildSettings.idColumn)
+      description.push(key + ' = ' + (settings[key as keyof typeof settings] || NO_VALUE_PLACEHOLDER));
   return new Embed({
     title: 'Current guild-specific settings',
     color: EMBED_COLORS.DEF,
