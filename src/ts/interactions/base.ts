@@ -1,13 +1,14 @@
 import { Interaction } from 'detritus-client';
 import {
+  ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
   MessageFlags,
 } from 'detritus-client/lib/constants';
 import { ParsedArgs } from 'detritus-client/lib/interaction';
 import { Embed } from 'detritus-client/lib/utils/embed';
 
-import { CatvoxInteractionCommandClient } from '../Application';
-import { EMBED_COLORS } from '../constants';
+import { CatvoxInteractionCommandClient } from '../application';
+import { EMBED_COLORS, EMOJIS } from '../constants';
 
 export class InteractionContextExtended extends Interaction.InteractionContext {
   public interactionCommandClient!: CatvoxInteractionCommandClient;
@@ -16,12 +17,12 @@ export class InteractionContextExtended extends Interaction.InteractionContext {
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
 > extends Interaction.InteractionCommand<ParsedArgsFinished> {
-  public type = ApplicationCommandTypes.CHAT_INPUT;
+  public readonly disableDm = true;
 
   public errorNoHalt(ctx: Interaction.InteractionContext, error: Error) {
     const { name, message } = error;
     const embed = new Embed({
-      title: ':bomb: Runtime Error',
+      title: EMOJIS.BOMB + ' Runtime Error',
       description: `**${name}**: ${message}`,
       color: EMBED_COLORS.ERR,
     });
@@ -34,6 +35,8 @@ export class BaseInteractionCommand<
     args: ParsedArgsFinished,
     error: any
   ) {
+    if (error.constructor.name === 'Error')
+      return ctx.editOrRespond(error.message);
     this.errorNoHalt(ctx, error);
 
     ctx.interactionCommandClient.application.logger.error(error);
@@ -58,4 +61,16 @@ export class BaseInteractionCommand<
 
     ctx.editOrRespond({ embed, flags: MessageFlags.EPHEMERAL });
   }
+}
+
+export class BaseCommandOption<ParsedArgsFinished = Interaction.ParsedArgs> extends Interaction.InteractionCommandOption<ParsedArgsFinished> {
+  public type = ApplicationCommandOptionTypes.SUB_COMMAND;
+}
+
+export class BaseCommandOptionGroup<ParsedArgsFinished = Interaction.ParsedArgs> extends Interaction.InteractionCommandOption<ParsedArgsFinished> {
+  public type = ApplicationCommandOptionTypes.SUB_COMMAND_GROUP;
+}
+
+export class BaseSlashCommand<ParsedArgsFinished = Interaction.ParsedArgs> extends BaseInteractionCommand<ParsedArgsFinished> {
+  public type = ApplicationCommandTypes.CHAT_INPUT;
 }

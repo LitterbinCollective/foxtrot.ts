@@ -4,7 +4,7 @@ import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 import { Markup } from 'detritus-client/lib/utils';
 import { RequestTypes } from 'detritus-client-rest';
 
-import { CatvoxCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../application';
 import { BaseCommand } from '../base';
 import { EMBED_COLORS } from '../../constants';
 

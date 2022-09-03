@@ -1,7 +1,7 @@
 # NPM modules
 node_modules/
 
-# Directory with compiled files
+# Directories with compiled files
 dist/
 build/
 
@@ -11,16 +11,12 @@ googleAssistantCredentials.json
 googleAssistantTokens.json
 youtube.cookies
 
-# Files associated with Google Assistant SDK experimenting
-test_device.json
-device_model.json
-
-# Google Assistant usage audio logs
-galogs/*.raw
-
 # Performance tester
 .clinic/
 
 # Cache
 cache/
 .shat
+
+# Development database
+dev.sqlite3

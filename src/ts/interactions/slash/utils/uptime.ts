@@ -1,9 +1,9 @@
 import prettyMilliseconds from 'pretty-ms';
 
-import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
+import { BaseSlashCommand, InteractionContextExtended } from '../../base';
 import { EMBED_COLORS, EMOJIS } from '../../../constants';
 
-export default class UptimeCommand extends BaseInteractionCommand {
+export default class UptimeCommand extends BaseSlashCommand {
   public name = 'uptime';
   public description = 'glowmem up-time';
 

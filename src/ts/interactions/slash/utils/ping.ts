@@ -1,6 +1,6 @@
-import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
+import { BaseSlashCommand, InteractionContextExtended } from '../../base';
 
-export default class PingCommand extends BaseInteractionCommand {
+export default class PingCommand extends BaseSlashCommand {
   public name = 'ping';
   public description = 'Ping-pong!';
 

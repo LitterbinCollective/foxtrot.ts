@@ -1,6 +1,2 @@
-const { Application } = require('./dist/Application')
-module.exports = new Application(
-  '',
-  require('./config.json'),
-  require('./package.json')
-)
+const { Application } = require('./dist/src/ts/Application')
+module.exports = new Application('')

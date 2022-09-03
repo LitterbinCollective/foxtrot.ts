@@ -1,7 +1,7 @@
 import { ClusterClient } from 'detritus-client';
 import { Context } from 'detritus-client/lib/command';
 
-import { CatvoxCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../application';
 import { BaseCommand } from '../base';
 
 export default class PingCommand extends BaseCommand {

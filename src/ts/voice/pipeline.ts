@@ -7,21 +7,19 @@ import { Readable, Transform, TransformCallback } from 'stream';
 
 import NewVoice from './new';
 import { Mixer } from './mixer';
-import Logger from '../logger';
+import { Logger } from '../utils';
 
 class VoiceSafeConnection extends EventEmitter {
   public voiceConnection!: VoiceConnection;
-  private readonly shard: ShardClient;
   private readonly logger: Logger;
 
-  constructor(voiceChannel: ChannelGuildVoice, shard: ShardClient) {
+  constructor(voiceChannel: ChannelGuildVoice) {
     super();
     this.logger = new Logger(`Voice safe connection [${voiceChannel.guildId}]`);
-    this.shard = shard;
     this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
     this.onVoiceServerUpdate = this.onVoiceServerUpdate.bind(this);
-    this.shard.on('voiceStateUpdate', this.onVoiceStateUpdate);
-    this.shard.on('voiceServerUpdate', this.onVoiceServerUpdate);
+    this.on('voiceStateUpdate', this.onVoiceStateUpdate);
+    this.on('voiceServerUpdate', this.onVoiceServerUpdate);
     this.initialize(voiceChannel);
   }
 
@@ -50,7 +48,7 @@ class VoiceSafeConnection extends EventEmitter {
     return this.voiceConnection ? this.voiceConnection.channel : undefined;
   }
 
-  private async onVoiceServerUpdate(
+  public async onVoiceServerUpdate(
     payload: GatewayClientEvents.VoiceServerUpdate
   ) {
     if (!this.channel) return;
@@ -68,12 +66,12 @@ class VoiceSafeConnection extends EventEmitter {
     });
   }
 
-  private async onVoiceStateUpdate(
+  public async onVoiceStateUpdate(
     payload: GatewayClientEvents.VoiceStateUpdate
   ) {
     if (!this.channel) return;
     if (
-      payload.voiceState.userId === this.shard.userId &&
+      payload.voiceState.userId === this.channel.client.userId &&
       payload.voiceState.guildId === this.channel.guildId &&
       payload.leftChannel
     )
@@ -92,7 +90,6 @@ class VoiceSafeConnection extends EventEmitter {
 
   public destroy() {
     if (this.voiceConnection) this.voiceConnection.kill();
-    this.shard.off('voiceStateUpdate', this.onVoiceStateUpdate);
     this.emit('destroy');
   }
 }
@@ -112,17 +109,15 @@ export default class VoicePipeline extends Transform {
   private readonly voice: NewVoice;
   private readonly REQUIRED_SAMPLES: number;
 
+  public onVoiceServerUpdate: (payload: GatewayClientEvents.VoiceServerUpdate) => void;
+  public onVoiceStateUpdate: (payload: GatewayClientEvents.VoiceStateUpdate) => void;
+
   constructor(voice: NewVoice, voiceChannel: ChannelGuildVoice) {
     super({ readableObjectMode: true });
 
     this.voice = voice;
     this.logger = new Logger(`Voice pipeline [${voiceChannel.guildId}]`);
-    this.connection = new VoiceSafeConnection(
-      voiceChannel,
-      this.voice.application.clusterClient.shards.get(
-        voiceChannel.shardId
-      ) as ShardClient
-    );
+    this.connection = new VoiceSafeConnection(voiceChannel);
     this.mixer = new Mixer();
     this.opus = new OpusEncoder(this.SAMPLE_RATE, this.AUDIO_CHANNELS);
 
@@ -130,6 +125,8 @@ export default class VoicePipeline extends Transform {
       this.AUDIO_CHANNELS * this.OPUS_FRAME_SIZE * this.SAMPLE_BYTE_LEN;
 
     this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
+    this.onVoiceServerUpdate = this.connection.onVoiceServerUpdate;
+    this.onVoiceStateUpdate = this.connection.onVoiceStateUpdate;
 
     this.connection.on('connected', () => this.emit('connected'));
     this.connection.on('destroy', this.onConnectionDestroy);

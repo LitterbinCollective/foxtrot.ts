@@ -5,7 +5,7 @@ import { Embed } from 'detritus-client/lib/utils';
 import {
   CatvoxCommandClient,
   CatvoxInteractionCommandClient,
-} from '../Application';
+} from '../application';
 import { EMBED_COLORS } from '../constants';
 import {
   ApplicationCommandTypes,
@@ -32,6 +32,8 @@ export class BaseCommand extends Command.Command {
   }
 
   public onRunError(ctx: Command.Context, _args: ParsedArgs, error: Error) {
+    if (error instanceof Error)
+      return ctx.reply(error.message);
     this.errorNoHalt(ctx, error);
 
     this.commandClient.application.logger.error(error);

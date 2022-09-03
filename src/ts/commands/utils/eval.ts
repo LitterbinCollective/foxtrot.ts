@@ -8,7 +8,7 @@ import { Markup, regex } from 'detritus-client/lib/utils';
 import { inspect } from 'util';
 
 import { BaseCommand } from '../base';
-import { CatvoxCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../application';
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 

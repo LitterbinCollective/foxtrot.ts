@@ -1,11 +1,11 @@
-import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
+import { BaseSlashCommand, InteractionContextExtended } from '../../base';
+import { bugs } from '../../../../../package.json';
 
-export default class IssueCommand extends BaseInteractionCommand {
+export default class IssueCommand extends BaseSlashCommand {
   public name = 'issue';
   public description = 'Report bugs and technical issues.';
 
   public async run(ctx: InteractionContextExtended) {
-    const { bugs } = ctx.interactionCommandClient.application.packageJson;
     const url = typeof bugs === 'object' && bugs.url ? bugs.url : bugs;
     if (!url) return; // what the fuck?
     ctx.editOrRespond(url.toString());

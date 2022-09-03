@@ -1,8 +1,9 @@
 import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
 
-import { CatvoxCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../application';
 import { BaseCommand } from '../base';
+import config from '../../../../config.json';
 
 export default class FeedbackCommand extends BaseCommand {
   constructor(commandClient: CatvoxCommandClient) {
@@ -24,13 +25,13 @@ export default class FeedbackCommand extends BaseCommand {
 
   public async run(ctx: Context, { feedback, anonymous }: ParsedArgs) {
     let webhook: IConfigFeedbackWebhook;
-    if (!(webhook = this.commandClient.application.config.feedbackWebhook))
+    if (!(webhook = config.feedbackWebhook))
       return ctx.reply('Submitting feedback is temporarily disabled!');
 
     feedback = feedback.replaceAll('@', '@\u200b');
     ctx.message.attachments.forEach((v) => (feedback += ' ' + v.url));
 
-    this.commandClient.rest.executeWebhook(webhook.id, webhook.token, {
+    ctx.rest.executeWebhook(webhook.id, webhook.token, {
       content: feedback,
       username: anonymous
         ? 'Anonymous#0000'

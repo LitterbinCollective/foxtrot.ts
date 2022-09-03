@@ -3,8 +3,8 @@ const { ClusterManager } = require('detritus-client');
 const fs = require('fs');
 const { decodeArrayStream } = require('@msgpack/msgpack');
 
-const Logger = require('./dist/logger').default;
-const { EXTERNAL_IPC_OP_CODES } = require('./dist/constants');
+const { Logger } = require('./dist/src/ts/utils');
+const { EXTERNAL_IPC_OP_CODES } = require('./dist/src/ts/constants');
 const config = require('./config.json');
 
 const logger = new Logger('Manager');
@@ -19,6 +19,7 @@ const SHAT_FILENAME = '.shat';
 const VORBIS_FILE_EXTENSION = '.ogg';
 let shat = {};
 
+// Source: https://github.com/Metastruct/Chatsounds-X/blob/master/app/src/ChatsoundsFetcher.ts
 async function shatBuildFromGitHub(repo, usesMsgPack, base) {
   if (!base) base = 'sounds/chatsounds';
 
@@ -129,7 +130,7 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
     logger.error(prefix, message);
   });
   clusterProcess.on('message', ({ op }) => {
-    if (op === EXTERNAL_IPC_OP_CODES.STOP_MGR) {
+    if (op === EXTERNAL_IPC_OP_CODES.STOP_MANAGER) {
       logger.warn(prefix, 'child has requested to stop manager!');
       process.exit(0);
     }

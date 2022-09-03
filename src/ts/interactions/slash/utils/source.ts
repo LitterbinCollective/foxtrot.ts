@@ -1,11 +1,11 @@
-import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
+import { BaseSlashCommand, InteractionContextExtended } from '../../base';
+import { homepage } from '../../../../../package.json';
 
-export default class SourceCommand extends BaseInteractionCommand {
+export default class SourceCommand extends BaseSlashCommand {
   public name = 'source';
-  public description = 'Source code for glowmem.';
+  public description = 'Source code for catvox.';
 
   public async run(ctx: InteractionContextExtended) {
-    const { homepage } = ctx.interactionCommandClient.application.packageJson;
     ctx.editOrRespond(homepage);
   }
 }

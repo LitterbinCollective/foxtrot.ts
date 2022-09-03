@@ -11,9 +11,9 @@ export default class URLFormat extends BaseFormat {
   public printName = 'URL';
   private readonly LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1'];
 
-  private async isUrlLocal(url: string) {
+  private isUrlLocal(url: string) {
     const { hostname } = new URL(url);
-    return await new Promise((res, rej) => {
+    return new Promise((res, rej) => {
       lookup(hostname, (err, address) =>
         err ? rej(err) : res(this.LOCAL_IPS.indexOf(address) !== -1)
       );

@@ -1,3 +1,4 @@
+import { GatewayClientEvents } from 'detritus-client';
 import {
   ChannelGuildVoice,
   ChannelTextType,
@@ -5,17 +6,17 @@ import {
 } from 'detritus-client/lib/structures';
 import { EventEmitter } from 'events';
 
-import { Application } from '../Application';
+import { Application } from '../application';
 import VoicePipeline from './pipeline';
 import { VoiceEffectManager } from './managers';
 import FFMpeg from './ffmpeg';
+import { VoiceStore } from '../stores';
 import VoiceQueue from './queue';
 
 export default class NewVoice extends EventEmitter {
   public effects!: VoiceEffectManager;
   public initialized = false;
   public queue!: VoiceQueue;
-  public readonly application: Application;
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
   private channel: ChannelGuildVoice;
@@ -23,18 +24,26 @@ export default class NewVoice extends EventEmitter {
   private pipeline!: VoicePipeline;
 
   constructor(
-    application: Application,
     channel: ChannelGuildVoice,
     logChannel: ChannelTextType
   ) {
     super();
-    this.application = application;
     this.channel = channel;
     this.initialize(logChannel);
   }
 
   public get isPlaying() {
     return this.ffmpeg !== undefined;
+  }
+
+  public onVoiceStateUpdate(payload: GatewayClientEvents.VoiceStateUpdate) {
+    if (this.pipeline)
+      this.pipeline.onVoiceStateUpdate(payload);
+  }
+
+  public onVoiceServerUpdate(payload: GatewayClientEvents.VoiceServerUpdate) {
+    if (this.pipeline)
+      this.pipeline.onVoiceServerUpdate(payload);
   }
 
   private async initialize(logChannel: ChannelTextType) {
@@ -56,7 +65,8 @@ export default class NewVoice extends EventEmitter {
   }
 
   public update() {
-    this.pipeline.update();
+    if (this.pipeline)
+      this.pipeline.update();
   }
 
   public play(stream: NodeJS.ReadableStream | string) {
@@ -127,6 +137,7 @@ export default class NewVoice extends EventEmitter {
   }
 
   public async playSoundeffect(script: string) {
+    /*
     script = script.toLowerCase();
     for (const word of script.split(' '))
       if (word.split(':')[0].split('#')[0] === 'sh') {
@@ -136,12 +147,13 @@ export default class NewVoice extends EventEmitter {
     const parsedScript = this.application.sh.Parser.parse(script);
     const stream = await this.application.sh.Audio.run(parsedScript);
     this.pipeline.addReadable(stream);
+    */
   }
 
   public kill(unexpected: boolean = false) {
     if (unexpected) this.queue.announcer.unexpectedLeave();
     this.cleanUp();
     this.pipeline.destroy();
-    this.application.newvoices.delete(this.channel.guildId);
+    VoiceStore.delete(this.channel.guildId)
   }
 }

@@ -1,7 +1,8 @@
 import { Context } from 'detritus-client/lib/command';
 
-import { CatvoxCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../application';
 import { BaseCommand } from '../base';
+import { homepage } from '../../../../package.json';
 
 export default class SourceCommand extends BaseCommand {
   constructor(commandClient: CatvoxCommandClient) {
@@ -12,7 +13,6 @@ export default class SourceCommand extends BaseCommand {
   }
 
   public async run(ctx: Context) {
-    const { homepage } = this.commandClient.application.packageJson;
     ctx.reply(homepage);
   }
 }

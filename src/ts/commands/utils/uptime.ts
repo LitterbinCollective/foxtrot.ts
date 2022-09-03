@@ -1,7 +1,7 @@
 import { Context } from 'detritus-client/lib/command';
 import prettyMilliseconds from 'pretty-ms';
 
-import { CatvoxCommandClient } from '../../Application';
+import { CatvoxCommandClient } from '../../application';
 import { BaseCommand } from '../base';
 import { EMBED_COLORS, EMOJIS } from '../../constants';
 

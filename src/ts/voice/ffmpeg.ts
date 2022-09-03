@@ -30,7 +30,7 @@ export default class FFMpeg extends Transform {
 
     if (this.instance) {
       this.instance.off('close', this.ffmpegClose);
-      this.instance.kill(9);
+      this.instance.kill('SIGKILL');
     }
 
     this.instance = spawn('ffmpeg', args, {

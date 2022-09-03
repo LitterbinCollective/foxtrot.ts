@@ -1,9 +1,10 @@
 import { ParsedArgs } from 'detritus-client/lib/command';
 import { ApplicationCommandOptionTypes } from 'detritus-client/lib/constants';
 
-import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
+import { BaseSlashCommand, InteractionContextExtended } from '../../base';
+import config from '../../../../../config.json';
 
-export default class FeedbackCommand extends BaseInteractionCommand {
+export default class FeedbackCommand extends BaseSlashCommand {
   public name = 'feedback';
   public description = 'Send us what do you think of this application!';
 
@@ -33,7 +34,7 @@ export default class FeedbackCommand extends BaseInteractionCommand {
     let webhook: IConfigFeedbackWebhook;
     if (
       !(webhook =
-        ctx.interactionCommandClient.application.config.feedbackWebhook)
+        config.feedbackWebhook)
     )
       return ctx.editOrRespond('Submitting feedback is temporarily disabled!');
 

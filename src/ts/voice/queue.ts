@@ -20,7 +20,7 @@ export default class VoiceQueue {
   constructor(voice: NewVoice, logChannel: ChannelTextType) {
     this.voice = voice;
     this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
-    this.formats = new VoiceFormatManager(voice.application);
+    this.formats = new VoiceFormatManager();
   }
 
   public async push(url: string, user?: User) {
@@ -38,6 +38,16 @@ export default class VoiceQueue {
     else this.queue.push(result);
     if (wasEmpty) await this.next();
     return true;
+  }
+
+  public get info() {
+    return this.queue.map(response => response.info);
+  }
+
+  public delete(id: number) {
+    if (!this.queue[id])
+      throw new Error('specified id does not exist in the queue')
+    return this.queue.splice(id, 1)[0];
   }
 
   public async next() {

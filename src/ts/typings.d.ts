@@ -3,7 +3,6 @@ declare module 'soundcloud-key-fetch';
 declare interface IConfig {
   token: string;
   prefix: string;
-  databaseDSN: string;
   feedbackWebhook: IConfigFeedbackWebhook;
   formatCredentials: IConfigFormatCredentials;
 }

@@ -5,6 +5,7 @@ import { RequestTypes } from 'detritus-client-rest';
 import { VoiceFormatResponseInfo } from './managers';
 import { EMBED_COLORS, EMOJIS } from '../constants';
 import NewVoice from './new';
+import { durationInString } from '../utils';
 
 export default class VoiceQueueAnnouncer {
   private channel: ChannelTextType;
@@ -17,15 +18,6 @@ export default class VoiceQueueAnnouncer {
     this.channel = channel;
   }
 
-  private durationInStr(seconds: number) {
-    const result = [~~(seconds / 60) % 60, ~~seconds % 60];
-    let hours: number;
-    if ((hours = ~~(seconds / 3600)) !== 0) result.unshift(hours);
-    return result
-      .map((n) => (n < 10 ? '0' + n.toString() : n.toString()))
-      .join(':');
-  }
-
   private playProgress(duration?: number) {
     if (!this.startTime) return;
     if (!duration) {
@@ -36,8 +28,8 @@ export default class VoiceQueueAnnouncer {
     const progress = Math.floor((Date.now() - this.startTime) / 1000);
     const factor = Math.min(progress / duration, 1);
 
-    const progressStr = this.durationInStr(progress),
-      durationStr = this.durationInStr(duration);
+    const progressStr = durationInString(progress),
+      durationStr = durationInString(duration);
 
     const LENGTH = 16;
     const repeatCount = ~~(factor * LENGTH);

@@ -7,11 +7,11 @@ import {
 import { Markup } from 'detritus-client/lib/utils';
 import { inspect } from 'util';
 
-import { BaseInteractionCommand, InteractionContextExtended } from '../../base';
+import { BaseSlashCommand, InteractionContextExtended } from '../../base';
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
-export default class EvalCommand extends BaseInteractionCommand {
+export default class EvalCommand extends BaseSlashCommand {
   public name = 'eval';
   public description = 'Application owners only.';
 

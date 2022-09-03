@@ -3,9 +3,9 @@ import { User } from 'detritus-client/lib/structures';
 import fs from 'fs';
 import { Transform } from 'stream';
 
-import { Application } from '../Application';
+import config from '../../../config.json';
 import { FILENAME_REGEX } from '../constants';
-import Logger from '../logger';
+import { Logger } from '../utils';
 import {
   BaseEffect,
   BaseEffectOptions,
@@ -17,27 +17,34 @@ import NewVoice from './new';
 interface BaseVoiceManagerOptions {
   create?: boolean;
   constructorArgs?: any[];
+  loggerTag?: string;
   scanPath: string;
-  loggerTag: string;
 }
 
 class BaseVoiceManager extends Transform {
-  public readonly logger: Logger;
+  public readonly logger!: Logger;
   public readonly processors: Record<string, any> = {};
 
   constructor(options: BaseVoiceManagerOptions) {
     super();
-    this.logger = new Logger(options.loggerTag);
+    if (options.loggerTag)
+      this.logger = new Logger(options.loggerTag);
+    this.processors = BaseVoiceManager.standaloneScan(options);
+  }
+
+  public static standaloneScan(options: BaseVoiceManagerOptions) {
+    const processors: Record<string, any> = {};
     for (const fileName of fs.readdirSync(__dirname + '/' + options.scanPath)) {
       const name = fileName.replace(FILENAME_REGEX, '');
       const any: any = require('./' + options.scanPath + fileName).default;
       if (!any) continue;
       if (options.create)
         if (options.constructorArgs)
-          this.processors[name] = new any(...options.constructorArgs);
-        else this.processors[name] = new any();
-      else this.processors[name] = any;
+          processors[name] = new any(...options.constructorArgs);
+        else processors[name] = new any();
+      else processors[name] = any;
     }
+    return processors;
   }
 }
 
@@ -78,12 +85,12 @@ export interface VoiceFormatResponseReadable extends VoiceFormatResponse {
 export class VoiceFormatManager extends BaseVoiceManager {
   public readonly processors!: Record<string, BaseFormat>;
 
-  constructor(application: Application) {
+  constructor() {
     super({
       create: true,
-      constructorArgs: [application.config.formatCredentials],
-      scanPath: 'formats/',
+      constructorArgs: [config.formatCredentials],
       loggerTag: 'Voice format manager',
+      scanPath: 'formats/',
     });
   }
 
@@ -111,6 +118,8 @@ export class VoiceFormatManager extends BaseVoiceManager {
   }
 }
 
+const VOICE_EFFECT_MANAGER_SCAN_PATH = 'effects/';
+
 export class VoiceEffectManager extends BaseVoiceManager {
   public readonly processors!: Record<string, new () => BaseEffect>;
   public readonly STACK_LIMIT = 8;
@@ -119,8 +128,13 @@ export class VoiceEffectManager extends BaseVoiceManager {
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice) {
-    super({ scanPath: 'effects/', loggerTag: 'Voice effect manager' });
+    super({ loggerTag: 'Voice effect manager', scanPath: VOICE_EFFECT_MANAGER_SCAN_PATH, });
     this.voice = voice;
+  }
+
+  public static getArgumentType() {
+    const effects = this.standaloneScan({ scanPath: VOICE_EFFECT_MANAGER_SCAN_PATH });
+    return Object.keys(effects).map(effect => ({ name: effect, value: effect }))
   }
 
   public addEffect(name: string, start?: number) {
@@ -223,7 +237,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public destroyAudioEffectManager() {
-    if (this.sox) this.sox.kill(9);
+    if (this.sox) this.sox.kill('SIGKILL');
   }
 
   public _write(
