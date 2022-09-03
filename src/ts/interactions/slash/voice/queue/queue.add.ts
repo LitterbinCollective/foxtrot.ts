@@ -36,5 +36,6 @@ export class QueueAddCommand extends BaseCommandOption {
       return await ctx.editOrRespond('Voice not yet initialized!');
 
     voice.queue.push(url, ctx.user);
+    ctx.editOrRespond('Okay.');
   }
 }
