@@ -1,23 +1,25 @@
 import { ApplicationCommandOptionTypes } from 'detritus-client/lib/constants';
 
 import { BaseCommandOption, InteractionContextExtended } from '../../../base';
-import { BaseVoiceCommand } from '../base';
 import { VoiceStore } from '../../../../stores';
+
+export const QUEUE_ADD_DESCRIPTION = 'Add URL to the queue.';
+export const QUEUE_ADD_OPTIONS = [
+  {
+    name: 'url',
+    description: 'URL',
+    type: ApplicationCommandOptionTypes.STRING,
+    required: true,
+  },
+];
 
 export class QueueAddCommand extends BaseCommandOption {
   public name = 'add';
-  public description = 'Add URL to the queue.';
+  public description = QUEUE_ADD_DESCRIPTION;
 
   constructor() {
     super({
-      options: [
-        {
-          name: 'url',
-          description: 'URL',
-          type: ApplicationCommandOptionTypes.STRING,
-          required: true,
-        },
-      ],
+      options: QUEUE_ADD_OPTIONS
     });
   }
 
@@ -26,8 +28,12 @@ export class QueueAddCommand extends BaseCommandOption {
     if (!ctx.member.voiceChannel)
       return await ctx.editOrRespond('You are not in the voice channel.')
 
-    const voice = VoiceStore.get(ctx.guild.id);
-    if (!voice) return;
+    let voice = VoiceStore.get(ctx.guild.id);
+    if (!voice) {
+      voice = VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+      voice.queue.push(url, ctx.user);
+      return ctx.editOrRespond('Okay, joining...');
+    }
     if (!voice.canExecuteVoiceCommands(ctx.member))
       return await ctx.editOrRespond(
         'You are not in the voice channel this bot is currently in.'
