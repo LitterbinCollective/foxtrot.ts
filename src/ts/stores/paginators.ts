@@ -1,6 +1,8 @@
 import { BaseSet } from 'detritus-client/lib/collections';
 import { Context } from 'detritus-client/lib/command';
+import { ClientEvents } from 'detritus-client/lib/constants';
 import { InteractionContext } from 'detritus-client/lib/interaction';
+import { Channel } from 'detritus-client/lib/structures';
 
 import { Application } from '../application';
 import { Paginator, PaginatorOptions } from '../utils';
@@ -25,8 +27,24 @@ class PaginatorsStore extends Store<string, BaseSet<Paginator>> {
     return paginator;
   }
 
+  private onChannelDelete(channel: Channel) {
+    if (this.has(channel.id)) {
+      for (const paginator of Object.values(this.get(channel.id)!))
+        paginator.kill();
+      this.delete(channel.id);
+    }
+  }
+
   public onApplication(application: Application): void {
-    // application.clusterClient.on()
+    application.clusterClient.on(ClientEvents.CHANNEL_DELETE, ({ channel }) => {
+      this.onChannelDelete(channel);
+    });
+
+    application.clusterClient.on(ClientEvents.GUILD_DELETE, ({ channels }) => {
+      if (!channels) return;
+      for (const [ _, channel ] of channels)
+        this.onChannelDelete(channel);
+    })
   }
 }
 
