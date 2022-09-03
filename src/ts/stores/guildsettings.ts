@@ -1,7 +1,7 @@
 import { PartialModelObject } from 'objection';
 
 import { Application } from '../application';
-import GuildSettings from '../models/GuildSettings';
+import GuildSettings from '../models/guildsettings';
 import { Store } from './store';
 
 class GuildSettingsStore extends Store<string, GuildSettings> {

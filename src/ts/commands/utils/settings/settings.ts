@@ -3,7 +3,7 @@ import { Embed, Markup } from 'detritus-client/lib/utils';
 
 import { CatvoxCommandClient } from '../../../application';
 import { EMBED_COLORS } from '../../../constants';
-import GuildSettings from '../../../models/GuildSettings';
+import GuildSettings from '../../../models/guildsettings';
 import { GuildSettingsStore } from '../../../stores';
 import { BaseCommand } from '../../base';
 
