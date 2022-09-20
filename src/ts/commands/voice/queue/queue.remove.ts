@@ -1,14 +1,10 @@
 import { Context } from 'detritus-client/lib/command';
 import { CommandArgumentTypes } from 'detritus-client/lib/constants';
-import { Embed, Markup } from 'detritus-client/lib/utils';
+import { Markup } from 'detritus-client/lib/utils';
 
 import { CatvoxCommandClient } from '../../../application';
-import { PaginatorsStore, VoiceStore } from '../../../stores';
-import { durationInString, Paginator } from '../../../utils';
-import { VoiceFormatResponseInfo } from '../../../voice/managers';
+import { VoiceStore } from '../../../stores';
 import { BaseVoiceCommand } from '../base';
-
-const QUEUE_PAGE_ITEMS_MAXIMUM = 9;
 
 export default class QueueRemoveCommand extends BaseVoiceCommand {
   constructor(commandClient: CatvoxCommandClient) {

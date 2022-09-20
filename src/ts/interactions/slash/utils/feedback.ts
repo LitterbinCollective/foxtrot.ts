@@ -43,8 +43,8 @@ export default class FeedbackCommand extends BaseSlashCommand {
     ctx.rest.executeWebhook(webhook.id, webhook.token, {
       content: feedback,
       username: anonymous
-        ? 'Anonymous#0000'
-        : ctx.user.tag + ' (' + ctx.user.id + ')',
+        ? 'Anonymous[hash]0000'
+        : ctx.user.username + ' [' + ctx.user.discriminator + '] (' + ctx.user.id + ')',
       avatarUrl: anonymous ? undefined : ctx.user.avatarUrl,
     });
     ctx.editOrRespond('Your feedback has been sent to our server, thank you!');

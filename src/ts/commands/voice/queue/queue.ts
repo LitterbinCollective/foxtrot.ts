@@ -25,7 +25,7 @@ export default class QueueCommand extends BaseVoiceCommand {
 
     const { info } = voice.queue;
     if (info.length === 0)
-      return ctx.reply('Nothing is in the queue');
+      return ctx.reply('Nothing is in the queue.');
 
     const pages = [];
     while (info.length)

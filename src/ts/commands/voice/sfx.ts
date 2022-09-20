@@ -5,7 +5,7 @@ import { CatvoxCommandClient } from '../../application';
 import { BaseVoiceCommand } from './base';
 import { VoiceStore } from '../../stores';
 
-export default class NSfxCommand extends BaseVoiceCommand {
+export default class SfxCommand extends BaseVoiceCommand {
   constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'sfx',

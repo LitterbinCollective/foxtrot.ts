@@ -1,3 +1,5 @@
+export const APPLICATION_NAME = 'catvox';
+
 export enum EMBED_COLORS {
   DEF = 0xdddddd,
   ERR = 0xe00d61,

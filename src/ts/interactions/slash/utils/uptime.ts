@@ -1,11 +1,11 @@
 import prettyMilliseconds from 'pretty-ms';
 
 import { BaseSlashCommand, InteractionContextExtended } from '../../base';
-import { EMBED_COLORS, EMOJIS } from '../../../constants';
+import { APPLICATION_NAME, EMBED_COLORS, EMOJIS } from '../../../constants';
 
 export default class UptimeCommand extends BaseSlashCommand {
   public name = 'uptime';
-  public description = 'glowmem up-time';
+  public description = APPLICATION_NAME + ' up-time';
 
   public async run(ctx: InteractionContextExtended) {
     const { startAt } = ctx.interactionCommandClient.application;

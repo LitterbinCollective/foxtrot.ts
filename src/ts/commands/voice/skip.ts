@@ -8,7 +8,7 @@ export default class SkipCommand extends BaseVoiceCommand {
   constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'skip',
-      aliases: ['s'],
+      aliases: ['s', 'next'],
     });
   }
 

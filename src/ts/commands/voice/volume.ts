@@ -5,7 +5,7 @@ import { CatvoxCommandClient } from '../../application';
 import { BaseVoiceCommand } from './base';
 import { VoiceStore } from '../../stores';
 
-export default class SkipCommand extends BaseVoiceCommand {
+export default class VolumeCommand extends BaseVoiceCommand {
   constructor(commandClient: CatvoxCommandClient) {
     super(commandClient, {
       name: 'volume',
