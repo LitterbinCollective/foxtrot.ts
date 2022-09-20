@@ -34,7 +34,7 @@ export default class FeedbackCommand extends BaseCommand {
     ctx.rest.executeWebhook(webhook.id, webhook.token, {
       content: feedback,
       username: anonymous
-        ? 'Anonymous[hash]0000'
+        ? 'Anonymous'
         : ctx.user.username + ' [' + ctx.user.discriminator + '] (' + ctx.user.id + ')',
       avatarUrl: anonymous ? undefined : ctx.user.avatarUrl,
     });
