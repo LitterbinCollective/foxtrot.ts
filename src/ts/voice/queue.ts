@@ -50,6 +50,10 @@ export default class VoiceQueue {
     return this.queue.splice(id, 1)[0];
   }
 
+  public clear() {
+    this.queue = [];
+  }
+
   public async next() {
     if (this.voice.isPlaying) return;
     this.announcer.reset();
