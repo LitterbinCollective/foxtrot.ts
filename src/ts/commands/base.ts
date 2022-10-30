@@ -1,16 +1,11 @@
 import { Command, Interaction } from 'detritus-client';
-import { ParsedArgs } from 'detritus-client/lib/command';
+import { Context, ParsedArgs } from 'detritus-client/lib/command';
 import { Embed } from 'detritus-client/lib/utils';
 
 import {
   CatvoxCommandClient,
-  CatvoxInteractionCommandClient,
 } from '../application';
 import { EMBED_COLORS } from '../constants';
-import {
-  ApplicationCommandTypes,
-  MessageFlags,
-} from 'detritus-client/lib/constants';
 
 export class BaseCommand extends Command.Command {
   public readonly commandClient!: CatvoxCommandClient;
@@ -19,6 +14,11 @@ export class BaseCommand extends Command.Command {
   // public onBeforeRun(ctx: Command.Context, _args: any) {
   //  return ctx.user.isClientOwner;
   // }
+
+  public onBefore(ctx: Context): boolean {
+    ctx.channel?.triggerTyping();
+    return true;
+  }
 
   public errorNoHalt(ctx: Command.Context, error: Error) {
     const { name, message } = error;
