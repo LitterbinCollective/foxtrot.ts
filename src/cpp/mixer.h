@@ -1,8 +1,15 @@
 #include <napi.h>
 
+#define CHUNK_SIZE 512
+
 struct Readable {
   int16_t* data;
   size_t size;
+  size_t pos;
+};
+
+struct Chunk {
+  int16_t* data;
   size_t pos;
 };
 
@@ -13,6 +20,7 @@ class Mixer : public Napi::ObjectWrap<Mixer> {
 
   private:
     std::vector<Readable> _readables;
+    std::vector<Chunk> _chunks;
     float _volume;
     void AddReadable(const Napi::CallbackInfo& info);
     void ClearReadables(const Napi::CallbackInfo& info);

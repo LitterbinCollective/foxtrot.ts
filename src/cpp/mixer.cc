@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include "mixer.h"
 
 Napi::Object Mixer::Init(Napi::Env env, Napi::Object exports) {
@@ -38,17 +39,38 @@ Napi::Value Mixer::GetVolume(const Napi::CallbackInfo& info) {
 
 void Mixer::AddReadable(const Napi::CallbackInfo& info) {
   Napi::Buffer<int16_t> value = info[0].As<Napi::Buffer<int16_t>>();
+  int16_t* data = value.Data();
+  size_t size = value.Length();
 
-  Readable read_obj;
-  read_obj.data = value.Data();
-  read_obj.size = value.Length();
-  read_obj.pos = 0;
+  for (size_t i = 0; i < round(size / CHUNK_SIZE); i++) {
+    Chunk chunk;
 
-  this->_readables.push_back(read_obj);
+    if (i >= this->_chunks.size()) {
+      chunk.data = new int16_t[CHUNK_SIZE];
+      std::fill(chunk.data, chunk.data + CHUNK_SIZE, 0);
+      chunk.pos = 0;
+      this->_chunks.push_back(chunk);
+    } else {
+      chunk = this->_chunks.at(i);
+    }
+
+    for (size_t k = 0; k < CHUNK_SIZE; k++) {
+      size_t offset = k + i * CHUNK_SIZE;
+      if (offset >= size)
+        break;
+      int16_t sample = data[offset];
+      int32_t new_sample = chunk.data[k] + sample;
+      if (new_sample >= std::numeric_limits<int16_t>::max())
+        new_sample = std::numeric_limits<int16_t>::max();
+      if (new_sample <= std::numeric_limits<int16_t>::min())
+        new_sample = std::numeric_limits<int16_t>::min();
+      chunk.data[k] = new_sample;
+    }
+  }
 }
 
 void Mixer::ClearReadables(const Napi::CallbackInfo& info) {
-  this->_readables.clear();
+  this->_chunks.clear();
 }
 
 Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
@@ -57,12 +79,13 @@ Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
   int16_t* data = value.Data();
   size_t size = value.Length();
 
-  float volume = 1 / (1 + static_cast<float>(this->_readables.size())) * this->_volume;
+  float volume = this->_volume;
 
-  for (size_t i = 0; i < size; i++) {
-    int32_t sample = data[i];
+  for (size_t i = 0; i < size; i += 2) {
+    int32_t sample_l = data[i];
+    int32_t sample_r = data[i + 1];
 
-    auto it = this->_readables.begin();
+    /*auto it = this->_readables.begin();
     for (; it != this->_readables.end();) {
       Readable read_obj = *it;
 
@@ -75,15 +98,37 @@ Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
       sample += readable_sample;
       (*it).pos++;
       ++it;
+    }*/
+
+    auto it = this->_chunks.begin();
+    if (it != this->_chunks.end()) {
+      Chunk chunk = *it;
+      // std::cout << i << " " << chunk.pos << " " << CHUNK_SIZE << std::endl;
+      int16_t chunk_sample_l = chunk.data[chunk.pos];
+      int16_t chunk_sample_r = chunk.data[chunk.pos + 1];
+      sample_l = sample_l + chunk_sample_l;
+      sample_r = sample_r + chunk_sample_r;
+
+      if (chunk.pos + 2 >= CHUNK_SIZE)
+        this->_chunks.erase(it);
+      else
+        (*it).pos += 2;
     }
 
-    sample *= volume;
-    if (sample >= std::numeric_limits<int16_t>::max())
-      sample = std::numeric_limits<int16_t>::max();
-    else if (sample <= std::numeric_limits<int16_t>::min())
-      sample = std::numeric_limits<int16_t>::min();
+    sample_l *= volume;
+    if (sample_l >= std::numeric_limits<int16_t>::max())
+      sample_l = std::numeric_limits<int16_t>::max();
+    if (sample_l <= std::numeric_limits<int16_t>::min())
+      sample_l = std::numeric_limits<int16_t>::min();
 
-    data[i] = sample;
+    sample_r *= volume;
+    if (sample_r >= std::numeric_limits<int16_t>::max())
+      sample_r = std::numeric_limits<int16_t>::max();
+    if (sample_r <= std::numeric_limits<int16_t>::min())
+      sample_r = std::numeric_limits<int16_t>::min();
+
+    data[i] = sample_l;
+    data[i + 1] = sample_r;
   }
 
   Napi::Buffer<int16_t> returned = Napi::Buffer<int16_t>::Copy(env, data, size);
