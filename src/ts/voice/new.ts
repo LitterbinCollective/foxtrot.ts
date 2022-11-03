@@ -113,6 +113,10 @@ export default class NewVoice extends EventEmitter {
     this.pipeline.bitrate = value * 1000;
   }
 
+  public get bitrate() {
+    return this.pipeline.bitrate;
+  }
+
   public skip() {
     this.cleanUp();
     this.queue.next();
