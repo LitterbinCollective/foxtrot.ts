@@ -4,7 +4,7 @@ import config from '@/configs/app.json';
 import { Logger } from '@/modules/utils';
 
 const logger = new Logger('Runner');
-const manager = new ClusterManager('../', config.token, {
+const manager = new ClusterManager('../app/', config.token, {
   respawn: true,
   shardCount: (config as any).shardCount || 1,
   shardsPerCluster: (config as any).shardsPerCluster || 2,
