@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 
 import chatsounds from '@/modules/chatsounds';
 import { VoiceStore } from '@/modules/stores';
+import config from '@/configs/app.json';
 
 import VoicePipeline from './pipeline';
 import { VoiceEffectManager } from './managers';
@@ -65,6 +66,11 @@ export default class Voice extends EventEmitter {
     this.pipeline.stopSilence();
 
     const fromURL = typeof stream === 'string';
+
+    const pre = ['-re'];
+    if (fromURL && config.proxy.length !== 0)
+      pre.unshift('-http_proxy', config.proxy);
+
     this.ffmpeg = new FFMpeg(
       [
         '-analyzeduration',
@@ -77,7 +83,7 @@ export default class Voice extends EventEmitter {
         '-f',
         's16le',
       ],
-      ['-re'],
+      pre,
       fromURL ? stream : undefined
     );
 
