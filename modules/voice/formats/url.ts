@@ -2,6 +2,8 @@ import { spawn } from 'child_process';
 import { lookup } from 'dns';
 import { URL } from 'url';
 
+import config from '@/configs/app.json';
+
 import { BaseFormat } from './baseformat';
 import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../managers';
 
@@ -22,7 +24,7 @@ export default class URLFormat extends BaseFormat {
 
   private createThumbnail(url: string): Promise<Buffer> {
     return new Promise(res => {
-      const child = spawn('ffmpeg', [
+      const args = [
         '-ss',
         '00:00:01.00',
         '-i',
@@ -34,7 +36,12 @@ export default class URLFormat extends BaseFormat {
         '-f',
         'mjpeg',
         '-',
-      ]);
+      ];
+      
+      if (config.proxy.length !== 0)
+        args.unshift('-http_proxy', config.proxy);
+
+      const child = spawn('ffmpeg', args);
 
       let buffer = Buffer.alloc(0);
       child.stdout.on('data', data => {
@@ -49,7 +56,7 @@ export default class URLFormat extends BaseFormat {
 
   private probe(url: string): Promise<{ duration: number; isVideo: boolean }> {
     return new Promise((res, rej) => {
-      const child = spawn('ffprobe', [
+      const args = [
         '-v',
         'error',
         '-show_entries',
@@ -57,7 +64,12 @@ export default class URLFormat extends BaseFormat {
         '-of',
         'default=noprint_wrappers=1',
         url,
-      ]);
+      ];
+
+      if (config.proxy.length !== 0)
+        args.unshift('-http_proxy', config.proxy);
+
+      const child = spawn('ffprobe', args);
 
       let buffer = Buffer.alloc(0);
       child.stdout.on('data', data => {

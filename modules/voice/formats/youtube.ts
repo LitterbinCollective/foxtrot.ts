@@ -33,7 +33,7 @@ export default class YouTubeFormat extends BaseFormat {
   public async process(matched: string) {
     const IPv6Block = this.formatCredentials.youtube
       ? this.formatCredentials.youtube.ipv6
-      : null;
+      : undefined;
     let info: ytdl.videoInfo;
     try {
       info = await ytdl.getBasicInfo(matched, {
@@ -59,6 +59,7 @@ export default class YouTubeFormat extends BaseFormat {
         quality: 'highestaudio',
         filter: 'audioonly',
         highWaterMark: 1 << 25,
+        IPv6Block
         /*requestOptions: {
           headers: {
             cookies: this.cookies

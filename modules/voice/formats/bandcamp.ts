@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { Proxy } from '@/modules/utils';
 
 import { VoiceFormatResponseType, VoiceFormatResponseURL } from '../managers';
 import { BaseFormat } from './baseformat';
@@ -19,7 +19,7 @@ export default class BandcampFormat extends BaseFormat {
   }
 
   public async process(matched: string) {
-    let info: any = await axios(matched);
+    let info: any = await Proxy(matched);
 
     const match = [...info.data.matchAll(this.tralbumRegex)][0][4];
     if (!match) return false;

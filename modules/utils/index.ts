@@ -162,3 +162,4 @@ export function convertToType(value: any, type: string) {
 export const Constants = constants;
 export { default as Logger } from './logger';
 export { Paginator, PaginatorOptions } from './paginator';
+export { default as Proxy } from './proxy';

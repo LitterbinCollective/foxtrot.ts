@@ -2,6 +2,7 @@
   "token": "",
   "prefix": "~~",
   "databaseDSN": "postgres://glowmem:1@localhost:5432/glowmem",
+  "proxy": "",
   "feedbackWebhook": {
     "id": "",
     "token": ""
