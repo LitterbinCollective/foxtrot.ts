@@ -4,10 +4,11 @@
   "description": "Discord bot made for playing media in the voice channels.",
   "main": "index.js",
   "scripts": {
-    "build:ts": "tsc",
+    "build:ts": "tsc && tsc-alias",
     "build:cpp": "node-gyp clean configure build",
     "build": "npm run build:cpp && npm run build:ts",
-    "start": "node index.js"
+    "start": "node index.js",
+    "prettier": "prettier --config ./.prettierrc --write **/*.ts"
   },
   "author": "Litterbin Collective",
   "license": "AGPL-3.0-or-later",
@@ -35,7 +36,9 @@
     "@types/cli-table": "^0.3.0",
     "node-addon-api": "^5.0.0",
     "node-gyp": "^9.1.0",
+    "prettier": "^2.8.0",
     "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.2",
     "typescript": "^4.6.4"
   },
   "repository": {

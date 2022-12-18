@@ -1,5 +1,4 @@
 {
-  "include": ["src/ts/", "knexfile.ts"],
   "compilerOptions": {
     "outDir": "dist/",
     "target": "es2021",
@@ -8,5 +7,9 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "strict": true,
+    "baseUrl": "./",
+    "paths": {
+			"@/*": ["./*"]
+		},
   },
 }

@@ -1,0 +1,12 @@
+{
+  "token": "",
+  "prefix": "~~",
+  "databaseDSN": "postgres://glowmem:1@localhost:5432/glowmem",
+  "feedbackWebhook": {
+    "id": "",
+    "token": ""
+  },
+  "shardCount": 4,
+  "shardStart": 0,
+  "shardEnd": 3
+}
