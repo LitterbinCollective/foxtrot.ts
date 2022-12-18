@@ -8,6 +8,7 @@ const manager = new ClusterManager('../', config.token, {
   respawn: true,
   shardCount: (config as any).shardCount || 1,
   shardsPerCluster: (config as any).shardsPerCluster || 2,
+  shards: [ config.shardStart, config.shardEnd ],
 });
 
 manager.on('clusterProcess', ({ clusterProcess }) => {
