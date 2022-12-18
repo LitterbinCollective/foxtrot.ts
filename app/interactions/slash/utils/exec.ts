@@ -28,7 +28,6 @@ export default class ExecCommand extends BaseSlashCommand {
       flags: DetritusConstants.MessageFlags.EPHEMERAL,
     };
 
-    ctx.respond(DetritusConstants.InteractionCallbackTypes.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE, message);
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
         const str = stderr.toString();

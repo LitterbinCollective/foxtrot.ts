@@ -10,6 +10,10 @@ export class BaseInteractionCommand<ParsedArgsFinished = Interaction.ParsedArgs>
   public readonly disableDm = true;
 
   public onBefore(ctx: Interaction.InteractionContext): boolean | Promise<boolean> {
+    ctx.respond(DetritusConstants.InteractionCallbackTypes.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE, {
+      flags: DetritusConstants.MessageFlags.EPHEMERAL,
+    });
+
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly ? ctx.member &&
       (ctx.member.permissions & Constants.MANAGE_GUILD_PERMISSION) ===
