@@ -1,7 +1,7 @@
 export const APPLICATION_NAME = 'foxtrot';
 
 export enum EMBED_COLORS {
-  DEFAULT = 0xdddddd,
+  DEFAULT = 0xf9d158,
   ERROR = 0xe00d61,
   WARNING = 0xe0af0d,
 }
