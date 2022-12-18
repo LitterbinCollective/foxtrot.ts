@@ -1,4 +1,4 @@
-const mixer = require.main?.require('../../build/Release/mixer');
+const mixer = require.main?.require('../build/Release/mixer');
 
 export interface Mixer {
   SetVolume(volume: number): number;
