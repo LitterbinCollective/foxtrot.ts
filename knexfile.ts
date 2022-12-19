@@ -1,5 +1,7 @@
 import type { Knex } from 'knex';
 
+import appConfig from '@/configs/app.json';
+
 const config: { [key: string]: Knex.Config } = {
   development: {
     client: 'sqlite3',
@@ -11,10 +13,7 @@ const config: { [key: string]: Knex.Config } = {
 
   production: {
     client: 'postgresql',
-    connection: {
-      database: 'glowmem',
-      user: 'glowmem',
-    },
+    connection: appConfig.database,
     pool: {
       min: 2,
       max: 10,

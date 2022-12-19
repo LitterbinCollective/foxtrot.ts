@@ -1,7 +1,13 @@
 {
   "token": "",
   "prefix": "~~",
-  "databaseDSN": "postgres://glowmem:1@localhost:5432/glowmem",
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "glowmem",
+    "password": "1",
+    "database": "glowmem"
+  },
   "proxy": "",
   "feedbackWebhook": {
     "id": "",
