@@ -134,7 +134,9 @@ export function convertToType(value: any, type: string) {
       value = value.toString();
       break;
     case 'number':
-      value = Number(value);
+      value = +value;
+      if (isNaN(value))
+        value = 0;
       break;
     case 'boolean':
       value = !(value === undefined || value === false || value === 0 || value === '0' || value === 'false');

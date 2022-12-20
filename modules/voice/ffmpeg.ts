@@ -70,6 +70,7 @@ export default class FFMpeg extends Transform {
   }
 
   private ffmpegClose() {
+    this.push(null);
     this.end();
     this.destroy();
   }

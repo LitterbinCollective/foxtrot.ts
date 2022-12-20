@@ -188,6 +188,9 @@ export class Paginator {
     if (this.dead) return;
     this.dead = true;
     this.onKill();
-    this.message.edit(this.messageObject);
+    if (this.context instanceof Interaction.InteractionContext)
+      this.context.editOrRespond(this.messageObject)
+    else
+      this.message.edit(this.messageObject);
   }
 }

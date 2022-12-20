@@ -14,6 +14,7 @@ import {
 export default class VoiceQueue {
   public readonly announcer: VoiceQueueAnnouncer;
   private formats: VoiceFormatManager;
+  private inProgress: number[] = [];
   private queue: VoiceFormatResponse[] = [];
   private readonly voice: NewVoice;
 
@@ -24,8 +25,18 @@ export default class VoiceQueue {
   }
 
   public async push(url: string, user?: Structures.User) {
+    const next = this.inProgress.length === 0;
+    const index = this.inProgress.push(Date.now()) - 1;
+    const wasEmpty = this.queue.length === 0;
+
     let result = await this.formats.fromURL(url);
-    if (!result) return false;
+    if (!result) {
+      this.inProgress.splice(index, 1);
+      if (wasEmpty && this.queue.length > 0)
+        await this.next();
+      return false;
+    }
+
     if (Array.isArray(result))
       result = result.map(res => {
         res.info.submittee = user;
@@ -34,15 +45,15 @@ export default class VoiceQueue {
     else
       result.info.submittee = user;
 
-    const wasEmpty = this.queue.length === 0;
-
     if (Array.isArray(result))
       this.queue.push(...result);
     else
       this.queue.push(result);
 
-    if (wasEmpty)
+    if (wasEmpty && next)
       await this.next();
+
+    this.inProgress.splice(index, 1);
 
     return true;
   }
