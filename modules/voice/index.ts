@@ -49,6 +49,7 @@ export default class Voice extends EventEmitter {
     }
 
     this.effects = new VoiceEffectManager(this);
+    this.effects.on('data', (chunk) => this.pipeline.write(chunk));
     this.queue = new VoiceQueue(this, logChannel);
     this.pipeline.playSilence();
 
@@ -93,8 +94,7 @@ export default class Voice extends EventEmitter {
     if (!fromURL) stream.pipe(this.ffmpeg, { end: false });
 
     this.ffmpeg
-      .pipe(this.effects, { end: false })
-      .pipe(this.pipeline, { end: false });
+      .pipe(this.effects, { end: false });
   }
 
   public set volume(value: number) {
@@ -117,13 +117,12 @@ export default class Voice extends EventEmitter {
   private cleanUp() {
     if (this.ffmpeg) {
       this.ffmpeg.unpipe(this.effects);
-      this.ffmpeg?.destroy();
+      this.ffmpeg.destroy();
       this.ffmpeg = undefined;
     }
 
     this.pipeline.playSilence();
     this.effects.destroyAudioEffectManager();
-    this.effects.unpipe(this.pipeline);
   }
 
   public canExecuteVoiceCommands(member: Structures.Member) {
