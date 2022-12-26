@@ -1,5 +1,5 @@
 {
-  "PAC3-Server/chatsounds-valve-games": {
+  "PAC3-Server/chatsounds-valve-games#master": {
     "bases": [
       "csgo",
       "css",
@@ -15,13 +15,13 @@
     "useMsgPack": true
   },
 
-  "Metastruct/garrysmod-chatsounds": {
+  "Metastruct/garrysmod-chatsounds#master": {
     "bases": ["sound/chatsounds/autoadd"],
     "useMsgPack": false
   },
 
-  "PAC3-Server/chatsounds": {
-    "bases": false,
+  "PAC3-Server/chatsounds#master": {
+    "bases": ["sounds/chatsounds"],
     "useMsgPack": false
   }
 }

@@ -6,12 +6,10 @@ dist/
 build/
 
 # Files with credentials
-config.json
-googleAssistantCredentials.json
-googleAssistantTokens.json
 youtube.cookies
 configs/*.json
 !configs/*.example.json
+.env
 
 # Performance tester
 .clinic/

@@ -1,30 +1,28 @@
-/*
-  rewrite the entire (Neo)Chatsounds system in TypeScript:
-  - should probably use a child process (ffmpeg)
-  - parser should support legacy modifiers
-  - parser should not crash the bot
-*/
+import Sh, { defaultModifiers } from 'sh';
 
-import fs from 'fs';
-import Sh from 'sh';
+import shConfig from '@/configs/shat.json';
 
-import { SHAT_FILENAME } from '@/modules/utils/constants';
+const sh = new Sh();
+sh.useModifiers(defaultModifiers);
 
-interface Repository {
-  branch: string
-  base: string
-  useMsgPack: boolean
-}
+export async function getRepositories() {
+  let merge = false;
 
-interface Repositories {
-  [repositoryName: string]: Repository
-}
-
-export class Chatsounds {
-  constructor(repositories: Repositories) {
-
+  for (const configKey in shConfig) {
+    const config = shConfig[configKey as keyof typeof shConfig];
+    const [ repository, branch ] = configKey.split('#');
+    for (const base of config.bases)
+      if (config.useMsgPack)
+        merge = await sh.useSourcesFromGitHubMsgPack(repository, branch, base) || merge
+      else
+        merge = await sh.useSourcesFromGitHub(repository, branch, base) || merge;
   }
+
+  if (merge)
+    sh.mergeSources();
 }
 
-// This is temporary!
-export default new Sh(JSON.parse(fs.readFileSync(SHAT_FILENAME).toString()));
+getRepositories();
+
+export const interval = setInterval(getRepositories, 60 * 60 * 1000);
+export default sh;

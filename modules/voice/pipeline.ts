@@ -217,11 +217,8 @@ export default class VoicePipeline extends Transform {
     this.silent = false;
   }
 
-  public addReadable(readable: Readable) {
-    let buffer = Buffer.alloc(0);
-    readable.on('data', chunk => (buffer = Buffer.concat([buffer, chunk])));
-
-    readable.on('end', () => this.mixer && this.mixer.AddReadable(buffer));
+  public playBuffer(buffer: Buffer) {
+    if (this.mixer) this.mixer.AddReadable(buffer);
   }
 
   public clearReadableArray() {

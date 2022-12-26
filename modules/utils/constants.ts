@@ -26,7 +26,6 @@ export enum EMOJIS {
   STOP = '⏹',
 }
 
-export const SHAT_FILENAME = '.shat';
 export const MANAGE_GUILD_PERMISSION = BigInt(1 << 5);
 export const YOUTUBE_APPLICATION_ID = '880218394199220334';
 export const QUEUE_PAGE_ITEMS_MAXIMUM = 9;

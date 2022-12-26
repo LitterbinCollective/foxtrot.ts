@@ -136,15 +136,12 @@ export default class Voice extends EventEmitter {
   }
 
   public async playSoundeffect(script: string) {
-    script = script.toLowerCase();
-    for (const word of script.split(' '))
-      if (word.split(':')[0].split('#')[0] === 'sh') {
-        this.pipeline.clearReadableArray();
-        break;
-      }
-    const parsedScript = chatsounds.Parser.parse(script);
-    const stream = await chatsounds.Audio.run(parsedScript);
-    this.pipeline.addReadable(stream);
+    const context = chatsounds.newBuffer(script);
+    const buffer = await context.audio();
+    if (context.mute)
+      this.pipeline.clearReadableArray();
+    if (buffer)
+      this.pipeline.playBuffer(buffer);
   }
 
   public kill(unexpected: boolean = false) {
