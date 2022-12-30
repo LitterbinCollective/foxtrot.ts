@@ -255,31 +255,37 @@ export default class NewYearsEveEvent extends BaseEvent {
     }
   }
 
+  private announce(voice: Voice) {
+    const prefix = app.commandClient.prefixes.custom.first();
+    const embed = new Utils.Embed({
+      title: "Happy New Year's Eve!",
+      color: Constants.EMBED_COLORS.DEFAULT,
+      description:
+        `As this year is coming to an end, ${Constants.APPLICATION_NAME} is going to ` +
+        'play Westminster Quarter melody and fireworks sounds every time a new year has just begun in other ' +
+        'locations. See the current status of the bot for more information on which countries or islands ' +
+        "are going to celebrate New Year's Eve next!",
+      fields: [
+        {
+          name: 'Disable Special Events',
+          value: Utils.Markup.codestring(
+            `${prefix}settings set special false`
+          ),
+        },
+      ],
+    });
+
+    voice.queue.announcer.channel.createMessage({ embed });
+  }
+
   public async onVoiceCreated(guildId: string, voice: Voice) {
     const settings = await GuildSettingsStore.getOrCreate(guildId);
-    const prefix = app.commandClient.prefixes.custom.first();
-    if (settings.special) {
-      voice.once('initialized', () => {
-        const embed = new Utils.Embed({
-          title: "Happy New Year's Eve!",
-          color: Constants.EMBED_COLORS.DEFAULT,
-          description:
-            `As this year is coming to an end, ${Constants.APPLICATION_NAME} is going to ` +
-            'play Westminster Quarter melody and fireworks sounds every time a new year has just begun in other ' +
-            'locations. See the current status of the bot for more information on which countries or islands ' +
-            "are going to celebrate New Year's Eve next!",
-          fields: [
-            {
-              name: 'Disable Special Events',
-              value: Utils.Markup.codestring(
-                `${prefix}settings set special false`
-              ),
-            },
-          ],
-        });
 
-        voice.queue.announcer.channel.createMessage({ embed });
-      });
+    if (settings.special) {
+      if (voice.initialized)
+        this.announce(voice)
+      else
+        voice.once('initialized', () => this.announce(voice));
     }
   }
 
