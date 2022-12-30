@@ -1,5 +1,10 @@
 import { exec } from 'child_process';
-import { Constants as DetritusConstants, Interaction, Structures, Utils } from 'detritus-client';
+import {
+  Constants as DetritusConstants,
+  Interaction,
+  Structures,
+  Utils,
+} from 'detritus-client';
 
 import { Constants } from '@/modules/utils';
 
@@ -23,7 +28,10 @@ export default class ExecCommand extends BaseSlashCommand {
     });
   }
 
-  public async run(ctx: Interaction.InteractionContext, { cmd }: Interaction.ParsedArgs) {
+  public async run(
+    ctx: Interaction.InteractionContext,
+    { cmd }: Interaction.ParsedArgs
+  ) {
     let message: Structures.InteractionEditOrRespond = {
       flags: DetritusConstants.MessageFlags.EPHEMERAL,
     };

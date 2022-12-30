@@ -25,7 +25,10 @@ export class EffectGetCommand extends BaseVoiceCommandOption {
     });
   }
 
-  public run(ctx: VoiceInteractionContext, { effect, key }: { effect: number; key: string }) {
+  public run(
+    ctx: VoiceInteractionContext,
+    { effect, key }: { effect: number; key: string }
+  ) {
     const value = ctx.voice.effects.getValue(effect, key);
     ctx.editOrRespond(value.toString());
   }

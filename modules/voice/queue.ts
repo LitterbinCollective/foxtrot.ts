@@ -10,6 +10,7 @@ import {
   VoiceFormatResponseReadable,
   VoiceFormatResponseFetch,
 } from './managers';
+import { UserError } from '../utils';
 
 export default class VoiceQueue {
   public readonly announcer: VoiceQueueAnnouncer;
@@ -32,8 +33,7 @@ export default class VoiceQueue {
     let result = await this.formats.fromURL(url);
     if (!result) {
       this.inProgress.splice(index, 1);
-      if (wasEmpty && this.queue.length > 0)
-        await this.next();
+      if (wasEmpty && this.queue.length > 0) await this.next();
       return false;
     }
 
@@ -42,16 +42,12 @@ export default class VoiceQueue {
         res.info.submittee = user;
         return res;
       });
-    else
-      result.info.submittee = user;
+    else result.info.submittee = user;
 
-    if (Array.isArray(result))
-      this.queue.push(...result);
-    else
-      this.queue.push(result);
+    if (Array.isArray(result)) this.queue.push(...result);
+    else this.queue.push(result);
 
-    if (wasEmpty && next)
-      await this.next();
+    if (wasEmpty && next) await this.next();
 
     this.inProgress.splice(index, 1);
 
@@ -64,7 +60,7 @@ export default class VoiceQueue {
 
   public delete(id: number) {
     if (!this.queue[id])
-      throw new Error('specified id does not exist in the queue');
+      throw new UserError('specified id does not exist in the queue');
     return this.queue.splice(id, 1)[0];
   }
 

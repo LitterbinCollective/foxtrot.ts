@@ -2,7 +2,7 @@ import { GatewayClientEvents, Structures } from 'detritus-client';
 import { EventEmitter } from 'events';
 
 import chatsounds from '@/modules/chatsounds';
-import { VoiceStore } from '@/modules/stores';
+import { GuildSettingsStore, VoiceStore } from '@/modules/stores';
 import config from '@/configs/app.json';
 
 import VoicePipeline from './pipeline';
@@ -14,13 +14,17 @@ export default class Voice extends EventEmitter {
   public effects!: VoiceEffectManager;
   public initialized = false;
   public queue!: VoiceQueue;
+  public special = true;
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
   private channel: Structures.ChannelGuildVoice;
   private ffmpeg?: FFMpeg;
   private pipeline!: VoicePipeline;
 
-  constructor(channel: Structures.ChannelGuildVoice, logChannel: Structures.ChannelTextType) {
+  constructor(
+    channel: Structures.ChannelGuildVoice,
+    logChannel: Structures.ChannelTextType
+  ) {
     super();
     this.channel = channel;
     this.initialize(logChannel);
@@ -48,8 +52,11 @@ export default class Voice extends EventEmitter {
       }
     }
 
+    const settings = await GuildSettingsStore.getOrCreate(this.channel.guildId);
+    this.special = settings.special;
+
     this.effects = new VoiceEffectManager(this);
-    this.effects.on('data', (chunk) => this.pipeline.write(chunk));
+    this.effects.on('data', chunk => this.pipeline.write(chunk));
     this.queue = new VoiceQueue(this, logChannel);
     this.pipeline.playSilence();
 
@@ -93,8 +100,7 @@ export default class Voice extends EventEmitter {
 
     if (!fromURL) stream.pipe(this.ffmpeg, { end: false });
 
-    this.ffmpeg
-      .pipe(this.effects, { end: false });
+    this.ffmpeg.pipe(this.effects, { end: false });
   }
 
   public set volume(value: number) {
@@ -135,13 +141,12 @@ export default class Voice extends EventEmitter {
     );
   }
 
-  public async playSoundeffect(script: string) {
+  public async playSoundeffect(script: string | Buffer) {
+    if (script instanceof Buffer) return this.pipeline.playBuffer(script);
     const context = chatsounds.newBuffer(script);
     const buffer = await context.audio();
-    if (context.mute)
-      this.pipeline.clearReadableArray();
-    if (buffer)
-      this.pipeline.playBuffer(buffer);
+    if (context.mute) this.pipeline.clearReadableArray();
+    if (buffer) this.pipeline.playBuffer(buffer);
   }
 
   public kill(unexpected: boolean = false) {

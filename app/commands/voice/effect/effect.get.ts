@@ -10,13 +10,24 @@ export default class EffectGetCommand extends BaseVoiceCommand {
       name: COMMAND_NAME,
       aliases: ['effect get'],
       type: [
-        { name: 'effect', type: Constants.CommandArgumentTypes.NUMBER, required: true },
-        { name: 'key', type: Constants.CommandArgumentTypes.STRING, required: true },
+        {
+          name: 'effect',
+          type: Constants.CommandArgumentTypes.NUMBER,
+          required: true,
+        },
+        {
+          name: 'key',
+          type: Constants.CommandArgumentTypes.STRING,
+          required: true,
+        },
       ],
     });
   }
 
-  public run(ctx: VoiceContext, { effect, key }: { effect: number; key: string }) {
+  public run(
+    ctx: VoiceContext,
+    { effect, key }: { effect: number; key: string }
+  ) {
     const value = ctx.voice.effects.getValue(effect, key);
     ctx.reply(value.toString());
   }

@@ -4,6 +4,7 @@ import NewVoice from '@/modules/voice';
 import { Application } from '@/app/app';
 
 import Store from './store';
+import { UserError } from '../utils';
 
 class VoiceStore extends Store<string, NewVoice> {
   private cycleTimeout: NodeJS.Timeout | null = null;
@@ -72,7 +73,7 @@ class VoiceStore extends Store<string, NewVoice> {
     textChannel: Structures.ChannelTextType
   ): NewVoice {
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
-      throw new Error(
+      throw new UserError(
         'Bot is not able to join or speak in this voice channel.'
       );
 
@@ -83,10 +84,13 @@ class VoiceStore extends Store<string, NewVoice> {
       );
 
     if (this.has(voiceChannel.guildId))
-      throw new Error('Already connected to a voice channel on this server');
+      throw new UserError(
+        'Already connected to a voice channel on this server'
+      );
 
     const voice = new NewVoice(voiceChannel, textChannel);
     this.set(voiceChannel.guildId, voice);
+    this.emit('voiceCreated', voiceChannel.guildId, voice);
     return voice;
   }
 

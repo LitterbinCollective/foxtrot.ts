@@ -33,19 +33,20 @@ export function buildArgumentErrorEmbed(errors: Record<string, Error>) {
   return embed;
 }
 
-export function sendFeedback(rest: RestClient, content: string, user?: Structures.User) {
+export function sendFeedback(
+  rest: RestClient,
+  content: string,
+  user?: Structures.User
+) {
   let webhook: IConfigFeedbackWebhook = config.feedbackWebhook;
-  if (!webhook)
-    return false;
-  
+  if (!webhook) return false;
+
   content = content.replaceAll('@', '@\u200b');
 
   rest.executeWebhook(webhook.id, webhook.token, {
     content,
-    username: user ?
-      `${user.tag} (${user.id})` :
-      'Anonymous',
-    avatarUrl: user ? user.avatarUrl : undefined
+    username: user ? `${user.tag} (${user.id})` : 'Anonymous',
+    avatarUrl: user ? user.avatarUrl : undefined,
   });
 
   return true;
@@ -119,7 +120,8 @@ export function listSettings(settings: GuildSettings) {
       description.push(
         key +
           ' = ' +
-          (settings[key as keyof typeof settings] || NO_VALUE_PLACEHOLDER)
+          (settings[key as keyof typeof settings]?.toString() ||
+            NO_VALUE_PLACEHOLDER)
       );
   return new Utils.Embed({
     title: 'Current guild-specific settings',
@@ -135,19 +137,23 @@ export function convertToType(value: any, type: string) {
       break;
     case 'number':
       value = +value;
-      if (isNaN(value))
-        value = 0;
+      if (isNaN(value)) value = 0;
       break;
     case 'boolean':
-      value = !(value === undefined || value === false || value === 0 || value === '0' || value === 'false');
+      value = !(
+        value === undefined ||
+        value === false ||
+        value === 0 ||
+        value === '0' ||
+        value === 'false' ||
+        value === 'off'
+      );
       break;
     case 'undefined':
       value = undefined;
       break;
     default:
-      throw new Error(
-        'could not convert given value to needed type! ' + type
-      );
+      throw new Error('could not convert given value to needed type! ' + type);
   }
 
   // safety check
@@ -155,11 +161,15 @@ export function convertToType(value: any, type: string) {
   if (type !== type2)
     throw new Error(
       'the type of value is not equal to the type of a specified type: ' +
-        type2 + ' !== ' + type
+        type2 +
+        ' !== ' +
+        type
     );
 
   return value;
 }
+
+export class UserError extends Error {}
 
 export const Constants = constants;
 export { default as Logger } from './logger';

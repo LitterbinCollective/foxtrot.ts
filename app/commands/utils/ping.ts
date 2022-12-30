@@ -16,8 +16,15 @@ export default class PingCommand extends BaseCommand {
 
     const embed = new Utils.Embed({
       title: 'Pong!',
-      description: Constants.EMOJIS.LINK + ' ' + rest + 'ms\n' +
-        Constants.EMOJIS.SATELLITE + ' ' + gateway + 'ms',
+      description:
+        Constants.EMOJIS.LINK +
+        ' ' +
+        rest +
+        'ms\n' +
+        Constants.EMOJIS.SATELLITE +
+        ' ' +
+        gateway +
+        'ms',
       footer: { text: 'Shard ID: ' + ctx.shardId },
       color: Constants.EMBED_COLORS.DEFAULT,
     });

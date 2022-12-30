@@ -7,10 +7,12 @@ import {
 import Knex from 'knex';
 import { Model } from 'objection';
 
-import { Constants, Logger } from '@/modules/utils';
+import { Logger } from '@/modules/utils';
 import { applicationCreated } from '@/modules/stores';
 
 const knexConfig = require('@/knexfile');
+
+import '@/modules/special';
 
 export class Application {
   public startAt: number;
@@ -35,7 +37,8 @@ export class Application {
     let processTitle = `Shard ${this.clusterClient.shardStart} - ${this.clusterClient.shardEnd}`;
     let tag = 'Shard';
     if (this.clusterClient.manager) {
-      processTitle = `Cluster [${this.clusterClient.clusterId}] - ` + processTitle;
+      processTitle =
+        `Cluster [${this.clusterClient.clusterId}] - ` + processTitle;
       tag = `Cluster [${this.clusterClient.clusterId}]`;
     }
 
@@ -58,7 +61,9 @@ export class Application {
     }
 
     {
-      this.interactionCommandClient = new InteractionCommandClient(this.clusterClient);
+      this.interactionCommandClient = new InteractionCommandClient(
+        this.clusterClient
+      );
       this.interactionCommandClient
         .addMultipleIn('app/interactions/', {
           subdirectories: true,

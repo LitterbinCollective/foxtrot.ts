@@ -13,7 +13,10 @@ export default class EffectListCommand extends BaseVoiceCommand {
   }
 
   public run(ctx: VoiceContext) {
-    const embed = listEffects(ctx.voice.effects.list, ctx.voice.effects.STACK_LIMIT);
+    const embed = listEffects(
+      ctx.voice.effects.list,
+      ctx.voice.effects.STACK_LIMIT
+    );
     ctx.reply({ embed });
   }
 }

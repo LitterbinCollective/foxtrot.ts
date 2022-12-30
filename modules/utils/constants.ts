@@ -17,6 +17,7 @@ export enum EMOJIS {
   QUESTION_MARK = '❓',
   LINK = '🔗',
   SATELLITE = '📡',
+  SOON = '🔜',
 
   PLAY = '▶️',
   FAST_REVERSE = '⏪',

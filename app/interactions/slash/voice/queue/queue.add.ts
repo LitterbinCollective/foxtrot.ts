@@ -24,7 +24,10 @@ export class QueueAddCommand extends BaseCommandOption {
     });
   }
 
-  public async run(ctx: Interaction.InteractionContext, { url }: { url: string }) {
+  public async run(
+    ctx: Interaction.InteractionContext,
+    { url }: { url: string }
+  ) {
     if (!ctx.guild || !ctx.member || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
       return await ctx.editOrRespond('You are not in the voice channel.');

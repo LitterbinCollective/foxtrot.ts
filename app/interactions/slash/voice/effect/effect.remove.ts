@@ -23,9 +23,14 @@ export class EffectRemoveCommand extends BaseVoiceCommandOption {
 
   public run(ctx: VoiceInteractionContext, { effect }: { effect: number }) {
     ctx.voice.effects.removeEffect(effect);
-    const embed = listEffects(ctx.voice.effects.list, ctx.voice.effects.STACK_LIMIT);
+    const embed = listEffects(
+      ctx.voice.effects.list,
+      ctx.voice.effects.STACK_LIMIT
+    );
     embed.setTitle(
-      Constants.EMOJIS.MINUS + ' Removed effect ' + Utils.Markup.codestring(effect.toString())
+      Constants.EMOJIS.MINUS +
+        ' Removed effect ' +
+        Utils.Markup.codestring(effect.toString())
     );
     ctx.editOrRespond({ embed });
   }

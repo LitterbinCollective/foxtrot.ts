@@ -1,6 +1,6 @@
 import type { Knex } from 'knex';
 
-import appConfig from '@/configs/app.json';
+// import appConfig from '@/configs/app.json';
 
 const config: { [key: string]: Knex.Config } = {
   development: {
@@ -13,7 +13,13 @@ const config: { [key: string]: Knex.Config } = {
 
   production: {
     client: 'postgresql',
-    connection: appConfig.database,
+    connection: {
+      host: 'localhost',
+      port: 5432,
+      user: 'glowmem',
+      password: '1',
+      database: 'glowmem',
+    },
     pool: {
       min: 2,
       max: 10,

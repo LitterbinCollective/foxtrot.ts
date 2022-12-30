@@ -1,5 +1,10 @@
 import { exec } from 'child_process';
-import { Command, CommandClient, Constants as DetritusConstants, Utils } from 'detritus-client';
+import {
+  Command,
+  CommandClient,
+  Constants as DetritusConstants,
+  Utils,
+} from 'detritus-client';
 import { RequestTypes } from 'detritus-client-rest';
 
 import { Constants } from '@/modules/utils';

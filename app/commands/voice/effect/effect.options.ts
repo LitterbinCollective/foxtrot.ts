@@ -20,13 +20,18 @@ export default class EffectOptionsCommand extends BaseVoiceCommand {
         'effect settings',
       ],
       type: [
-        { name: 'effect', type: Constants.CommandArgumentTypes.NUMBER, required: true },
+        {
+          name: 'effect',
+          type: Constants.CommandArgumentTypes.NUMBER,
+          required: true,
+        },
       ],
     });
   }
 
   public run(ctx: VoiceContext, { effect }: { effect: number }) {
-    const { name, options, optionsRange } = ctx.voice.effects.getEffectInfo(effect);
+    const { name, options, optionsRange } =
+      ctx.voice.effects.getEffectInfo(effect);
     const embed = listOptions(name, options, optionsRange);
     ctx.reply({ embed });
   }

@@ -1,4 +1,8 @@
-import { CommandClient, Constants as DetritusConstants, Utils } from 'detritus-client';
+import {
+  CommandClient,
+  Constants as DetritusConstants,
+  Utils,
+} from 'detritus-client';
 
 import { Constants, listOptions } from '@/modules/utils';
 
@@ -12,9 +16,21 @@ export default class EffectSetCommand extends BaseVoiceCommand {
       name: COMMAND_NAME,
       aliases: ['effect set'],
       type: [
-        { name: 'effect', type: DetritusConstants.CommandArgumentTypes.NUMBER, required: true },
-        { name: 'key', type: DetritusConstants.CommandArgumentTypes.STRING, required: true },
-        { name: 'value', type: DetritusConstants.CommandArgumentTypes.STRING, required: true },
+        {
+          name: 'effect',
+          type: DetritusConstants.CommandArgumentTypes.NUMBER,
+          required: true,
+        },
+        {
+          name: 'key',
+          type: DetritusConstants.CommandArgumentTypes.STRING,
+          required: true,
+        },
+        {
+          name: 'value',
+          type: DetritusConstants.CommandArgumentTypes.STRING,
+          required: true,
+        },
       ],
     });
   }
@@ -25,7 +41,8 @@ export default class EffectSetCommand extends BaseVoiceCommand {
   ) {
     ctx.voice.effects.setValue(effect, key, value);
 
-    const { name, options, optionsRange } = ctx.voice.effects.getEffectInfo(effect);
+    const { name, options, optionsRange } =
+      ctx.voice.effects.getEffectInfo(effect);
     const embed = listOptions(name, options, optionsRange);
     embed.setTitle(
       Constants.EMOJIS.CHECK +

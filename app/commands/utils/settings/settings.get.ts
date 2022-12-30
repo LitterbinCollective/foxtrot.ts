@@ -1,7 +1,7 @@
 import { CommandClient, Constants } from 'detritus-client';
 
 import { GuildSettings } from '@/modules/models';
-import { NO_VALUE_PLACEHOLDER } from '@/modules/utils';
+import { NO_VALUE_PLACEHOLDER, UserError } from '@/modules/utils';
 
 import { BaseSettingsCommand, SettingsContext } from './settings';
 
@@ -10,7 +10,11 @@ export default class SettingsGetCommand extends BaseSettingsCommand {
     super(commandClient, {
       name: 'settings get',
       type: [
-        { name: 'key', type: Constants.CommandArgumentTypes.STRING, required: true },
+        {
+          name: 'key',
+          type: Constants.CommandArgumentTypes.STRING,
+          required: true,
+        },
       ],
     });
   }
@@ -22,7 +26,7 @@ export default class SettingsGetCommand extends BaseSettingsCommand {
       !properties[key as keyof typeof properties] ||
       key === GuildSettings.idColumn
     )
-      throw new Error('unknown setting');
+      throw new UserError('unknown setting');
 
     const value =
       ctx.settings[key as keyof typeof ctx.settings] || NO_VALUE_PLACEHOLDER;

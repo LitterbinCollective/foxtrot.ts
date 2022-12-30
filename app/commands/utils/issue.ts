@@ -13,8 +13,7 @@ export default class IssueCommand extends BaseCommand {
 
   public async run(ctx: Command.Context) {
     const url = typeof bugs === 'object' && bugs.url ? bugs.url : bugs;
-    if (!url)
-      return ctx.reply('Submit issues directly to the hoster.');
+    if (!url) return ctx.reply('Submit issues directly to the hoster.');
     ctx.reply(url.toString());
   }
 }

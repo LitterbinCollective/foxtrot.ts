@@ -1,4 +1,9 @@
-import { ClusterClient, Command, CommandClient, Constants as DetritusConstants } from 'detritus-client';
+import {
+  ClusterClient,
+  Command,
+  CommandClient,
+  Constants as DetritusConstants,
+} from 'detritus-client';
 
 import { Constants } from '@/modules/utils';
 
@@ -17,7 +22,8 @@ export default class KillCommand extends BaseCommand {
 
   public async run(_ctx: Command.Context, { self }: { self: boolean }) {
     const manager = (this.commandClient.client as ClusterClient).manager;
-    if (manager && !self) manager.sendIPC(Constants.EXTERNAL_IPC_OP_CODES.STOP_MANAGER);
+    if (manager && !self)
+      manager.sendIPC(Constants.EXTERNAL_IPC_OP_CODES.STOP_MANAGER);
     else process.exit(0);
   }
 }

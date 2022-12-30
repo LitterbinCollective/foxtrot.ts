@@ -27,7 +27,7 @@ class PaginatorsStore extends Store<string, BaseSet<Paginator>> {
     if (!this.has(ctx.channelId)) this.set(ctx.channelId, new BaseSet());
 
     const store = this;
-    options.onKill = function(this: Paginator) {
+    options.onKill = function (this: Paginator) {
       if (ctx.channelId && store.has(ctx.channelId)) {
         const paginators = store.get(ctx.channelId);
         paginators?.delete(this);

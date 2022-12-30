@@ -15,7 +15,9 @@ export default class UptimeCommand extends BaseSlashCommand {
     ctx.editOrRespond({
       embed: {
         title:
-          Constants.EMOJIS.STOPWATCH + prefix + prettyMilliseconds(Date.now() - app.startAt),
+          Constants.EMOJIS.STOPWATCH +
+          prefix +
+          prettyMilliseconds(Date.now() - app.startAt),
         color: Constants.EMBED_COLORS.DEFAULT,
       },
     });

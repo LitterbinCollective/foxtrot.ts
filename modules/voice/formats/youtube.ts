@@ -59,7 +59,7 @@ export default class YouTubeFormat extends BaseFormat {
         quality: 'highestaudio',
         filter: 'audioonly',
         highWaterMark: 1 << 25,
-        IPv6Block
+        IPv6Block,
         /*requestOptions: {
           headers: {
             cookies: this.cookies

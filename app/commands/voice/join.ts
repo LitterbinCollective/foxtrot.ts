@@ -22,10 +22,8 @@ export default class JoinCommand extends BaseCommand {
     try {
       VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
     } catch (err: any) {
-      if (err instanceof Error)
-        return ctx.reply(err.message);
-      else
-        throw err;
+      if (err instanceof Error) return ctx.reply(err.message);
+      else throw err;
     }
 
     return await ctx.reply(Math.random() > 0.95 ? 'Oh hi Mark.' : 'Hi.');

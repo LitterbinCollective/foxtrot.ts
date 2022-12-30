@@ -1,6 +1,11 @@
-import { Command, CommandClient, Utils } from 'detritus-client';
+import { Command, CommandClient } from 'detritus-client';
 
-import { buildArgumentErrorEmbed, buildRuntimeErrorEmbed, Constants } from '@/modules/utils';
+import {
+  buildArgumentErrorEmbed,
+  buildRuntimeErrorEmbed,
+  Constants,
+  UserError,
+} from '@/modules/utils';
 
 import app from '..';
 
@@ -14,9 +19,12 @@ export class BaseCommand extends Command.Command {
     ctx.channel?.triggerTyping();
 
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
-    const manageGuildCheck = this.manageGuildOnly ? ctx.member &&
-      (ctx.member.permissions & Constants.MANAGE_GUILD_PERMISSION) ===
-      Constants.MANAGE_GUILD_PERMISSION : true;
+    const manageGuildCheck = this.manageGuildOnly
+      ? (ctx.member &&
+          (ctx.member.permissions & Constants.MANAGE_GUILD_PERMISSION) ===
+            Constants.MANAGE_GUILD_PERMISSION) ||
+        ctx.user.isClientOwner
+      : true;
     if (ownerCheck || manageGuildCheck) {
       return true;
     }
@@ -25,8 +33,12 @@ export class BaseCommand extends Command.Command {
     return false;
   }
 
-  public onRunError(ctx: Command.Context, _args: Command.ParsedArgs, error: Error) {
-    if (error instanceof Error) return ctx.reply(error.message);
+  public onRunError(
+    ctx: Command.Context,
+    _args: Command.ParsedArgs,
+    error: Error
+  ) {
+    if (error instanceof UserError) return ctx.reply(error.message);
 
     const embed = buildRuntimeErrorEmbed(error);
     ctx.reply({ embed });
@@ -34,7 +46,11 @@ export class BaseCommand extends Command.Command {
     app.logger.error(error);
   }
 
-  public onTypeError(ctx: Command.Context, _args: Command.ParsedArgs, errors: Record<string, Error>) {
+  public onTypeError(
+    ctx: Command.Context,
+    _args: Command.ParsedArgs,
+    errors: Record<string, Error>
+  ) {
     const embed = buildArgumentErrorEmbed(errors);
     ctx.reply({ embed });
   }

@@ -8,7 +8,6 @@ export { default as VoiceStore } from './voice';
 export function applicationCreated(app: Application) {
   for (let key in exports) {
     const value = exports[key];
-    if (typeof value === 'object')
-      value.applicationCreated(app);
+    if (typeof value === 'object') value.applicationCreated(app);
   }
 }

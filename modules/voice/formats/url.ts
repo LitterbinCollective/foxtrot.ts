@@ -37,9 +37,8 @@ export default class URLFormat extends BaseFormat {
         'mjpeg',
         '-',
       ];
-      
-      if (config.proxy.length !== 0)
-        args.unshift('-http_proxy', config.proxy);
+
+      if (config.proxy.length !== 0) args.unshift('-http_proxy', config.proxy);
 
       const child = spawn('ffmpeg', args);
 
@@ -66,8 +65,7 @@ export default class URLFormat extends BaseFormat {
         url,
       ];
 
-      if (config.proxy.length !== 0)
-        args.unshift('-http_proxy', config.proxy);
+      if (config.proxy.length !== 0) args.unshift('-http_proxy', config.proxy);
 
       const child = spawn('ffprobe', args);
 

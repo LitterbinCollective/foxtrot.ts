@@ -5,9 +5,8 @@ import config from '@/configs/app.json';
 
 let httpsAgent: HttpsProxyAgent.HttpsProxyAgent | undefined;
 
-if (config.proxy.length !== 0)
-  httpsAgent = HttpsProxyAgent(config.proxy);
+if (config.proxy.length !== 0) httpsAgent = HttpsProxyAgent(config.proxy);
 
 export default axios.create({
-  httpsAgent
+  httpsAgent,
 });

@@ -38,7 +38,7 @@ export default class EvalCommand extends BaseSlashCommand {
 
   public async run(
     ctx: Interaction.InteractionContext,
-    { code, async, url }: { code: string, async: string, url: string }
+    { code, async, url }: { code: string; async: string; url: string }
   ) {
     if (url && url.length !== 0) code = (await axios(url)).data;
 
@@ -48,14 +48,11 @@ export default class EvalCommand extends BaseSlashCommand {
       if (async) {
         const funct = new AsyncFunction('context', code);
         message = await funct(ctx);
-      } else
-        message = await Promise.resolve(eval(code));
+      } else message = await Promise.resolve(eval(code));
 
-      if (typeof message === 'object')
-        message = inspect(message);
+      if (typeof message === 'object') message = inspect(message);
     } catch (err) {
-      if (err instanceof Error)
-        message = err.toString();
+      if (err instanceof Error) message = err.toString();
     }
 
     ctx.editOrRespond({

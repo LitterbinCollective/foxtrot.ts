@@ -1,4 +1,8 @@
-import { CommandClient, Constants as DetritusConstants, Utils } from 'detritus-client';
+import {
+  CommandClient,
+  Constants as DetritusConstants,
+  Utils,
+} from 'detritus-client';
 
 import { Constants, listEffects } from '@/modules/utils';
 
@@ -13,16 +17,25 @@ export default class EffectAddCommand extends BaseVoiceCommand {
       name: 'e add',
       aliases: ['effect add'],
       type: [
-        { name: 'effect', type: DetritusConstants.CommandArgumentTypes.STRING, required: true },
+        {
+          name: 'effect',
+          type: DetritusConstants.CommandArgumentTypes.STRING,
+          required: true,
+        },
       ],
     });
   }
 
   public run(ctx: VoiceContext, { effect }: { effect: string }) {
     const id = ctx.voice.effects.addEffect(effect);
-    const embed = listEffects(ctx.voice.effects.list, ctx.voice.effects.STACK_LIMIT);
+    const embed = listEffects(
+      ctx.voice.effects.list,
+      ctx.voice.effects.STACK_LIMIT
+    );
 
-    embed.setTitle(Constants.EMOJIS.PLUS + ' Added effect ' + Utils.Markup.codestring(effect));
+    embed.setTitle(
+      Constants.EMOJIS.PLUS + ' Added effect ' + Utils.Markup.codestring(effect)
+    );
 
     // tips
     const { name, options } = ctx.voice.effects.getEffectInfo(id);

@@ -26,9 +26,14 @@ export class EffectAddCommand extends BaseVoiceCommandOption {
     if (!ctx.guild) return;
 
     const id = ctx.voice.effects.addEffect(effect);
-    const embed = listEffects(ctx.voice.effects.list, ctx.voice.effects.STACK_LIMIT);
+    const embed = listEffects(
+      ctx.voice.effects.list,
+      ctx.voice.effects.STACK_LIMIT
+    );
     const { name } = ctx.voice.effects.getEffectInfo(id);
-    embed.setTitle(Constants.EMOJIS.PLUS + ' Added effect ' + Utils.Markup.codestring(effect));
+    embed.setTitle(
+      Constants.EMOJIS.PLUS + ' Added effect ' + Utils.Markup.codestring(effect)
+    );
     embed.setFooter('Effect ID: ' + id + ' (' + name + ')');
     ctx.editOrRespond({ embed });
   }

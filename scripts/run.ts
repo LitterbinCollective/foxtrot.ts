@@ -8,7 +8,7 @@ const manager = new ClusterManager('../', config.token, {
   respawn: true,
   shardCount: (config as any).shardCount || 1,
   shardsPerCluster: (config as any).shardsPerCluster || 2,
-  shards: [ config.shardStart, config.shardEnd ],
+  shards: [config.shardStart, config.shardEnd],
 });
 
 manager.on('clusterProcess', ({ clusterProcess }) => {
@@ -19,8 +19,7 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
 
   clusterProcess.on('close', ({ code, signal }) => {
     let message = `closed: ${code}`;
-    if (signal)
-      message += '/' + signal;
+    if (signal) message += '/' + signal;
     logger.error(prefix, message);
   });
 });
@@ -28,5 +27,7 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
 (async () => {
   logger.log('starting...');
   await manager.run();
-  logger.info(`loaded ${manager.shardStart} - ${manager.shardEnd} shards out of ${manager.shardCount} total`);
+  logger.info(
+    `loaded ${manager.shardStart} - ${manager.shardEnd} shards out of ${manager.shardCount} total`
+  );
 })();

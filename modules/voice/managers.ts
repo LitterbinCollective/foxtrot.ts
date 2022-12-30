@@ -3,10 +3,14 @@ import { Structures } from 'detritus-client';
 import fs from 'fs';
 import { Transform } from 'stream';
 
-import { Constants, convertToType, Logger } from '@/modules/utils';
+import { Constants, convertToType, Logger, UserError } from '@/modules/utils';
 
 import config from '@/configs/formats.json';
-import { BaseEffect, BaseEffectOptions, BaseEffectOptionsRange } from './effects/baseeffect';
+import {
+  BaseEffect,
+  BaseEffectOptions,
+  BaseEffectOptionsRange,
+} from './effects/baseeffect';
 import { BaseFormat } from './formats/baseformat';
 import NewVoice from '.';
 
@@ -142,9 +146,9 @@ export class VoiceEffectManager extends BaseVoiceManager {
 
   public addEffect(name: string, start?: number) {
     start = start || this.stack.length;
-    if (!this.processors[name]) throw new Error('effect not found');
+    if (!this.processors[name]) throw new UserError('effect not found');
     if (this.stack.length === this.STACK_LIMIT)
-      throw new Error('effect stack overflow');
+      throw new UserError('effect stack overflow');
     const effect = new this.processors[name]();
     effect.enabled = true;
     this.stack.splice(start, 0, effect);
@@ -153,14 +157,14 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public removeEffect(id: number) {
-    if (!this.stack[id]) throw new Error('effect not found');
-    if (this.stack.length === 0) throw new Error('effect stack underflow');
+    if (!this.stack[id]) throw new UserError('effect not found');
+    if (this.stack.length === 0) throw new UserError('effect stack underflow');
     this.stack.splice(id, 1);
     if (this.sox) this.createAudioEffectManager();
   }
 
   public getEffectInfo(id: number) {
-    if (!this.stack[id]) throw new Error('effect not found');
+    if (!this.stack[id]) throw new UserError('effect not found');
     return {
       name: this.stack[id].name,
       options: this.stack[id].options,
@@ -174,11 +178,11 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public setValue(id: number, name: string, value?: any) {
-    if (!this.stack[id]) throw new Error('effect not found');
+    if (!this.stack[id]) throw new UserError('effect not found');
     const afx = this.stack[id];
     const option = afx.options[name as keyof BaseEffectOptions];
-    if (option === undefined) throw new Error('effect option not found');
-    if (value === undefined) throw new Error('value has to be provided');
+    if (option === undefined) throw new UserError('effect option not found');
+    if (value === undefined) throw new UserError('value has to be provided');
 
     const type = typeof option;
     value = convertToType(value, type);
@@ -188,7 +192,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
     if (type === 'number' && range) {
       const [min, max] = range;
       if (value < min || value > max)
-        throw new Error(`given value out of range (${min} - ${max})`);
+        throw new UserError(`given value out of range (${min} - ${max})`);
     }
 
     afx.options[name as keyof BaseEffectOptions] = value;
@@ -196,7 +200,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public getValue(id: number, option: string) {
-    if (!this.stack[id]) throw new Error('effect not found');
+    if (!this.stack[id]) throw new UserError('effect not found');
     return this.stack[id].options[option];
   }
 

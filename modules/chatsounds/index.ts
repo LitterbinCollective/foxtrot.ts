@@ -10,16 +10,18 @@ export async function getRepositories() {
 
   for (const configKey in shConfig) {
     const config = shConfig[configKey as keyof typeof shConfig];
-    const [ repository, branch ] = configKey.split('#');
+    const [repository, branch] = configKey.split('#');
     for (const base of config.bases)
       if (config.useMsgPack)
-        merge = await sh.useSourcesFromGitHubMsgPack(repository, branch, base) || merge
+        merge =
+          (await sh.useSourcesFromGitHubMsgPack(repository, branch, base)) ||
+          merge;
       else
-        merge = await sh.useSourcesFromGitHub(repository, branch, base) || merge;
+        merge =
+          (await sh.useSourcesFromGitHub(repository, branch, base)) || merge;
   }
 
-  if (merge)
-    sh.mergeSources();
+  if (merge) sh.mergeSources();
 }
 
 getRepositories();

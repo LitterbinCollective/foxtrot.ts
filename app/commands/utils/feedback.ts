@@ -22,7 +22,10 @@ export default class FeedbackCommand extends BaseCommand {
     });
   }
 
-  public async run(ctx: Command.Context, { feedback, anonymous }: { feedback: string, anonymous: boolean }) {
+  public async run(
+    ctx: Command.Context,
+    { feedback, anonymous }: { feedback: string; anonymous: boolean }
+  ) {
     let text = 'Failed to submit feedback.';
 
     if (sendFeedback(ctx.rest, feedback, anonymous ? undefined : ctx.user))

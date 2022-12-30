@@ -7,7 +7,7 @@ import { VoiceFormatResponseInfo } from './managers';
 import NewVoice from '.';
 
 export default class VoiceQueueAnnouncer {
-  private channel: Structures.ChannelTextType;
+  public channel: Structures.ChannelTextType;
   private current?: VoiceFormatResponseInfo;
   private startTime?: number;
   private readonly voice: NewVoice;
@@ -36,10 +36,15 @@ export default class VoiceQueueAnnouncer {
       '-'.repeat(Math.max(repeatCount, 0)) +
       Constants.EMOJIS.RADIO +
       '-'.repeat(Math.max(LENGTH - repeatCount, 0));
-    return Utils.Markup.codestring(`${progressStr} ${progressBar} ${durationStr}`);
+    return Utils.Markup.codestring(
+      `${progressStr} ${progressBar} ${durationStr}`
+    );
   }
 
-  public play(streamInfo: VoiceFormatResponseInfo | undefined = this.current, returnCreateMessage = false): RequestTypes.CreateMessage | undefined {
+  public play(
+    streamInfo: VoiceFormatResponseInfo | undefined = this.current,
+    returnCreateMessage = false
+  ): RequestTypes.CreateMessage | undefined {
     if (!streamInfo) throw new Error('No stream info provided');
     if (!this.current) {
       this.startTime = Date.now();
@@ -72,8 +77,7 @@ export default class VoiceQueueAnnouncer {
         filename: 'image.jpg',
         value: streamInfo.image as Buffer,
       };
-    if (returnCreateMessage)
-      return options;
+    if (returnCreateMessage) return options;
 
     this.channel.createMessage(options);
   }

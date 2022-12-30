@@ -1,4 +1,10 @@
-import { Command, Constants as DetritusConstants, Interaction, Structures, Utils } from 'detritus-client';
+import {
+  Command,
+  Constants as DetritusConstants,
+  Interaction,
+  Structures,
+  Utils,
+} from 'detritus-client';
 import { RequestTypes } from 'detritus-client-rest';
 
 import * as Constants from './constants';
@@ -59,7 +65,10 @@ export class Paginator {
   private readonly context: Command.Context | Interaction.InteractionContext;
   private readonly target: string[];
 
-  constructor(ctx: Command.Context | Interaction.InteractionContext, options: PaginatorOptions) {
+  constructor(
+    ctx: Command.Context | Interaction.InteractionContext,
+    options: PaginatorOptions
+  ) {
     this.context = ctx;
 
     this.pages = options.pages;
@@ -69,10 +78,8 @@ export class Paginator {
     );
     this.onEmbed = options.onEmbed.bind(this);
 
-    if (options.onKill)
-      this.onKill = options.onKill.bind(this);
-    else
-      this.onKill = () => void 0;
+    if (options.onKill) this.onKill = options.onKill.bind(this);
+    else this.onKill = () => void 0;
 
     if (options.target) this.target = options.target;
     else this.target = [ctx.userId];
@@ -85,11 +92,12 @@ export class Paginator {
   }
 
   private get messageObject() {
-    const messageObject: RequestTypes.CreateMessage | Structures.InteractionEditOrRespond =
-      {
-        components: [],
-        embed: this.embed,
-      };
+    const messageObject:
+      | RequestTypes.CreateMessage
+      | Structures.InteractionEditOrRespond = {
+      components: [],
+      embed: this.embed,
+    };
     if (!this.dead) messageObject.components = this.components;
     return messageObject;
   }
@@ -139,7 +147,9 @@ export class Paginator {
       time - this.lastRan < RATE_LIMIT ||
       this.target.indexOf(ctx.userId) === -1
     )
-      return ctx.respond(DetritusConstants.InteractionCallbackTypes.DEFERRED_UPDATE_MESSAGE);
+      return ctx.respond(
+        DetritusConstants.InteractionCallbackTypes.DEFERRED_UPDATE_MESSAGE
+      );
 
     switch (ctx.customId) {
       case PageButtonIDs.FIRST:
@@ -189,8 +199,7 @@ export class Paginator {
     this.dead = true;
     this.onKill();
     if (this.context instanceof Interaction.InteractionContext)
-      this.context.editOrRespond(this.messageObject)
-    else
-      this.message.edit(this.messageObject);
+      this.context.editOrRespond(this.messageObject);
+    else this.message.edit(this.messageObject);
   }
 }

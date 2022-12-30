@@ -16,7 +16,9 @@ export class BaseSettingsCommand extends BaseCommand {
   public async onBeforeRun(ctx: Command.Context): Promise<boolean> {
     if (!ctx.guild) return false;
 
-    (ctx as SettingsContext).settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
+    (ctx as SettingsContext).settings = await GuildSettingsStore.getOrCreate(
+      ctx.guild.id
+    );
 
     return true;
   }

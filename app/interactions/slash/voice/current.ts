@@ -7,12 +7,13 @@ export default class CurrentlyPlayingCommand extends BaseVoiceSlashCommand {
   public description = 'Currently playing track.';
 
   public async run(ctx: VoiceInteractionContext) {
-    let options: string | Structures.InteractionEditOrRespond = 'Nothing is playing right now.';
+    let options: string | Structures.InteractionEditOrRespond =
+      'Nothing is playing right now.';
 
     if (ctx.voice.isPlaying) {
       const createMessage = ctx.voice.queue.announcer.play(undefined, true);
       options = {
-        embed: createMessage?.embed
+        embed: createMessage?.embed,
       };
     }
 

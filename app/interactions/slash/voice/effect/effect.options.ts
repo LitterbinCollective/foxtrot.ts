@@ -22,7 +22,8 @@ export class EffectOptionsCommand extends BaseVoiceCommandOption {
   }
 
   public run(ctx: VoiceInteractionContext, { effect }: { effect: number }) {
-    const { name, options, optionsRange } = ctx.voice.effects.getEffectInfo(effect);
+    const { name, options, optionsRange } =
+      ctx.voice.effects.getEffectInfo(effect);
     const embed = listOptions(name, options, optionsRange);
     ctx.editOrRespond({ embed });
   }

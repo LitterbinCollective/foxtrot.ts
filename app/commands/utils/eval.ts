@@ -13,7 +13,10 @@ export default class EvalCommand extends BaseCommand {
     super(commandClient, {
       name: 'eval',
       type: value => {
-        const { matches } = Utils.regex(Constants.DiscordRegexNames.TEXT_CODEBLOCK, value);
+        const { matches } = Utils.regex(
+          Constants.DiscordRegexNames.TEXT_CODEBLOCK,
+          value
+        );
         if (matches.length > 0) return matches[0].text;
         return value;
       },
@@ -25,7 +28,10 @@ export default class EvalCommand extends BaseCommand {
     });
   }
 
-  public async run(ctx: Command.Context, { code, async, url }: { code: string, async: boolean, url: string }) {
+  public async run(
+    ctx: Command.Context,
+    { code, async, url }: { code: string; async: boolean; url: string }
+  ) {
     if (url && url.length !== 0) code = (await axios(url)).data;
 
     let message = '';
@@ -42,6 +48,8 @@ export default class EvalCommand extends BaseCommand {
       if (err instanceof Error) message = err.toString();
     }
 
-    ctx.user.createMessage(Utils.Markup.codeblock(String(message), { language }));
+    ctx.user.createMessage(
+      Utils.Markup.codeblock(String(message), { language })
+    );
   }
 }
