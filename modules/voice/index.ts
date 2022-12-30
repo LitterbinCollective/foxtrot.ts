@@ -52,13 +52,13 @@ export default class Voice extends EventEmitter {
       }
     }
 
-    const settings = await GuildSettingsStore.getOrCreate(this.channel.guildId);
-    this.special = settings.special;
-
     this.effects = new VoiceEffectManager(this);
     this.effects.on('data', chunk => this.pipeline.write(chunk));
     this.queue = new VoiceQueue(this, logChannel);
     this.pipeline.playSilence();
+
+    const settings = await GuildSettingsStore.getOrCreate(this.channel.guildId);
+    this.special = settings.special;
 
     this.emit('initialized');
     this.initialized = true;
