@@ -131,6 +131,11 @@ export default class NewYearsEveEvent extends BaseEvent {
         'Cambodia, Christmas Island, Indonesia, Mongolia, Russia, Thailand, etc.',
     },
     {
+      offset: 8,
+      locations:
+        'Australia, Brunei, China, Hong Kong, Indonesia, Macau, Malaysia, Singapore, etc.',
+    },
+    {
       offset: 8.75,
       locations: 'Australia',
     },
@@ -225,7 +230,7 @@ export default class NewYearsEveEvent extends BaseEvent {
         shard.gateway.setPresence({
           activity: {
             type: DetritusConstants.ActivityTypes.WATCHING,
-            name: 'New Years Eve' + suffix,
+            name: "New Year's Eve" + suffix,
           },
         });
       });
