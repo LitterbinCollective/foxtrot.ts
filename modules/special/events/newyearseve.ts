@@ -172,12 +172,20 @@ export default class NewYearsEveEvent extends BaseEvent {
       locations: 'Kiribati',
     },
   ];
-  private next = this.utcOffsets.length - 1;
+  private next = -1;
 
   constructor() {
     super();
 
     this.activityRun = this.activityRun.bind(this);
+
+    for (let i = this.utcOffsets.length - 1; i >= 0; i--) {
+      const date = dayjs().utcOffset(this.utcOffsets[i].offset * 60);
+      if (date.date() === 31) {
+        this.next = i;
+        break;
+      }
+    }
 
     this.interval = setTimeout(
       () => (this.interval = setInterval(this.activityRun, 1000)),
