@@ -110,7 +110,7 @@ export default class NewYearsEveEvent extends BaseEvent {
       locations: 'Kazakhstan, Russia, etc.',
     },
     {
-      offset: 5,
+      offset: 5.5,
       locations: 'India, Sri Lanka',
     },
     {
