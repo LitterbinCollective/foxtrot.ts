@@ -17,7 +17,6 @@ export default class Voice extends EventEmitter {
   public special = true;
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
-  private channel: Structures.ChannelGuildVoice;
   private ffmpeg?: FFMpeg;
   private pipeline!: VoicePipeline;
 
@@ -26,8 +25,11 @@ export default class Voice extends EventEmitter {
     logChannel: Structures.ChannelTextType
   ) {
     super();
-    this.channel = channel;
-    this.initialize(logChannel);
+    this.initialize(channel, logChannel);
+  }
+
+  private get channel() {
+    return this.pipeline.channel;
   }
 
   public get isPlaying() {
@@ -42,9 +44,9 @@ export default class Voice extends EventEmitter {
     if (this.pipeline) this.pipeline.onVoiceServerUpdate(payload);
   }
 
-  private async initialize(logChannel: Structures.ChannelTextType) {
+  private async initialize(channel: Structures.ChannelGuildVoice, logChannel: Structures.ChannelTextType) {
     try {
-      this.pipeline = new VoicePipeline(this, this.channel);
+      this.pipeline = new VoicePipeline(this, channel);
     } catch (err) {
       if (err instanceof Error) {
         await logChannel.createMessage(err.message);
@@ -57,7 +59,7 @@ export default class Voice extends EventEmitter {
     this.queue = new VoiceQueue(this, logChannel);
     this.pipeline.playSilence();
 
-    const settings = await GuildSettingsStore.getOrCreate(this.channel.guildId);
+    const settings = await GuildSettingsStore.getOrCreate(channel.guildId);
     this.special = settings.special;
 
     this.emit('initialized');
@@ -132,13 +134,15 @@ export default class Voice extends EventEmitter {
   }
 
   public canExecuteVoiceCommands(member: Structures.Member) {
+    if (!this.channel)
+      return true;
     return this.channel === member.voiceChannel;
   }
 
   public canLeave(member: Structures.Member) {
-    return (
-      this.canExecuteVoiceCommands(member) || this.channel.members.size === 1
-    );
+    if (!this.channel)
+      return true;
+    return this.canExecuteVoiceCommands(member) || this.channel.members.size === 1;
   }
 
   public async playSoundeffect(script: string | Buffer) {
@@ -153,6 +157,7 @@ export default class Voice extends EventEmitter {
     if (unexpected) this.queue.announcer.unexpectedLeave();
     this.cleanUp();
     this.pipeline.destroy();
-    VoiceStore.delete(this.channel.guildId);
+    if (this.channel)
+      VoiceStore.delete(this.channel.guildId as string);
   }
 }

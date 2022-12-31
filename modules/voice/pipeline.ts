@@ -136,6 +136,10 @@ export default class VoicePipeline extends Transform {
     this.connection.on('destroy', this.onConnectionDestroy);
   }
 
+  public get channel() {
+    return this.connection.voiceConnection.channel;
+  }
+
   public set bitrate(value: number) {
     if (this.opus) this.opus.setBitrate(Math.min(128e3, Math.max(16e3, value)));
   }
