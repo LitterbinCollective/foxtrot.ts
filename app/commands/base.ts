@@ -25,7 +25,7 @@ export class BaseCommand extends Command.Command {
             Constants.MANAGE_GUILD_PERMISSION) ||
         ctx.user.isClientOwner
       : true;
-    if (ownerCheck || manageGuildCheck) {
+    if (ownerCheck && manageGuildCheck) {
       return true;
     }
 
