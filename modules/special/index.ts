@@ -63,7 +63,10 @@ class Special {
       }
     }
 
-    if (!matched) this.current = undefined;
+    if (!matched && this.current) {
+      this.current.cleanUp();
+      this.current = undefined;
+    }
   }
 }
 

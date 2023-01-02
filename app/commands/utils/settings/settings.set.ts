@@ -15,8 +15,6 @@ import {
 import { BaseSettingsCommand, SettingsContext } from './settings';
 
 export default class SettingsSetCommand extends BaseSettingsCommand {
-  public manageGuildOnly = true;
-
   constructor(commandClient: CommandClient) {
     super(commandClient, {
       name: 'settings set',
