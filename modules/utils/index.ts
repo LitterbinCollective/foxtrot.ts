@@ -137,7 +137,7 @@ export function convertToType(value: any, type: string) {
       break;
     case 'number':
       value = +value;
-      if (isNaN(value)) value = 0;
+      if (isNaN(value)) throw new UserError('invalid number value provided');
       break;
     case 'boolean':
       value = !(
