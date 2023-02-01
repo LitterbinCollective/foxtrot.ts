@@ -27,15 +27,38 @@ export default class VoiceQueue {
 
   public async push(url: string, user?: Structures.User) {
     const next = this.inProgress.length === 0;
-    const index = this.inProgress.push(Date.now()) - 1;
+    const pushID = Date.now();
+    const index = this.inProgress.push(pushID) - 1;
     const wasEmpty = this.queue.length === 0;
 
-    let result = await this.formats.fromURL(url);
-    if (!result) {
+    let result;
+
+    try {
+      const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
+
+      let timeoutHandle;
+      const timeoutPromise = new Promise<void>((_, rej) => {
+        timeoutHandle = setTimeout(
+          () => rej(new Error('fromURL timed out (' + FORMAT_FROMURL_TIMEOUT + ' seconds)')),
+          FORMAT_FROMURL_TIMEOUT * 1000
+        );
+      })
+
+      result = await Promise.race([ timeoutPromise, this.formats.fromURL(url) ]);
+      clearTimeout(timeoutHandle);
+
+      if (!result)
+        throw new UserError('the requested URL is not supported');
+    } catch (err) {
       this.inProgress.splice(index, 1);
-      if (wasEmpty && this.queue.length > 0) await this.next();
-      return false;
+      if (wasEmpty && this.queue.length > 0)
+        await this.next();
+
+      throw err;
     }
+
+    if (this.inProgress.indexOf(pushID) === -1)
+      return false;
 
     if (Array.isArray(result))
       result = result.map(res => {
@@ -66,6 +89,7 @@ export default class VoiceQueue {
 
   public clear() {
     this.queue = [];
+    this.inProgress = [];
   }
 
   public async next() {
