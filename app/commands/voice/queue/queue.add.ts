@@ -47,6 +47,6 @@ export default class QueueAddCommand extends BaseCommand {
     if (!voice.initialized)
       return await ctx.reply('Voice not yet initialized!');
 
-    voice.queue.push(url, ctx.user);
+    await voice.queue.push(url, ctx.user);
   }
 }
