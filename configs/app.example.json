@@ -6,6 +6,7 @@
     "id": "",
     "token": ""
   },
+  "devId": "",
   "shardCount": 4,
   "shardStart": 0,
   "shardEnd": 3

@@ -1,4 +1,5 @@
 import { Structures, Utils } from 'detritus-client';
+import { Client } from 'detritus-client-rest';
 
 import { GuildSettings } from '@/modules/models';
 
@@ -34,19 +35,21 @@ export function buildArgumentErrorEmbed(errors: Record<string, Error>) {
 }
 
 export function sendFeedback(
-  rest: RestClient,
+  rest: RestClient | Client,
   content: string,
-  user?: Structures.User
+  user?: Structures.User | string
 ) {
   let webhook: IConfigFeedbackWebhook = config.feedbackWebhook;
-  if (!webhook) return false;
-
-  content = content.replaceAll('@', '@\u200b');
+  if (!webhook || webhook.id.length === 0 || webhook.token.length === 0)
+    return false;
 
   rest.executeWebhook(webhook.id, webhook.token, {
     content,
-    username: user ? `${user.tag} (${user.id})` : 'Anonymous',
-    avatarUrl: user ? user.avatarUrl : undefined,
+    username: typeof user === 'object' ? `${user.tag} (${user.id})` : (user || 'Anonymous'),
+    avatarUrl: typeof user === 'object' ? user.avatarUrl : undefined,
+    allowedMentions: {
+      parse: [ 'users' ],
+    },
   });
 
   return true;
