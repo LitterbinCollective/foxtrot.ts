@@ -22,7 +22,8 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
     let message = `closed: ${code}`;
     if (signal) message += '/' + signal;
     if (config.devId && config.devId.length > 0)
-      sendFeedback(manager.rest, `<@${config.devId}> Cluster ${clusterProcess.clusterId} has died: ${Markup.codestring(code + ' ' + signal)}`);
+      sendFeedback(manager.rest, `<@${config.devId}> Cluster ${clusterProcess.clusterId} [${config.shardStart} ` +
+        `- ${config.shardEnd}] has died: ${Markup.codestring(code + ' ' + signal)}`);
     logger.error(prefix, message);
   });
 });
