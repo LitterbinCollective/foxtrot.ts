@@ -78,7 +78,8 @@ export default class VoiceQueueAnnouncer {
     if (returnCreateMessage) return options;
 
     if (this.loadingMessage) {
-      this.loadingMessage.reply(options);
+      this.loadingMessage.edit(options);
+      this.loadingMessage = undefined;
       return;
     }
 
