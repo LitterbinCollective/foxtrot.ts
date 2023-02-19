@@ -35,7 +35,7 @@ export class QueueListCommand extends BaseVoiceCommandOption {
             const duration = Utils.Markup.codestring(
               durationInString(info.duration)
             );
-            const suffix = info.submittee ? ` - ${info.submittee.mention}` : '';
+            const suffix = info.author ? ` - ${info.author.name}` : '';
             return `${position}) ${duration} ${info.title}` + suffix;
           })
           .join('\n');

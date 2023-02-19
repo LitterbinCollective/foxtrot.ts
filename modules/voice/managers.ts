@@ -47,10 +47,16 @@ class BaseVoiceManager extends Transform {
   }
 }
 
+interface EmbedAuthorField {
+  name: string;
+  icon_url?: string;
+  url?: string;
+}
+
 export interface VoiceFormatResponseInfo {
+  author?: EmbedAuthorField
   title: string;
   url: string;
-  submittee?: Structures.User;
   image: string | Buffer;
   duration: number;
 }
@@ -81,7 +87,7 @@ export interface VoiceFormatResponseReadable extends VoiceFormatResponse {
   type: VoiceFormatResponseType.READABLE;
 }
 
-export class VoiceFormatManager extends BaseVoiceManager {
+class VoiceFormatManager extends BaseVoiceManager {
   public readonly processors!: Record<string, BaseFormat>;
 
   constructor() {
@@ -117,6 +123,8 @@ export class VoiceFormatManager extends BaseVoiceManager {
   }
 }
 
+export const formats = new VoiceFormatManager();
+
 const VOICE_EFFECT_MANAGER_SCAN_PATH = 'effects/';
 
 export class VoiceEffectManager extends BaseVoiceManager {
@@ -149,9 +157,11 @@ export class VoiceEffectManager extends BaseVoiceManager {
     if (!this.processors[name]) throw new UserError('effect not found');
     if (this.stack.length === this.STACK_LIMIT)
       throw new UserError('effect stack overflow');
+
     const effect = new this.processors[name]();
     effect.enabled = true;
     this.stack.splice(start, 0, effect);
+
     if (this.sox) this.createAudioEffectManager();
     return start;
   }
@@ -159,12 +169,15 @@ export class VoiceEffectManager extends BaseVoiceManager {
   public removeEffect(id: number) {
     if (!this.stack[id]) throw new UserError('effect not found');
     if (this.stack.length === 0) throw new UserError('effect stack underflow');
+
     this.stack.splice(id, 1);
+
     if (this.sox) this.createAudioEffectManager();
   }
 
   public getEffectInfo(id: number) {
     if (!this.stack[id]) throw new UserError('effect not found');
+
     return {
       name: this.stack[id].name,
       options: this.stack[id].options,
@@ -174,6 +187,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
 
   public clearEffects() {
     this.stack = [];
+
     if (this.sox) this.createAudioEffectManager();
   }
 
@@ -196,11 +210,13 @@ export class VoiceEffectManager extends BaseVoiceManager {
     }
 
     afx.options[name as keyof BaseEffectOptions] = value;
+
     if (this.sox) this.createAudioEffectManager();
   }
 
   public getValue(id: number, option: string) {
     if (!this.stack[id]) throw new UserError('effect not found');
+
     return this.stack[id].options[option];
   }
 

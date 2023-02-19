@@ -137,6 +137,8 @@ export default class VoicePipeline extends Transform {
   }
 
   public get channel() {
+    if (!this.connection || !this.connection.voiceConnection)
+      return null;
     return this.connection.voiceConnection.channel;
   }
 

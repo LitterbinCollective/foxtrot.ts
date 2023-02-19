@@ -38,7 +38,7 @@ export default class QueueAddCommand extends BaseCommand {
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
       voice = VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
-      return voice.queue.push(url, ctx.user);
+      return await voice.queue.push(url, ctx.message);
     }
     if (!voice.canExecuteVoiceCommands(ctx.member))
       return await ctx.reply(
@@ -47,6 +47,6 @@ export default class QueueAddCommand extends BaseCommand {
     if (!voice.initialized)
       return await ctx.reply('Voice not yet initialized!');
 
-    await voice.queue.push(url, ctx.user);
+    await voice.queue.push(url, ctx.message);
   }
 }

@@ -1,40 +1,83 @@
 import { Structures } from 'detritus-client';
+import { EventEmitter } from 'events';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
 import {
   VoiceFormatResponse,
   VoiceFormatResponseType,
-  VoiceFormatManager,
   VoiceFormatResponseURL,
   VoiceFormatResponseReadable,
   VoiceFormatResponseFetch,
+  VoiceFormatResponseInfo,
+  formats,
 } from './managers';
 import { UserError } from '../utils';
 
-export default class VoiceQueue {
-  public readonly announcer: VoiceQueueAnnouncer;
-  private formats: VoiceFormatManager;
-  private inProgress: number[] = [];
-  private queue: VoiceFormatResponse[] = [];
-  private readonly voice: NewVoice;
+const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
 
-  constructor(voice: NewVoice, logChannel: Structures.ChannelTextType) {
-    this.voice = voice;
-    this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
-    this.formats = new VoiceFormatManager();
+class VoiceQueueMedia extends EventEmitter {
+  private _children?: VoiceQueueMedia[];
+  private formatData!: VoiceFormatResponse | VoiceFormatResponse[];
+  private _submittee?: Structures.User;
+  private message?: Structures.Message;
+  private url: string;
+
+  constructor(url: string | VoiceFormatResponse, message?: Structures.Message | Structures.User) {
+    super();
+
+    if (message instanceof Structures.User)
+      this._submittee = message
+    else
+      this.message = message;
+
+    if (typeof url === 'string') {
+      this.url = url;
+      this.fetchFormatData();
+    } else {
+      this.url = url.info.url;
+      this.formatData = url;
+    }
   }
 
-  public async push(url: string, user?: Structures.User) {
-    const next = this.inProgress.length === 0;
-    const pushID = Date.now();
-    const index = this.inProgress.push(pushID) - 1;
-    const wasEmpty = this.queue.length === 0;
+  private get submittee(): Structures.User | undefined {
+    if (this._submittee)
+      return this._submittee;
+    return this.message ? this.message.author : undefined;
+  }
 
-    let result;
+  public get info(): VoiceFormatResponseInfo {
+    if (this.formatData && !Array.isArray(this.formatData))
+      return this.formatData.info;
 
+    return {
+      title: '[loading...]',
+      duration: 0,
+      url: this.url,
+      image: ''
+    };
+  }
+
+  public get loaded() {
+    return this.formatData !== undefined;
+  }
+
+  public get children() {
+    if (!this.formatData)
+      throw new Error('children getter called on an invalid VoiceQueueMedia object');
+
+    if (!Array.isArray(this.formatData))
+      return [ this ];
+
+    if (this._children)
+      return this._children;
+
+    return this._children = this.formatData.map(x => new VoiceQueueMedia(x));
+  }
+
+  private async fetchFormatData() {
     try {
-      const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
+      let result;
 
       let timeoutHandle;
       const timeoutPromise = new Promise<void>((_, rej) => {
@@ -44,37 +87,87 @@ export default class VoiceQueue {
         );
       })
 
-      result = await Promise.race([ timeoutPromise, this.formats.fromURL(url) ]);
+      result = await Promise.race([ timeoutPromise, formats.fromURL(this.url) ]);
       clearTimeout(timeoutHandle);
 
       if (!result)
         throw new UserError('the requested URL is not supported');
-    } catch (err) {
-      this.inProgress.splice(index, 1);
-      if (wasEmpty && this.queue.length > 0)
-        await this.next();
 
-      throw err;
+      if (this.submittee) {
+        if (Array.isArray(result)) {
+          for (let i = 0; i < result.length; i++)
+            result[i].info.author = {
+              name: this.submittee.tag,
+              icon_url: this.submittee.avatarUrl,
+              url: this.message ? this.message.jumpLink : undefined
+            };
+        } else
+          result.info.author = {
+            name: this.submittee.tag,
+            icon_url: this.submittee.avatarUrl,
+            url: this.message ? this.message.jumpLink : undefined
+          };
+      }
+
+      this.formatData = result;
+    } catch (err) {
+      return this.emit('error', err);
     }
 
-    if (this.inProgress.indexOf(pushID) === -1)
-      return false;
+    this.emit('finish');
+  }
 
-    if (Array.isArray(result))
-      result = result.map(res => {
-        res.info.submittee = user;
-        return res;
+  public async getStream() {
+    if (!this.formatData || Array.isArray(this.formatData))
+      throw new Error('getStream called on an invalid VoiceQueueMedia object');
+
+    switch (this.formatData.type) {
+      case VoiceFormatResponseType.URL:
+        return (this.formatData as VoiceFormatResponseURL).url;
+      case VoiceFormatResponseType.READABLE:
+        return (this.formatData as VoiceFormatResponseReadable).readable;
+      case VoiceFormatResponseType.FETCH:
+        return await (this.formatData as VoiceFormatResponseFetch).fetch();
+      default:
+        throw new Error('unknown VoiceFormatResponseType');
+    }
+  }
+}
+
+export default class VoiceQueue {
+  public readonly announcer: VoiceQueueAnnouncer;
+  private queue: VoiceQueueMedia[] = [];
+  private readonly voice: NewVoice;
+
+  constructor(voice: NewVoice, logChannel: Structures.ChannelTextType) {
+    this.voice = voice;
+    this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
+  }
+
+  public async push(url: string, message?: Structures.Message | Structures.User) {
+    const object = new VoiceQueueMedia(url, message);
+    this.queue.push(object);
+
+    return new Promise((res, rej) => {
+      object.once('finish', () => {
+        const index = this.queue.indexOf(object);
+        if (index === -1) return;
+        this.queue.splice(index, 1, ...object.children);
+
+        if (!this.voice.isPlaying)
+          this.next();
+
+        res(true);
       });
-    else result.info.submittee = user;
 
-    if (Array.isArray(result)) this.queue.push(...result);
-    else this.queue.push(result);
+      object.once('error', (error) => {
+        rej(error);
 
-    if (wasEmpty && next) await this.next();
-
-    this.inProgress.splice(index, 1);
-
-    return true;
+        const index = this.queue.indexOf(object);
+        if (index !== -1)
+          this.queue.splice(index, 1);
+      });
+    });
   }
 
   public get info() {
@@ -89,7 +182,11 @@ export default class VoiceQueue {
 
   public clear() {
     this.queue = [];
-    this.inProgress = [];
+  }
+
+  private async continue(media: VoiceQueueMedia) {
+    this.announcer.play(media.info);
+    this.voice.play(await media.getStream());
   }
 
   public async next() {
@@ -98,27 +195,16 @@ export default class VoiceQueue {
 
     if (this.queue.length === 0) return;
 
-    const singleResponse = this.queue.shift();
-    if (!singleResponse) return;
-
-    this.announcer.play(singleResponse.info);
-    switch (singleResponse.type) {
-      case VoiceFormatResponseType.URL:
-        this.voice.play((singleResponse as VoiceFormatResponseURL).url);
-        break;
-      case VoiceFormatResponseType.READABLE:
-        this.voice.play(
-          (singleResponse as VoiceFormatResponseReadable).readable
-        );
-        break;
-      case VoiceFormatResponseType.FETCH:
-        this.voice.play(
-          await (singleResponse as VoiceFormatResponseFetch).fetch()
-        );
-        break;
-      default:
-        throw new Error('Unknown VoiceFormatResponseType');
+    const media = this.queue[0];
+    if (!media) return;
+    if (!media.loaded) {
+      this.announcer.createLoadingMessage();
+      return;
     }
+
+    this.queue.shift();
+    this.continue(media);
+
     // this.voice.playStream(singleResponse.readable ? singleResponse.readable : await singleResponse.fetch());
   }
 }

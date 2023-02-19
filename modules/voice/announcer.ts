@@ -9,12 +9,17 @@ import NewVoice from '.';
 export default class VoiceQueueAnnouncer {
   public channel: Structures.ChannelTextType;
   private current?: VoiceFormatResponseInfo;
+  private loadingMessage?: Structures.Message;
   private startTime?: number;
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice, channel: Structures.ChannelTextType) {
     this.voice = voice;
     this.channel = channel;
+  }
+
+  public async createLoadingMessage() {
+    this.loadingMessage = await this.channel.createMessage('Loading...');
   }
 
   private playProgress(duration?: number) {
@@ -52,16 +57,9 @@ export default class VoiceQueueAnnouncer {
     }
 
     const fromURL = typeof streamInfo.image === 'string';
+    console.log(streamInfo);
     const embed = new Utils.Embed({
-      author: streamInfo.submittee
-        ? {
-            name:
-              streamInfo.submittee.username +
-              '#' +
-              streamInfo.submittee.discriminator,
-            icon_url: streamInfo.submittee.avatarUrl,
-          }
-        : undefined,
+      author: streamInfo.author,
       title: Constants.EMOJIS.PLAY + ' ' + streamInfo.title,
       description: this.playProgress(streamInfo.duration),
       color: Constants.EMBED_COLORS.DEFAULT,
@@ -78,6 +76,11 @@ export default class VoiceQueueAnnouncer {
         value: streamInfo.image as Buffer,
       };
     if (returnCreateMessage) return options;
+
+    if (this.loadingMessage) {
+      this.loadingMessage.reply(options);
+      return;
+    }
 
     this.channel.createMessage(options);
   }

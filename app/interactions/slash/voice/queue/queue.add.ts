@@ -35,7 +35,7 @@ export class QueueAddCommand extends BaseCommandOption {
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
       voice = VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
-      voice.queue.push(url, ctx.user);
+      await voice.queue.push(url, ctx.user);
       return ctx.editOrRespond('Okay, joining...');
     }
     if (!voice.canExecuteVoiceCommands(ctx.member))

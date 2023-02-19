@@ -1,6 +1,6 @@
 import { CommandClient, Utils } from 'detritus-client';
 
-import { PaginatorsStore, VoiceStore } from '@/modules/stores';
+import { PaginatorsStore } from '@/modules/stores';
 import { Constants, durationInString, Paginator } from '@/modules/utils';
 import { VoiceFormatResponseInfo } from '@/modules/voice/managers';
 
@@ -38,7 +38,7 @@ export default class QueueCommand extends BaseVoiceCommand {
             const duration = Utils.Markup.codestring(
               durationInString(info.duration)
             );
-            const suffix = info.submittee ? ` - ${info.submittee.mention}` : '';
+            const suffix = info.author ? ` - ${info.author.name}` : '';
             return `${position}) ${duration} ${info.title}` + suffix;
           })
           .join('\n');
