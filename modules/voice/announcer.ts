@@ -18,8 +18,15 @@ export default class VoiceQueueAnnouncer {
     this.channel = channel;
   }
 
+  public createMessage(message: RequestTypes.CreateMessage | string) {
+    try {
+      if (this.channel.canMessage)
+        return this.channel.createMessage(message);
+    } catch (err) {}
+  }
+
   public async createLoadingMessage() {
-    this.loadingMessage = await this.channel.createMessage('Loading...');
+    this.loadingMessage = await this.createMessage('Loading...');
   }
 
   private playProgress(duration?: number) {
@@ -83,11 +90,7 @@ export default class VoiceQueueAnnouncer {
       return;
     }
 
-    this.channel.createMessage(options);
-  }
-
-  public unexpectedLeave() {
-    return this.channel.createMessage('what is wrong with you?');
+    this.createMessage(options);
   }
 
   public reset() {

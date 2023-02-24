@@ -19,13 +19,6 @@ export default class JoinCommand extends BaseCommand {
         'You are not connected to any voice channel on this server.'
       );
 
-    try {
-      VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
-    } catch (err: any) {
-      if (err instanceof Error) return ctx.reply(err.message);
-      else throw err;
-    }
-
-    return await ctx.reply(Math.random() > 0.95 ? 'Oh hi Mark.' : 'Hi.');
+    VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
   }
 }

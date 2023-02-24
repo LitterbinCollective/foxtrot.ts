@@ -14,14 +14,9 @@ export default class JoinCommand extends BaseSlashCommand {
       return ctx.editOrRespond(
         'You are not connected to any voice channel on this server.'
       );
-    try {
-      VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
-    } catch (err: any) {
-      if (err instanceof Error) return ctx.editOrRespond(err.message);
-      else throw err;
-    }
-    return await ctx.editOrRespond(
-      Math.random() > 0.95 ? 'Oh hi Mark.' : 'Hi.'
-    );
+
+    VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+
+    return await ctx.editOrRespond('Hello.');
   }
 }

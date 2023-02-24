@@ -72,6 +72,11 @@ class VoiceStore extends Store<string, NewVoice> {
     voiceChannel: Structures.ChannelGuildVoice,
     textChannel: Structures.ChannelTextType
   ): NewVoice {
+    if (!textChannel.canMessage)
+      throw new UserError(
+        'Not enough permissions to talk in this text channel.'
+      );
+
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
       throw new UserError(
         'Bot is not able to join or speak in this voice channel.'

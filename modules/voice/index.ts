@@ -153,8 +153,7 @@ export default class Voice extends EventEmitter {
     if (buffer) this.pipeline.playBuffer(buffer);
   }
 
-  public kill(unexpected: boolean = false) {
-    if (unexpected) this.queue.announcer.unexpectedLeave();
+  public kill(forceLeave: boolean = false) {
     this.cleanUp();
     this.pipeline.destroy();
     if (this.channel)

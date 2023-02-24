@@ -29,7 +29,8 @@ export class BaseCommand extends Command.Command {
       return true;
     }
 
-    ctx.reply('🔒');
+    if (ctx.channel?.canAddReactions)
+      ctx.message.react('🔒');
     return false;
   }
 
@@ -38,10 +39,13 @@ export class BaseCommand extends Command.Command {
     _args: Command.ParsedArgs,
     error: Error
   ) {
-    if (error instanceof UserError) return ctx.reply(error.message);
+    if (ctx.channel?.canMessage) {
+      if (error instanceof UserError) return ctx.reply(error.message);
 
-    const embed = buildRuntimeErrorEmbed(error);
-    ctx.reply({ embed });
+      const embed = buildRuntimeErrorEmbed(error);
+      ctx.reply({ embed });
+    } else if (ctx.channel?.canAddReactions)
+      ctx.message.react(Constants.EMOJIS.BOMB);
 
     app.logger.error(error);
   }
@@ -51,7 +55,10 @@ export class BaseCommand extends Command.Command {
     _args: Command.ParsedArgs,
     errors: Record<string, Error>
   ) {
-    const embed = buildArgumentErrorEmbed(errors);
-    ctx.reply({ embed });
+    if (ctx.channel?.canMessage) {
+      const embed = buildArgumentErrorEmbed(errors);
+      ctx.reply({ embed });
+    } else if (ctx.channel?.canAddReactions)
+      ctx.message.react(Constants.EMOJIS.QUESTION_MARK);
   }
 }

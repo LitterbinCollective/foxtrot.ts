@@ -23,7 +23,6 @@
     "objection": "github:Vincit/objection.js",
     "pg": "^8.7.3",
     "pretty-ms": "^7.0.1",
-    "sequelize": "^6.19.0",
     "sh": "github:LitterbinCollective/sh",
     "soundcloud-downloader": "github:LitterbinCollective/node-soundcloud-downloader",
     "sqlite3": "^5.0.11",
