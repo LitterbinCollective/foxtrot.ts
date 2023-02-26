@@ -14,8 +14,8 @@ export async function runJS(ctx: Command.Context, code: string, async = false) {
 
   try {
     if (async) {
-      const funct = new AsyncFunction('ctx', 'Chatsounds', 'Stores', 'Utils', code);
-      message = await funct(ctx, Chatsounds, Stores, Utils);
+      const funct = new AsyncFunction('ctx', 'Chatsounds', 'Stores', 'Utils', 'Voice', code);
+      message = await funct(ctx, Chatsounds, Stores, Utils, Voice);
     } else
       message = await Promise.resolve(eval(code));
 
