@@ -5,6 +5,7 @@ import { inspect } from 'util';
 import * as Chatsounds from '@/modules/chatsounds';
 import * as Stores from '@/modules/stores';
 import * as Utils from '@/modules/utils';
+import * as Voice from '@/modules/voice';
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
