@@ -10,6 +10,12 @@ import { VoiceEffectManager } from './managers';
 import FFMpeg from './ffmpeg';
 import VoiceQueue from './queue';
 
+export * as Announcer from './announcer';
+export * as FFMpeg from './ffmpeg';
+export * as Managers from './managers';
+export * as Pipeline from './pipeline';
+export * as Queue from './queue';
+
 export default class Voice extends EventEmitter {
   public effects!: VoiceEffectManager;
   public initialized = false;

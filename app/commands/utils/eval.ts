@@ -1,10 +1,9 @@
 import axios from 'axios';
 import { Command, CommandClient, Constants, Utils } from 'detritus-client';
-import { inspect } from 'util';
+
+import { runJS } from '@/modules/utils/eval-helper';
 
 import { BaseCommand } from '../base';
-
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 export default class EvalCommand extends BaseCommand {
   public ownerOnly = true;
@@ -34,22 +33,10 @@ export default class EvalCommand extends BaseCommand {
   ) {
     if (url && url.length !== 0) code = (await axios(url)).data;
 
-    let message = '';
-    let language = 'js';
-    try {
-      if (async) {
-        const funct = new AsyncFunction('context', code);
-        message = await funct(ctx);
-      } else message = await Promise.resolve(eval(code));
-
-      if (typeof message === 'object')
-        (message = inspect(message)), (language = 'js');
-    } catch (err) {
-      if (err instanceof Error) message = err.toString();
-    }
+    let message = await runJS(ctx, code, async);
 
     ctx.user.createMessage(
-      Utils.Markup.codeblock(String(message), { language })
+      Utils.Markup.codeblock(String(message), { language: 'js' })
     );
   }
 }

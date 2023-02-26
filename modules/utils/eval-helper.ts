@@ -1,0 +1,28 @@
+import { Command } from 'detritus-client';
+import { inspect } from 'util';
+
+// easy access variables
+import * as Chatsounds from '@/modules/chatsounds';
+import * as Stores from '@/modules/stores';
+import * as Utils from '@/modules/utils';
+
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+export async function runJS(ctx: Command.Context, code: string, async = false) {
+  let message = 'Nothing was ran.';
+
+  try {
+    if (async) {
+      const funct = new AsyncFunction('ctx', 'Chatsounds', 'Stores', 'Utils', code);
+      message = await funct(ctx, Chatsounds, Stores, Utils);
+    } else
+      message = await Promise.resolve(eval(code));
+
+    if (typeof message === 'object')
+      message = inspect(message);
+  } catch (err) {
+    if (err instanceof Error) message = err.toString();
+  }
+  
+  return message;
+}
