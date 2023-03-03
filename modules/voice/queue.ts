@@ -186,7 +186,12 @@ export default class VoiceQueue {
 
   private async continue(media: VoiceQueueMedia) {
     this.announcer.play(media.info);
-    this.voice.play(await media.getStream());
+    try {
+      this.voice.play(await media.getStream());
+    } catch (err: any) {
+      this.announcer.createMessage('Skipping due to a streaming error: ' + err.toString());
+      this.next();
+    }
   }
 
   public async next() {

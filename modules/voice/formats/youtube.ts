@@ -65,7 +65,6 @@ export default class YouTubeFormat extends BaseFormat {
             cookies: this.cookies
           }
         },*/
-        // IPv6Block: IPv6Block || undefined,
       });
       return stream;
     }
