@@ -13,11 +13,14 @@
   },
   "author": "Litterbin Collective",
   "license": "AGPL-3.0-or-later",
+  "overrides": {
+    "@discordjs/opus": "^0.8.0"
+  },
   "dependencies": {
-    "@discordjs/opus": "^0.8.0",
     "axios": "^0.21.2",
     "dayjs": "^1.11.7",
     "detritus-client": "^0.16.3",
+    "detritus-client-socket": "github:be195/client-socket",
     "https-proxy-agent": "^5.0.1",
     "knex": "^2.4.0",
     "objection": "github:Vincit/objection.js",

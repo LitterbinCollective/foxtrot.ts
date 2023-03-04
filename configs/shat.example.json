@@ -1,27 +1,31 @@
 {
-  "PAC3-Server/chatsounds-valve-games#master": {
-    "bases": [
-      "csgo",
-      "css",
-      "ep1",
-      "ep2",
-      "hl1",
-      "hl2",
-      "l4d",
-      "l4d2",
-      "portal",
-      "tf2"
-    ],
-    "useMsgPack": true
-  },
+  "gitHubToken": "",
 
-  "Metastruct/garrysmod-chatsounds#master": {
-    "bases": ["sound/chatsounds/autoadd"],
-    "useMsgPack": false
-  },
-
-  "PAC3-Server/chatsounds#master": {
-    "bases": ["sounds/chatsounds"],
-    "useMsgPack": false
+  "sources": {
+    "PAC3-Server/chatsounds-valve-games#master": {
+      "bases": [
+        "csgo",
+        "css",
+        "ep1",
+        "ep2",
+        "hl1",
+        "hl2",
+        "l4d",
+        "l4d2",
+        "portal",
+        "tf2"
+      ],
+      "useMsgPack": true
+    },
+  
+    "Metastruct/garrysmod-chatsounds#master": {
+      "bases": ["sound/chatsounds/autoadd"],
+      "useMsgPack": false
+    },
+  
+    "PAC3-Server/chatsounds#master": {
+      "bases": ["sounds/chatsounds"],
+      "useMsgPack": false
+    }
   }
 }

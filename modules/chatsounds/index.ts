@@ -2,14 +2,16 @@ import Sh, { defaultModifiers } from 'sh';
 
 import shConfig from '@/configs/shat.json';
 
-const sh = new Sh();
-sh.useModifiers(defaultModifiers);
+const sh = new Sh({
+  gitHubToken: shConfig.gitHubToken,
+  modifiers: defaultModifiers
+});
 
 export async function getRepositories() {
   let merge = false;
 
-  for (const configKey in shConfig) {
-    const config = shConfig[configKey as keyof typeof shConfig];
+  for (const configKey in shConfig.sources) {
+    const config = shConfig.sources[configKey as keyof typeof shConfig.sources];
     const [repository, branch] = configKey.split('#');
     for (const base of config.bases)
       if (config.useMsgPack)
