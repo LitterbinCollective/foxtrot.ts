@@ -91,7 +91,8 @@ export default class Voice extends EventEmitter {
       [
         '-analyzeduration',
         '0',
-        // '-loglevel', '0',
+        '-loglevel',
+        process.env.NODE_ENV === 'production' ? '0' : '32',
         '-ar',
         this.SAMPLE_RATE.toString(),
         '-ac',

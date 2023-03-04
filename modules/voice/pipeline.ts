@@ -39,8 +39,16 @@ class VoiceSafeConnection extends EventEmitter {
       voice: true,
     });
     this.voiceConnection.sendAudioSilenceFrame();
+
+    /*
+      what we are essentially doing here is not using detritus'
+      reconnectivity, which is broken for some reason.
+
+      instead we reconnect it ourselves (see onVoiceServerUpdate).
+    */
     if (this.voiceConnection.gateway.socket)
       this.voiceConnection.gateway.socket.socket.onclose = () => {};
+
     this.emit('connected');
   }
 

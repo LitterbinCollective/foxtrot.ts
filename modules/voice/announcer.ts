@@ -64,7 +64,6 @@ export default class VoiceQueueAnnouncer {
     }
 
     const fromURL = typeof streamInfo.image === 'string';
-    console.log(streamInfo);
     const embed = new Utils.Embed({
       author: streamInfo.author,
       title: Constants.EMOJIS.PLAY + ' ' + streamInfo.title,

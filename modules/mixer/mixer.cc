@@ -1,3 +1,8 @@
+/*
+  the project had multiple iterations of a PCM mixer in JavaScript,
+  but JavaScript is slow, so we have to rely on a C++ module, which
+  is more performant.
+*/
 #include <iostream>
 #include <cmath>
 #include "mixer.h"
@@ -42,6 +47,12 @@ void Mixer::AddReadable(const Napi::CallbackInfo& info) {
   int16_t* data = value.Data();
   size_t size = value.Length();
 
+  /*
+    splitting audio into bite-sized pieces so it will not cause
+    an undefined behavior or memory leaks.
+
+    this is still bound to break at one point, right?
+  */
   for (size_t i = 0; i < round(size / CHUNK_SIZE); i++) {
     Chunk chunk;
 

@@ -16,6 +16,7 @@ import { UserError } from '../utils';
 
 const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
 
+// exists solely so there will not be a racing condition
 class VoiceQueueMedia extends EventEmitter {
   private _children?: VoiceQueueMedia[];
   private formatData!: VoiceFormatResponse | VoiceFormatResponse[];
