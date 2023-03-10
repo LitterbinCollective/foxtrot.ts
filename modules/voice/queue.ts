@@ -1,4 +1,4 @@
-import { Structures } from 'detritus-client';
+import { Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
 
 import VoiceQueueAnnouncer from './announcer';
@@ -12,7 +12,7 @@ import {
   VoiceFormatResponseInfo,
   formats,
 } from './managers';
-import { UserError } from '../utils';
+import { sendFeedback, UserError } from '../utils';
 
 const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
 
@@ -185,13 +185,24 @@ export default class VoiceQueue {
     this.queue = [];
   }
 
+  public streamingError(err: any) {
+    const error = Utils.Markup.codestring(err.toString());
+    this.announcer.createMessage('Skipping due to a streaming error: ' + error);
+    this.next();
+
+    sendFeedback(
+      this.announcer.channel.client.rest,
+      'Stream threw an error! ' + error
+    );
+    console.error(err);
+  }
+
   private async continue(media: VoiceQueueMedia) {
     this.announcer.play(media.info);
     try {
       this.voice.play(await media.getStream());
     } catch (err: any) {
-      this.announcer.createMessage('Skipping due to a streaming error: ' + err.toString());
-      this.next();
+      this.streamingError(err);
     }
   }
 

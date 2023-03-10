@@ -107,7 +107,13 @@ export default class Voice extends EventEmitter {
     this.effects.createAudioEffectManager();
     this.ffmpeg.on('end', () => this.skip());
 
-    if (!fromURL) stream.pipe(this.ffmpeg, { end: false });
+    if (!fromURL) {
+      stream.pipe(this.ffmpeg, { end: false });
+      stream.on('error', (err) => {
+        this.cleanUp();
+        this.queue.streamingError(err);
+      });
+    }
 
     this.ffmpeg.pipe(this.effects, { end: false });
   }
