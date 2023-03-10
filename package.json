@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "axios": "^0.21.2",
+    "better-ytdl-core": "github:be195/better-ytdl-core#patch-1",
     "dayjs": "^1.11.7",
     "detritus-client": "^0.16.3",
     "detritus-client-socket": "github:be195/client-socket",

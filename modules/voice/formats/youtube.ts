@@ -1,5 +1,5 @@
 import fs from 'fs';
-import ytdl from 'ytdl-core';
+import ytdl from 'better-ytdl-core';
 
 import { BaseFormat } from './baseformat';
 import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../managers';
