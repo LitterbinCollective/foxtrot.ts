@@ -1,6 +1,8 @@
 import { Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
 
+import { sendFeedback, UserError } from '@/modules/utils';
+
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
 import {
@@ -12,7 +14,6 @@ import {
   VoiceFormatResponseInfo,
   formats,
 } from './managers';
-import { sendFeedback, UserError } from '../utils';
 
 const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
 
