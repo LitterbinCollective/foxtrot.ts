@@ -151,7 +151,7 @@ export default class VoicePipeline extends Transform {
   }
 
   public set bitrate(value: number) {
-    if (this.opus) this.opus.setBitrate(Math.min(128e3, Math.max(16e3, value)));
+    if (this.opus) this.opus.setBitrate(Math.min(128e3, Math.max(2e3, value)));
   }
 
   public get bitrate(): number {
@@ -199,7 +199,7 @@ export default class VoicePipeline extends Transform {
     let n = 0;
     while (this.opusLeftover.length >= this.REQUIRED_SAMPLES * (n + 1)) {
       const frame = this.opus.encode(
-        this.opusLeftover.slice(
+        this.opusLeftover.subarray(
           n * this.REQUIRED_SAMPLES,
           (n + 1) * this.REQUIRED_SAMPLES
         )
@@ -209,7 +209,7 @@ export default class VoicePipeline extends Transform {
     }
     this.logger.debug('converted opus frames ', n);
     if (n > 0)
-      this.opusLeftover = this.opusLeftover.slice(n * this.REQUIRED_SAMPLES);
+      this.opusLeftover = this.opusLeftover.subarray(n * this.REQUIRED_SAMPLES);
     return callback();
   }
 
@@ -255,6 +255,6 @@ export default class VoicePipeline extends Transform {
     this.mixer = undefined;
     this.opus = undefined;
     this.opusLeftover = undefined;
-    super.destroy();
+    return super.destroy();
   }
 }

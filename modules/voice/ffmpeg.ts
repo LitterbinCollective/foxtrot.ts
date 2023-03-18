@@ -79,10 +79,9 @@ export default class FFMpeg extends Transform {
     (this.instance.stdio[3] as Writable).end();
   }
 
-  public destroy(error?: Error): void {
-    super.destroy(error);
-    if (!this.instance.killed) {
+  public destroy(error?: Error) {
+    if (!this.instance.killed)
       this.instance.kill();
-    }
+    return super.destroy(error);
   }
 }

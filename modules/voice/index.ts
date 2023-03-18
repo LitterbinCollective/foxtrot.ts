@@ -123,7 +123,7 @@ export default class Voice extends EventEmitter {
   }
 
   public set bitrate(value: number) {
-    this.pipeline.bitrate = value * 1000;
+    this.pipeline.bitrate = value;
   }
 
   public get bitrate() {

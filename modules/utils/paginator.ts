@@ -179,7 +179,7 @@ export class Paginator {
     } else {
       if (this.context instanceof Command.Context)
         this.message = await this.context.reply(this.messageObject);
-      else this.message = await this.context.editOrRespond(this.messageObject);
+      else this.message = await this.context.editOrRespond(this.messageObject) as Structures.Message;
     }
   }
 

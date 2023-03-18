@@ -1,4 +1,4 @@
-import { Interaction, Constants } from 'detritus-client';
+import { Interaction, Constants, Structures } from 'detritus-client';
 
 import { VoiceStore } from '@/modules/stores';
 
@@ -10,8 +10,14 @@ export const QUEUE_ADD_OPTIONS = [
     name: 'url',
     description: 'URL',
     type: Constants.ApplicationCommandOptionTypes.STRING,
-    required: true,
+    required: false,
   },
+  {
+    name: 'file',
+    description: 'Media file',
+    type: Constants.ApplicationCommandOptionTypes.ATTACHMENT,
+    required: false
+  }
 ];
 
 export class QueueAddCommand extends BaseCommandOption {
@@ -26,17 +32,21 @@ export class QueueAddCommand extends BaseCommandOption {
 
   public async run(
     ctx: Interaction.InteractionContext,
-    { url }: { url: string }
+    { url, file }: { url?: string, file?: Structures.Attachment }
   ) {
     if (!ctx.guild || !ctx.member || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
       return await ctx.editOrRespond('You are not in the voice channel.');
+    if (!url && !file)
+      return await ctx.editOrRespond('Either pass a URL or upload a file.');
+    // fuck you
+    const media = url || (file ? file.url : '');
 
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
       voice = VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
-      await voice.queue.push(url, ctx.user);
-      return ctx.editOrRespond('Okay, joining...');
+      await voice.queue.push(media, ctx.user);
+      return await ctx.editOrRespond('Okay, joining...');
     }
     if (!voice.canExecuteVoiceCommands(ctx.member))
       return await ctx.editOrRespond(
@@ -45,7 +55,7 @@ export class QueueAddCommand extends BaseCommandOption {
     if (!voice.initialized)
       return await ctx.editOrRespond('Voice not yet initialized!');
 
-    await voice.queue.push(url, ctx.user);
-    ctx.editOrRespond('Okay.');
+    await voice.queue.push(media, ctx.user);
+    await ctx.editOrRespond('Added to the queue.');
   }
 }
