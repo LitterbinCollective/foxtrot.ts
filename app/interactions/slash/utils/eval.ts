@@ -1,3 +1,4 @@
+import { runJS } from '@/modules/utils/eval-helper';
 import axios from 'axios';
 import { Constants, Interaction, Utils } from 'detritus-client';
 import { inspect } from 'util';
@@ -38,25 +39,14 @@ export default class EvalCommand extends BaseSlashCommand {
 
   public async run(
     ctx: Interaction.InteractionContext,
-    { code, async, url }: { code: string; async: string; url: string }
+    { code, async, url }: { code: string; async: boolean; url: string }
   ) {
     if (url && url.length !== 0) code = (await axios(url)).data;
 
-    let message = '';
-    let language = 'js';
-    try {
-      if (async) {
-        const funct = new AsyncFunction('context', code);
-        message = await funct(ctx);
-      } else message = await Promise.resolve(eval(code));
+    let message = await runJS(ctx, code, async);
 
-      if (typeof message === 'object') message = inspect(message);
-    } catch (err) {
-      if (err instanceof Error) message = err.toString();
-    }
-
-    ctx.editOrRespond({
-      content: Utils.Markup.codeblock(String(message), { language }),
+    await ctx.editOrRespond({
+      content: Utils.Markup.codeblock(String(message), { language: 'js' }),
       flags: Constants.MessageFlags.EPHEMERAL,
     });
   }

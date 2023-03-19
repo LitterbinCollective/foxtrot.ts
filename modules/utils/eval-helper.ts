@@ -1,4 +1,4 @@
-import { Command } from 'detritus-client';
+import { Command, Interaction } from 'detritus-client';
 import { inspect } from 'util';
 
 // easy access variables
@@ -9,7 +9,7 @@ import * as Voice from '@/modules/voice';
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
-export async function runJS(ctx: Command.Context, code: string, async = false) {
+export async function runJS(ctx: Command.Context | Interaction.InteractionContext, code: string, async = false) {
   let message = 'Nothing was ran.';
 
   try {

@@ -35,7 +35,7 @@ export default class EvalCommand extends BaseCommand {
 
     let message = await runJS(ctx, code, async);
 
-    ctx.user.createMessage(
+    await ctx.user.createMessage(
       Utils.Markup.codeblock(String(message), { language: 'js' })
     );
   }
