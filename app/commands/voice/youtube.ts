@@ -27,7 +27,7 @@ export default class YouTubeCommand extends BaseCommand {
   }
 
   public async run(ctx: Command.Context, { query, noqueue }: { query: string, noqueue: boolean }) {
-    if (!ctx.guild) return;
+    if (!ctx.guild || !ctx.member) return;
     let requestOptions = undefined;
 
     if (formats.youtube && formats.youtube.ipv6.length !== 0)
@@ -48,7 +48,8 @@ export default class YouTubeCommand extends BaseCommand {
     let message = first.url;
 
     const voice = VoiceStore.get(ctx.guild.id);
-    if (voice && voice.initialized && !noqueue) {
+    if (voice && voice.initialized &&
+      voice.canExecuteVoiceCommands(ctx.member)&& !noqueue) {
       voice.queue.push(first.url, ctx.message);
       message = 'Adding ' + first.url + ' to the queue.';
     }
