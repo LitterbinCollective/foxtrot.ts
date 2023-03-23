@@ -6,7 +6,7 @@ import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../managers';
 import { BaseFormat } from './baseformat';
 
 export default class SoundcloudFormat extends BaseFormat {
-  public regex = /^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/g;
+  public regex = /^https?:\/\/(?:www\.)?(soundcloud\.com|snd\.sc)(?:\/([0-9A-z_-]+)){2}/g;
   public printName = 'SoundCloud';
   private readonly scdl;
 
@@ -18,17 +18,17 @@ export default class SoundcloudFormat extends BaseFormat {
     });
   }
 
-  public async process(matched: string) {
+  public async process(url: string) {
     let info: any;
     try {
-      info = await this.scdl.getInfo(matched);
+      info = await this.scdl.getInfo(url);
     } catch (err) {
       return false;
     }
 
     const { scdl } = this;
     async function fetch() {
-      const stream = await scdl.download(matched);
+      const stream = await scdl.download(url);
       return stream;
     }
 
@@ -38,7 +38,7 @@ export default class SoundcloudFormat extends BaseFormat {
       info: {
         title: info.user.username + ' - ' + info.title,
         image: info.artwork_url || info.user.avatar_url,
-        url: matched,
+        url,
         duration: info.full_duration / 1000,
       },
     } as VoiceFormatResponseFetch;

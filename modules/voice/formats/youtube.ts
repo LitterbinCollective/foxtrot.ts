@@ -6,7 +6,7 @@ import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../managers';
 
 export default class YouTubeFormat extends BaseFormat {
   public regex =
-    /https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/g;
+    /^https?:\/\/(?:www\.|music\.)?youtu(?:be\.com\/watch\?v=|be\.com\/shorts\/|\.be\/)([\w\-\_]*)(&(amp;)?[\w\?=]*)?$/g;
   public printName = 'YouTube';
 
   private get cookies() {
@@ -30,13 +30,13 @@ export default class YouTubeFormat extends BaseFormat {
     return result;
   }
 
-  public async process(matched: string) {
+  public async process(_: string, [__, videoId]: RegExpMatchArray) {
     const IPv6Block = this.formatCredentials.youtube
       ? this.formatCredentials.youtube.ipv6
       : undefined;
     let info: ytdl.videoInfo;
     try {
-      info = await ytdl.getBasicInfo(matched, {
+      info = await ytdl.getBasicInfo(videoId, {
         /*requestOptions: {
           headers: {
             cookies: this.cookies
@@ -55,7 +55,7 @@ export default class YouTubeFormat extends BaseFormat {
         (image = thumbnail.url), (width = thumbnail.width);
 
     function fetch() {
-      const stream = ytdl(matched, {
+      const stream = ytdl(videoId, {
         quality: 'highestaudio',
         filter: 'audioonly',
         highWaterMark: 1 << 25,

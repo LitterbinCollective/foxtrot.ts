@@ -7,8 +7,7 @@
     "build:ts": "tsc && tsc-alias",
     "build:cpp": "node-gyp clean configure build",
     "build": "npm run build:cpp && npm run build:ts",
-    "start": "node dist/scripts/run.js",
-    "update-shat": "node dist/scripts/updateshat.js",
+    "start": "node --openssl-legacy-provider dist/scripts/run.js",
     "prettier": "prettier --config ./.prettierrc --write **/*.ts"
   },
   "author": "Litterbin Collective",
@@ -20,8 +19,9 @@
     "axios": "^0.21.2",
     "better-ytdl-core": "github:be195/better-ytdl-core#patch-1",
     "dayjs": "^1.11.7",
-    "detritus-client": "^0.17.0-beta.14",
+    "detritus-client": "github:be195/client#0.16.4",
     "detritus-client-socket": "github:be195/client-socket",
+    "form-data": "^4.0.0",
     "https-proxy-agent": "^5.0.1",
     "knex": "^2.4.0",
     "objection": "github:Vincit/objection.js",
@@ -32,8 +32,7 @@
     "sqlite3": "^5.0.11",
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
-    "youtube-search-without-api-key": "^1.0.7",
-    "ytdl-core": "^4.11.2"
+    "ytsr": "github:Yonle/node-ytsr"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",

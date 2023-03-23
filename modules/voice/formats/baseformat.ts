@@ -10,7 +10,8 @@ export class BaseFormat {
   }
 
   public process(
-    _matched: string
+    _url: string,
+    _matches: RegExpMatchArray
   ):
     | Promise<VoiceFormatResponse[] | VoiceFormatResponse | false>
     | VoiceFormatResponse[]

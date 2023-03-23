@@ -104,11 +104,11 @@ class VoiceFormatManager extends BaseVoiceManager {
 
     for (const formatName in this.processors) {
       const format = this.processors[formatName];
-      const match = url.match(format.regex);
+      const match = [...url.matchAll(format.regex)];
       if (!match || match.length === 0) continue;
 
       try {
-        result = await format.process(url);
+        result = await format.process(match[0][0], match[0]);
         if (!result) continue;
       } catch (err) {
         this.logger.error(format.printName, 'spew an error: ', err);
