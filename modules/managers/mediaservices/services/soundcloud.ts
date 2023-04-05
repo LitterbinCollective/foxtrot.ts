@@ -46,9 +46,4 @@ export default class SoundCloudService extends MediaService {
     ':author/:song',
     ':shortened'
   ];
-
-  public async download(url: string, matches: Record<string, string>): Promise<MediaServiceResponse> {
-    
-  }
-
 }
