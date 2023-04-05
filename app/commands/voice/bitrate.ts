@@ -21,6 +21,7 @@ export default class BitrateCommand extends BaseVoiceCommand {
           Utils.Markup.codestring(ctx.voice.bitrate.toString()) + '.'
       );
     }
+
     return await ctx.reply(
       'The current Opus encoder bitrate is ' +
         Utils.Markup.codestring(ctx.voice.bitrate.toString()) + '.'

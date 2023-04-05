@@ -32,6 +32,8 @@
     "sqlite3": "^5.0.11",
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
+    "url-pattern": "^1.0.3",
+    "youtubei.js": "^4.1.0",
     "ytsr": "github:Yonle/node-ytsr"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 import fs from 'fs';
-import ytdl from 'better-ytdl-core';
+import { Readable } from 'stream';
+import { Innertube } from 'youtubei.js';
 
 import { BaseFormat } from './baseformat';
 import { VoiceFormatResponseFetch, VoiceFormatResponseType } from '../managers';
@@ -8,6 +9,13 @@ export default class YouTubeFormat extends BaseFormat {
   public regex =
     /^https?:\/\/(?:www\.|music\.)?youtu(?:be\.com\/watch\?v=|be\.com\/shorts\/|\.be\/)([\w\-\_]*)(&(amp;)?[\w\?=]*)?$/g;
   public printName = 'YouTube';
+  private yt!: Innertube;
+
+  constructor (formatCredentials: IConfigFormatCredentials) {
+    super(formatCredentials);
+
+    Innertube.create().then(v => this.yt = v);
+  }
 
   private get cookies() {
     const cookie = fs.readFileSync('youtube.cookies').toString();
@@ -30,54 +38,36 @@ export default class YouTubeFormat extends BaseFormat {
     return result;
   }
 
-  public async process(_: string, [__, videoId]: RegExpMatchArray) {
-    const IPv6Block = this.formatCredentials.youtube
-      ? this.formatCredentials.youtube.ipv6
-      : undefined;
-    let info: ytdl.videoInfo;
-    try {
-      info = await ytdl.getBasicInfo(videoId, {
-        /*requestOptions: {
-          headers: {
-            cookies: this.cookies
-          }
-        },*/
-        IPv6Block,
-      } as any);
-    } catch (err) {
-      return false;
-    }
-
-    let image = '';
-    let width = 0;
-    for (const thumbnail of info.videoDetails.thumbnails)
-      if (thumbnail.width > width)
-        (image = thumbnail.url), (width = thumbnail.width);
-
-    function fetch() {
-      const stream = ytdl(videoId, {
-        quality: 'highestaudio',
-        filter: 'audioonly',
-        highWaterMark: 1 << 25,
-        IPv6Block,
-        /*requestOptions: {
-          headers: {
-            cookies: this.cookies
-          }
-        },*/
-      });
-      return stream;
-    }
+  public async process(url: string, [__, videoId]: RegExpMatchArray) {
+    const info = await this.yt.getBasicInfo(videoId, 'ANDROID');
+    if (!info.streaming_data)
+      throw new Error('no streaming_data');
+    const { expires } = info.streaming_data;
 
     return {
-      fetch,
       type: VoiceFormatResponseType.FETCH,
-      info: {
-        title: info.videoDetails.title,
-        url: info.videoDetails.video_url,
-        duration: Number(info.videoDetails.lengthSeconds),
-        image,
+      fetch: async () => {
+        let stream: ReadableStream;
+
+        const options = {
+          type: 'audio' as 'audio',
+          quality: 'best',
+          format: 'mp4'
+        };
+
+        if (expires.getDate() - Date.now() <= 0)
+          stream = await this.yt.download(videoId, options);
+        else
+          stream = await info.download(options);
+
+        return Readable.from(stream as any);
       },
-    } as VoiceFormatResponseFetch;
+      info: {
+        title: info.basic_info.author + ' - ' + info.basic_info.title || '',
+        image: (info.basic_info.thumbnail || [])[0].url,
+        duration: info.basic_info.duration || -1,
+        url
+      }
+    }
   }
 }
