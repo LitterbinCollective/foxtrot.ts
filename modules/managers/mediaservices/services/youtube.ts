@@ -26,7 +26,8 @@ export default class YouTubeService extends MediaService {
   public test(url: URL): URL | Promise<URL> {
     if (url.hostname === 'youtu.be') {
       url.hostname = 'youtube.com';
-      url.pathname = '/watch?v=' + url.pathname;
+      url.searchParams.append('v', url.pathname.slice(1));
+      url.pathname = '/watch';
     }
 
     return url;

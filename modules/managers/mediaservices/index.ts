@@ -157,7 +157,7 @@ export class MediaServiceManager extends BaseManager<MediaService> {
   constructor() {
     super({
       create: true,
-      loggerTag: 'yes',
+      loggerTag: 'Media service manager',
       scanPath: 'mediaservices/services/',
     });
 
