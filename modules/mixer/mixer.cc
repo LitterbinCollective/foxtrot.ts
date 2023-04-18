@@ -195,24 +195,31 @@ Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
           case CORRUPT_MODE_SHIFT_L:
             sample_l = sample_l << rand_sample;
             sample_r = sample_r << rand_sample;
+            break;
           case CORRUPT_MODE_SHIFT_R:
             sample_l = sample_l >> rand_sample;
             sample_r = sample_r >> rand_sample;
+            break;
           case CORRUPT_MODE_OR:
             sample_l = sample_l | rand_sample;
             sample_r = sample_r | rand_sample;
+            break;
           case CORRUPT_MODE_AND:
             sample_l = sample_l & rand_sample;
             sample_r = sample_r & rand_sample;
+            break;
           case CORRUPT_MODE_XOR:
             sample_l = sample_l ^ rand_sample;
             sample_r = sample_r ^ rand_sample;
+            break;
           case CORRUPT_MODE_NOT:
             sample_l = ~sample_l;
             sample_r = ~sample_r;
+            break;
           default:
             sample_l += rand_sample;
             sample_r += rand_sample;
+            break;
         }
       }
       this->_corrupt_pos = 0;
