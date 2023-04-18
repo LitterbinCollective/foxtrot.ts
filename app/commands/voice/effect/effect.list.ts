@@ -12,8 +12,10 @@ export default class EffectListCommand extends BaseVoiceCommand {
     });
   }
 
-  public run(ctx: VoiceContext) {
-    const embed = listEffects(
+  public async run(ctx: VoiceContext) {
+    if (!ctx.guild) return;
+    const embed = await listEffects(
+      ctx.guild,
       ctx.voice.effects.list,
       ctx.voice.effects.STACK_LIMIT
     );

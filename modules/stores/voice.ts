@@ -68,19 +68,15 @@ class VoiceStore extends Store<string, NewVoice> {
     this.nextCycle = -1;
   }
 
-  public create(
+  public async create(
     voiceChannel: Structures.ChannelGuildVoice,
     textChannel: Structures.ChannelTextType
-  ): NewVoice {
+  ): Promise<NewVoice> {
     if (!textChannel.canMessage)
-      throw new UserError(
-        'Not enough permissions to talk in this text channel.'
-      );
+      throw new UserError('voice-check.not-enough-perms-send-messages');
 
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
-      throw new UserError(
-        'Bot is not able to join or speak in this voice channel.'
-      );
+      throw new UserError('voice-check.not-enough-perms-speak');
 
     if (voiceChannel.guildId !== textChannel.guildId)
       throw new Error(
@@ -89,9 +85,7 @@ class VoiceStore extends Store<string, NewVoice> {
       );
 
     if (this.has(voiceChannel.guildId))
-      throw new UserError(
-        'Already connected to a voice channel on this server'
-      );
+      throw new UserError('voice-check.already-connected');
 
     const voice = new NewVoice(voiceChannel, textChannel);
     this.set(voiceChannel.guildId, voice);

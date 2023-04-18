@@ -26,11 +26,12 @@ export default class FeedbackCommand extends BaseCommand {
     ctx: Command.Context,
     { feedback, anonymous }: { feedback: string; anonymous: boolean }
   ) {
-    let text = 'Failed to submit feedback.';
+    if (!ctx.guild) return;
+    let text = 'commands.feedback.fail';
 
     if (sendFeedback(ctx.rest, feedback, anonymous ? undefined : ctx.user))
-      text = 'Your feedback has been sent to our server, thank you!';
+      text = 'commands.feedback.success';
 
-    ctx.reply(text);
+    ctx.reply(await this.t(ctx, text));
   }
 }

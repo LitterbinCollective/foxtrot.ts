@@ -9,23 +9,23 @@ export class VoiceInteractionContext extends Interaction.InteractionContext {
   public voice!: Voice;
 }
 
-async function onBeforeRun(ctx: Interaction.InteractionContext) {
+async function onBeforeRun(this: any, ctx: Interaction.InteractionContext) {
   if (!ctx.guild || !ctx.member) return false;
 
   const voice = VoiceStore.get(ctx.guild.id);
   if (!voice) {
-    await ctx.editOrRespond('Not in the voice channel.');
+    await ctx.editOrRespond(await this.t(ctx, 'voice-check.bot-not-in-voice'));
     return false;
   }
 
   if (!voice.initialized) {
-    await ctx.editOrRespond('Voice not yet initialized!');
+    await ctx.editOrRespond(await this.t(ctx, 'voice-check.voice-not-init'));
     return false;
   }
 
   if (!voice.canExecuteVoiceCommands(ctx.member)) {
     await ctx.editOrRespond(
-      'You are not in the voice channel this bot is currently in.'
+      await this.t(ctx, 'voice-check.member-not-in-voice')
     );
     return false;
   }
@@ -37,12 +37,12 @@ async function onBeforeRun(ctx: Interaction.InteractionContext) {
 
 export class BaseVoiceSlashCommand extends BaseSlashCommand {
   public onBeforeRun(ctx: Interaction.InteractionContext): Promise<boolean> {
-    return onBeforeRun(ctx);
+    return onBeforeRun.call(this, ctx);
   }
 }
 
 export class BaseVoiceCommandOption extends BaseCommandOption {
   public onBeforeRun(ctx: Interaction.InteractionContext): Promise<boolean> {
-    return onBeforeRun(ctx);
+    return onBeforeRun.call(this, ctx);
   }
 }

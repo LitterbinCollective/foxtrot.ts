@@ -1,22 +1,20 @@
 import { Interaction } from 'detritus-client';
 
 import { VoiceStore } from '@/modules/stores';
+import { UserError } from '@/modules/utils';
 
 import { BaseSlashCommand } from '../../base';
 
 export default class JoinCommand extends BaseSlashCommand {
   public name = 'join';
-  public description = 'Connects to a voice channel.';
+  public description = 'connects to a voice channel';
 
   public async run(ctx: Interaction.InteractionContext) {
     if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
-      return ctx.editOrRespond(
-        'You are not connected to any voice channel on this server.'
-      );
+      throw new UserError('voice-check.member-not-in-voice');
 
-    VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
-
-    return await ctx.editOrRespond('Hello.');
+    await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+    return await ctx.editOrRespond(await this.t(ctx, 'commands.join-msg'));
   }
 }

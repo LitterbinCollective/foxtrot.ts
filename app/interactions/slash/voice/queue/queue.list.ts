@@ -1,33 +1,38 @@
 import { Utils } from 'detritus-client';
 
 import { PaginatorsStore } from '@/modules/stores';
-import { Constants, durationInString, Paginator } from '@/modules/utils';
-import { VoiceFormatResponseInfo } from '@/modules/voice/managers';
+import { MediaServiceResponseInformation } from '@/modules/managers/mediaservices/types';
+import {
+  Constants,
+  durationInString,
+  Paginator,
+  UserError,
+} from '@/modules/utils';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
-
 export class QueueListCommand extends BaseVoiceCommandOption {
   public name = 'list';
-  public description = 'List queue.';
+  public description = 'list queue';
 
   public async run(ctx: VoiceInteractionContext) {
-    if (!ctx.guild) return;
-
     const { info } = ctx.voice.queue;
-    if (info.length === 0) return ctx.editOrRespond('Nothing is in the queue');
+    if (info.length === 0) throw new UserError('commands.queue.nothing');
 
     const pages = [];
     while (info.length)
       pages.push(info.splice(0, Constants.QUEUE_PAGE_ITEMS_MAXIMUM));
 
+    const titleTemplate = (...values: any[]) =>
+      this.t(ctx, 'commands.queue.paginator', ...values);
+
     const paginator = PaginatorsStore.create(ctx, {
       pages,
-      onEmbed(
+      async onEmbed(
         this: Paginator,
-        page: VoiceFormatResponseInfo[],
+        page: MediaServiceResponseInformation[],
         embed: Utils.Embed
       ) {
-        embed.setTitle('Queue - ' + embed.title);
+        embed.setTitle(await titleTemplate(embed.title));
         const description = page
           .map((info, k) => {
             const position =
@@ -35,7 +40,7 @@ export class QueueListCommand extends BaseVoiceCommandOption {
             const duration = Utils.Markup.codestring(
               durationInString(info.duration)
             );
-            const suffix = info.author ? ` - ${info.author.name}` : '';
+            const suffix = info.metadata ? ` - ${info.metadata.name}` : '';
             return `${position}) ${duration} ${info.title}` + suffix;
           })
           .join('\n');

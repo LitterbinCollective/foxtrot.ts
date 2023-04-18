@@ -26,15 +26,19 @@ export default class EffectAddCommand extends BaseVoiceCommand {
     });
   }
 
-  public run(ctx: VoiceContext, { effect }: { effect: string }) {
+  public async run(ctx: VoiceContext, { effect }: { effect: string }) {
+    if (!ctx.guild) return;
     const id = ctx.voice.effects.addEffect(effect);
-    const embed = listEffects(
+    const embed = await listEffects(
+      ctx.guild,
       ctx.voice.effects.list,
       ctx.voice.effects.STACK_LIMIT
     );
 
     embed.setTitle(
-      Constants.EMOJIS.PLUS + ' Added effect ' + Utils.Markup.codestring(effect)
+      Constants.EMOJIS.PLUS +
+        ' ' +
+        (await this.t(ctx, 'commands.effect.add', effect))
     );
 
     // tips
@@ -43,24 +47,24 @@ export default class EffectAddCommand extends BaseVoiceCommand {
     const key = optionsKeys[(optionsKeys.length * Math.random()) << 0];
     const prefix = this.commandClient.prefixes.custom.first();
     embed.addField(
-      'List options',
+      await this.t(ctx, 'commands.effect.list-options'),
       Utils.Markup.codestring(`${prefix}${COMMAND_NAME_OPTIONS} ${id}`),
       true
     );
     embed.addField(
-      'Set option',
+      await this.t(ctx, 'commands.effect.set-option'),
       Utils.Markup.codestring(
         `${prefix}${COMMAND_NAME_SET} ${id} ${key} ${options[key]}`
       ),
       true
     );
     embed.addField(
-      'Get option',
+      await this.t(ctx, 'commands.effect.get-option'),
       Utils.Markup.codestring(`${prefix}${COMMAND_NAME_GET} ${id} ${key}`),
       true
     );
 
-    embed.setFooter('Effect ID: ' + id + ' (' + name + ')');
+    embed.setFooter(await this.t(ctx, 'commands.effect.effect-id', id, effect));
     ctx.reply({ embed });
   }
 }

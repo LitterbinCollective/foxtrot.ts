@@ -12,8 +12,10 @@ export default class CurrentlyPlayingCommand extends BaseVoiceCommand {
   }
 
   public async run(ctx: VoiceContext) {
-    let options: string | RequestTypes.CreateMessage =
-      'Nothing is playing right now.';
+    let options: string | RequestTypes.CreateMessage = await this.t(
+      ctx,
+      'commands.nothing-is-playing'
+    );
 
     if (ctx.voice.isPlaying)
       options = ctx.voice.queue.announcer.play(

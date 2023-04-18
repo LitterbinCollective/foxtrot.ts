@@ -2,10 +2,10 @@ import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class EffectClearCommand extends BaseVoiceCommandOption {
   public name = 'clear';
-  public description = 'Clear effects.';
+  public description = 'clear effects';
 
-  public run(ctx: VoiceInteractionContext) {
+  public async run(ctx: VoiceInteractionContext) {
     ctx.voice.effects.clearEffects();
-    ctx.editOrRespond('Cleared effects.');
+    ctx.editOrRespond(await this.t(ctx, 'commands.effect.clear'));
   }
 }

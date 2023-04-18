@@ -14,17 +14,16 @@ export default class BitrateCommand extends BaseVoiceCommand {
   }
 
   public async run(ctx: VoiceContext, { bitrate }: { bitrate?: number }) {
+    let current = ctx.voice.bitrate;
+    let message = 'current';
+
     if (bitrate) {
-      ctx.voice.bitrate = bitrate;
-      return await ctx.reply(
-        'Set bitrate to ' +
-          Utils.Markup.codestring(ctx.voice.bitrate.toString()) + '.'
-      );
+      ctx.voice.bitrate = current = bitrate;
+      message = 'set';
     }
 
     return await ctx.reply(
-      'The current Opus encoder bitrate is ' +
-        Utils.Markup.codestring(ctx.voice.bitrate.toString()) + '.'
+      await this.t(ctx, 'commands.bitrate.' + message, current)
     );
   }
 }

@@ -42,7 +42,7 @@ export default class SettingsSetCommand extends BaseSettingsCommand {
 
     const attribute = properties[key as keyof typeof properties];
     if (!attribute || key === GuildSettings.idColumn)
-      throw new UserError('unknown setting');
+      throw new UserError('commands.settings.unknown');
 
     let type = attribute.type;
 
@@ -52,13 +52,11 @@ export default class SettingsSetCommand extends BaseSettingsCommand {
 
     await ctx.settings.$query().patch({ [key]: value });
 
-    const embed = listSettings(ctx.settings);
+    const embed = await listSettings(ctx.guild, ctx.settings);
     embed.setTitle(
       Constants.EMOJIS.CHECK +
-        ' Set ' +
-        Utils.Markup.codestring(key) +
-        ' to ' +
-        Utils.Markup.codestring(value.toString())
+        ' ' +
+        (await this.t(ctx, 'commands.settings.set', key, value))
     );
     ctx.reply({ embed });
   }

@@ -6,7 +6,7 @@ import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class EffectSetCommand extends BaseVoiceCommandOption {
   public name = 'set';
-  public description = 'Set value of the specified effect option.';
+  public description = 'set value of the specified effect option';
 
   constructor() {
     super({
@@ -19,13 +19,13 @@ export class EffectSetCommand extends BaseVoiceCommandOption {
         },
         {
           name: 'key',
-          description: 'Option key',
+          description: 'option key',
           type: DetritusConstants.ApplicationCommandOptionTypes.STRING,
           required: true,
         },
         {
           name: 'value',
-          description: 'Option value',
+          description: 'option value',
           type: DetritusConstants.ApplicationCommandOptionTypes.STRING,
           required: true,
         },
@@ -33,23 +33,24 @@ export class EffectSetCommand extends BaseVoiceCommandOption {
     });
   }
 
-  public run(
+  public async run(
     ctx: VoiceInteractionContext,
     { effect, key, value }: { effect: number; key: string; value: string }
   ) {
+    if (!ctx.guild) return;
     ctx.voice.effects.setValue(effect, key, value);
 
     const { name, options, optionsRange } =
       ctx.voice.effects.getEffectInfo(effect);
-    const embed = listOptions(name, options, optionsRange);
+    const embed = await listOptions(ctx.guild, name, options, optionsRange);
     embed.setTitle(
       Constants.EMOJIS.CHECK +
-        ' Set ' +
-        Utils.Markup.codestring(key) +
-        ' to ' +
-        Utils.Markup.codestring(value)
+        ' ' +
+        (await this.t(ctx, 'commands.effect.set', key, value))
     );
-    embed.setFooter('Effect ID: ' + effect + ' (' + name + ')');
+    embed.setFooter(
+      await this.t(ctx, 'commands.effect.effect-id', effect, name)
+    );
     ctx.editOrRespond({ embed });
   }
 }

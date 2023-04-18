@@ -1,14 +1,14 @@
 import { Structures, Utils } from 'detritus-client';
 import { RequestTypes } from 'detritus-client-rest';
 
+import { MediaServiceResponseInformation } from '@/modules/managers/mediaservices/types';
 import { Constants, durationInString } from '@/modules/utils';
 
-import { VoiceFormatResponseInfo } from './managers';
 import NewVoice from '.';
 
 export default class VoiceQueueAnnouncer {
   public channel: Structures.ChannelTextType;
-  private current?: VoiceFormatResponseInfo;
+  private current?: MediaServiceResponseInformation;
   private loadingMessage?: Structures.Message;
   private startTime?: number;
   private readonly voice: NewVoice;
@@ -20,8 +20,7 @@ export default class VoiceQueueAnnouncer {
 
   public createMessage(message: RequestTypes.CreateMessage | string) {
     try {
-      if (this.channel.canMessage)
-        return this.channel.createMessage(message);
+      if (this.channel.canMessage) return this.channel.createMessage(message);
     } catch (err) {}
   }
 
@@ -54,7 +53,7 @@ export default class VoiceQueueAnnouncer {
   }
 
   public play(
-    streamInfo: VoiceFormatResponseInfo | undefined = this.current,
+    streamInfo: MediaServiceResponseInformation | undefined = this.current,
     returnCreateMessage = false
   ): RequestTypes.CreateMessage | undefined {
     if (!streamInfo) throw new Error('No stream info provided');
@@ -63,15 +62,20 @@ export default class VoiceQueueAnnouncer {
       this.current = streamInfo;
     }
 
-    const fromURL = typeof streamInfo.image === 'string';
+    const fromURL = typeof streamInfo.cover === 'string';
     const embed = new Utils.Embed({
-      author: streamInfo.author,
-      title: Constants.EMOJIS.PLAY + ' ' + streamInfo.title,
+      author: streamInfo.metadata,
+      title:
+        Constants.EMOJIS.PLAY +
+        ' ' +
+        streamInfo.author +
+        ' - ' +
+        streamInfo.title,
       description: this.playProgress(streamInfo.duration),
       color: Constants.EMBED_COLORS.DEFAULT,
       url: streamInfo.url,
       thumbnail: {
-        url: fromURL ? (streamInfo.image as string) : 'attachment://image.jpg',
+        url: fromURL ? (streamInfo.cover as string) : 'attachment://image.jpg',
       },
     });
 
@@ -79,7 +83,7 @@ export default class VoiceQueueAnnouncer {
     if (!fromURL)
       options.file = {
         filename: 'image.jpg',
-        value: streamInfo.image as Buffer,
+        value: streamInfo.cover as Buffer,
       };
     if (returnCreateMessage) return options;
 

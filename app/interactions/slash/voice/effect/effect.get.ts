@@ -1,10 +1,10 @@
-import { Constants } from 'detritus-client';
+import { Constants, Utils } from 'detritus-client';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class EffectGetCommand extends BaseVoiceCommandOption {
   public name = 'get';
-  public description = 'Get value of the specified effect option.';
+  public description = 'get value of the specified effect option';
 
   constructor() {
     super({
@@ -17,7 +17,7 @@ export class EffectGetCommand extends BaseVoiceCommandOption {
         },
         {
           name: 'key',
-          description: 'Option key',
+          description: 'option key',
           type: Constants.ApplicationCommandOptionTypes.STRING,
           required: true,
         },
@@ -30,6 +30,6 @@ export class EffectGetCommand extends BaseVoiceCommandOption {
     { effect, key }: { effect: number; key: string }
   ) {
     const value = ctx.voice.effects.getValue(effect, key);
-    ctx.editOrRespond(value.toString());
+    ctx.editOrRespond(Utils.Markup.codestring(value.toString()));
   }
 }

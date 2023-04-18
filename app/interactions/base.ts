@@ -3,6 +3,7 @@ import { Constants as DetritusConstants, Interaction } from 'detritus-client';
 import { buildRuntimeErrorEmbed, Constants, UserError } from '@/modules/utils';
 
 import app from '..';
+import { t } from '@/modules/translations';
 
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
@@ -36,13 +37,24 @@ export class BaseInteractionCommand<
     return false;
   }
 
-  public onRunError(
+  public t(
+    ctx: Interaction.InteractionContext,
+    text: string,
+    ...values: any[]
+  ) {
+    if (!ctx.guild) return 'no guild';
+    return t(ctx.guild, text, ...values);
+  }
+
+  public async onRunError(
     ctx: Interaction.InteractionContext,
     _: ParsedArgsFinished,
     error: any
   ) {
-    if (error instanceof UserError) return ctx.editOrRespond(error.message);
-    const embed = buildRuntimeErrorEmbed(error);
+    if (!ctx.guild) return;
+    if (error instanceof UserError)
+      return ctx.editOrRespond(await this.t(ctx, error.message));
+    const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
     ctx.editOrRespond({ embed });
 
     app.logger.error(error);
@@ -53,6 +65,15 @@ export class BaseCommandOption<
   ParsedArgsFinished = Interaction.ParsedArgs
 > extends Interaction.InteractionCommandOption<ParsedArgsFinished> {
   public type = DetritusConstants.ApplicationCommandOptionTypes.SUB_COMMAND;
+
+  public t(
+    ctx: Interaction.InteractionContext,
+    text: string,
+    ...values: any[]
+  ) {
+    if (!ctx.guild) return 'no guild';
+    return t(ctx.guild, text, ...values);
+  }
 }
 
 export class BaseCommandOptionGroup<

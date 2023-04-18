@@ -1,13 +1,22 @@
 const mixer = require.main?.require('../build/Release/mixer');
 
 export interface Mixer {
-  SetVolume(volume: number): number;
-  GetVolume(): number;
+  setVolume(volume: number): number;
+  getVolume(): number;
 
-  AddReadable(data: Buffer): void;
-  ClearReadables(): void;
+  addReadable(data: Buffer): void;
+  clearReadables(): void;
 
-  Process(data: Buffer): Buffer;
+  process(data: Buffer): Buffer;
+
+  setCorruptEnabled(enable: boolean): boolean;
+  getCorruptEnabled(): boolean;
+  setCorruptEvery(n: number): number;
+  getCorruptEvery(): number;
+  setCorruptRandSample(n: number): number;
+  getCorruptRandSample(): number;
+  setCorruptMode(m: number): number;
+  getCorruptMode(): number;
 }
 
 export const Mixer: {

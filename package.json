@@ -21,20 +21,17 @@
     "dayjs": "^1.11.7",
     "detritus-client": "github:be195/client#0.16.4",
     "detritus-client-socket": "github:be195/client-socket",
-    "form-data": "^4.0.0",
     "https-proxy-agent": "^5.0.1",
     "knex": "^2.4.0",
+    "m3u8stream": "^0.8.6",
     "objection": "github:Vincit/objection.js",
     "pg": "^8.7.3",
-    "pretty-ms": "^7.0.1",
     "sh": "github:LitterbinCollective/sh",
-    "soundcloud-downloader": "github:LitterbinCollective/node-soundcloud-downloader",
     "sqlite3": "^5.0.11",
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
     "url-pattern": "^1.0.3",
-    "youtubei.js": "^4.1.0",
-    "ytsr": "github:Yonle/node-ytsr"
+    "youtubei.js": "^4.1.0"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",

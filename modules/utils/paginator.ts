@@ -7,6 +7,8 @@ import {
 } from 'detritus-client';
 import { RequestTypes } from 'detritus-client-rest';
 
+import { t } from '@/modules/translations';
+
 import * as Constants from './constants';
 
 export interface PaginatorOptions {
@@ -91,12 +93,12 @@ export class Paginator {
     return this.context.channelId;
   }
 
-  private get messageObject() {
+  private async getMessageObject() {
     const messageObject:
       | RequestTypes.CreateMessage
       | Structures.InteractionEditOrRespond = {
       components: [],
-      embed: this.embed,
+      embed: await this.getEmbed(),
     };
     if (!this.dead) messageObject.components = this.components;
     return messageObject;
@@ -141,7 +143,7 @@ export class Paginator {
     return components;
   }
 
-  private run(ctx: Utils.ComponentContext) {
+  private async run(ctx: Utils.ComponentContext) {
     const time = Date.now();
     if (
       time - this.lastRan < RATE_LIMIT ||
@@ -170,22 +172,31 @@ export class Paginator {
     }
 
     this.lastRan = time;
-    ctx.editOrRespond(this.messageObject);
+    ctx.editOrRespond(await this.getMessageObject());
   }
 
   public async start() {
+    const message = await this.getMessageObject();
     if (this.message) {
-      await this.message.edit(this.messageObject);
+      await this.message.edit(message);
     } else {
       if (this.context instanceof Command.Context)
-        this.message = await this.context.reply(this.messageObject);
-      else this.message = await this.context.editOrRespond(this.messageObject) as Structures.Message;
+        this.message = await this.context.reply(message);
+      else
+        this.message = (await this.context.editOrRespond(
+          message
+        )) as Structures.Message;
     }
   }
 
-  private get embed(): Utils.Embed {
+  private async getEmbed() {
     const embed = new Utils.Embed({
-      title: `Page ${this.currentPage + 1}/${this.maximumPages}`,
+      title: await t(
+        this.context.guild as any,
+        'page',
+        this.currentPage + 1,
+        this.maximumPages
+      ),
       color: Constants.EMBED_COLORS.DEFAULT,
     });
 
@@ -194,12 +205,14 @@ export class Paginator {
     return embed;
   }
 
-  public kill() {
+  public async kill() {
     if (this.dead) return;
     this.dead = true;
     this.onKill();
+
+    const message = await this.getMessageObject();
     if (this.context instanceof Interaction.InteractionContext)
-      this.context.editOrRespond(this.messageObject);
-    else this.message.edit(this.messageObject);
+      this.context.editOrRespond(message);
+    else this.message.edit(message);
   }
 }

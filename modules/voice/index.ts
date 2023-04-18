@@ -17,6 +17,7 @@ export * as Pipeline from './pipeline';
 export * as Queue from './queue';
 
 export default class Voice extends EventEmitter {
+  public allowCorrupt = false;
   public effects!: VoiceEffectManager;
   public initialized = false;
   public queue!: VoiceQueue;
@@ -50,7 +51,10 @@ export default class Voice extends EventEmitter {
     if (this.pipeline) this.pipeline.onVoiceServerUpdate(payload);
   }
 
-  private async initialize(channel: Structures.ChannelGuildVoice, logChannel: Structures.ChannelTextType) {
+  private async initialize(
+    channel: Structures.ChannelGuildVoice,
+    logChannel: Structures.ChannelTextType
+  ) {
     try {
       this.pipeline = new VoicePipeline(this, channel);
     } catch (err) {
@@ -67,6 +71,7 @@ export default class Voice extends EventEmitter {
 
     const settings = await GuildSettingsStore.getOrCreate(channel.guildId);
     this.special = settings.special;
+    this.allowCorrupt = settings.allowCorrupt;
 
     this.emit('initialized');
     this.initialized = true;
@@ -109,7 +114,7 @@ export default class Voice extends EventEmitter {
 
     if (!fromURL) {
       stream.pipe(this.ffmpeg, { end: false });
-      stream.on('error', (err) => {
+      stream.on('error', err => {
         this.cleanUp();
         this.queue.streamingError(err);
       });
@@ -122,12 +127,48 @@ export default class Voice extends EventEmitter {
     this.pipeline.volume = value;
   }
 
+  public get volume() {
+    return this.pipeline.volume;
+  }
+
   public set bitrate(value: number) {
     this.pipeline.bitrate = value;
   }
 
   public get bitrate() {
     return this.pipeline.bitrate;
+  }
+
+  public set corrupt(enable: boolean) {
+    this.pipeline.corrupt = enable;
+  }
+
+  public get corrupt() {
+    return this.pipeline.corrupt;
+  }
+
+  public set corruptEvery(every: number) {
+    this.pipeline.corruptEvery = every;
+  }
+
+  public get corruptEvery() {
+    return this.pipeline.corruptEvery;
+  }
+
+  public set corruptMode(mode: string) {
+    this.pipeline.corruptMode = mode;
+  }
+
+  public get corruptMode() {
+    return this.pipeline.corruptMode;
+  }
+
+  public set corruptRandSample(randSample: number) {
+    this.pipeline.corruptRandSample = randSample;
+  }
+
+  public get corruptRandSample() {
+    return this.pipeline.corruptRandSample;
   }
 
   public skip() {
@@ -147,15 +188,15 @@ export default class Voice extends EventEmitter {
   }
 
   public canExecuteVoiceCommands(member: Structures.Member) {
-    if (!this.channel)
-      return true;
+    if (!this.channel) return true;
     return this.channel === member.voiceChannel;
   }
 
   public canLeave(member: Structures.Member) {
-    if (!this.channel)
-      return true;
-    return this.canExecuteVoiceCommands(member) || this.channel.members.size === 1;
+    if (!this.channel) return true;
+    return (
+      this.canExecuteVoiceCommands(member) || this.channel.members.size === 1
+    );
   }
 
   public async playSoundeffect(script: string | Buffer) {
@@ -169,7 +210,6 @@ export default class Voice extends EventEmitter {
   public kill(forceLeave: boolean = false) {
     this.cleanUp();
     this.pipeline.destroy();
-    if (this.channel)
-      VoiceStore.delete(this.channel.guildId as string);
+    if (this.channel) VoiceStore.delete(this.channel.guildId as string);
   }
 }

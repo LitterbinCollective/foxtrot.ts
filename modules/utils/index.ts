@@ -2,15 +2,20 @@ import { Structures, Utils } from 'detritus-client';
 import { RestClient } from 'detritus-client/lib/rest';
 import { Client } from 'detritus-client-rest';
 
+import { t } from '@/modules/translations';
 import { GuildSettings } from '@/modules/models';
-
 import config from '@/configs/app.json';
+
 import * as constants from './constants';
 
-export function buildRuntimeErrorEmbed(error: Error) {
+export async function buildRuntimeErrorEmbed(
+  guild: Structures.Guild,
+  error: Error
+) {
   const { name, message } = error;
   const embed = new Utils.Embed({
-    title: Constants.EMOJIS.BOMB + ' Runtime Error',
+    title:
+      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'commands.runtime-error')),
     description: `**${name}**: ${message}`,
     color: Constants.EMBED_COLORS.ERROR,
   });
@@ -39,7 +44,8 @@ const normalizeIP = (ip: string) => {
   return fullIP;
 };
 
-const IPV6_REGEX = /^(([0-9a-f]{1,4}:)(:[0-9a-f]{1,4}){1,6}|([0-9a-f]{1,4}:){1,2}(:[0-9a-f]{1,4}){1,5}|([0-9a-f]{1,4}:){1,3}(:[0-9a-f]{1,4}){1,4}|([0-9a-f]{1,4}:){1,4}(:[0-9a-f]{1,4}){1,3}|([0-9a-f]{1,4}:){1,5}(:[0-9a-f]{1,4}){1,2}|([0-9a-f]{1,4}:){1,6}(:[0-9a-f]{1,4})|([0-9a-f]{1,4}:){1,7}(([0-9a-f]{1,4})|:))\/(1[0-1]\d|12[0-8]|\d{1,2})$/;
+const IPV6_REGEX =
+  /^(([0-9a-f]{1,4}:)(:[0-9a-f]{1,4}){1,6}|([0-9a-f]{1,4}:){1,2}(:[0-9a-f]{1,4}){1,5}|([0-9a-f]{1,4}:){1,3}(:[0-9a-f]{1,4}){1,4}|([0-9a-f]{1,4}:){1,4}(:[0-9a-f]{1,4}){1,3}|([0-9a-f]{1,4}:){1,5}(:[0-9a-f]{1,4}){1,2}|([0-9a-f]{1,4}:){1,6}(:[0-9a-f]{1,4})|([0-9a-f]{1,4}:){1,7}(([0-9a-f]{1,4})|:))\/(1[0-1]\d|12[0-8]|\d{1,2})$/;
 /**
  * Quick check for a valid IPv6
  * The Regex only accepts a subset of all IPv6 Addresses
@@ -55,11 +61,14 @@ export function getRandomIPv6(ip: string) {
   // Start by splitting and normalizing addr and mask
   const [rawAddr, rawMask] = ip.split('/');
   let base10Mask = parseInt(rawMask);
-  if (!base10Mask || base10Mask > 128 || base10Mask < 24) throw Error('Invalid IPv6 subnet');
+  if (!base10Mask || base10Mask > 128 || base10Mask < 24)
+    throw Error('Invalid IPv6 subnet');
   const base10addr = normalizeIP(rawAddr);
   // Get random addr to pad with
   // using Math.random since we're not requiring high level of randomness
-  const randomAddr = new Array(8).fill(1).map(() => Math.floor(Math.random() * 0xffff));
+  const randomAddr = new Array(8)
+    .fill(1)
+    .map(() => Math.floor(Math.random() * 0xffff));
 
   // Merge base10addr with randomAddr
   const mergedAddr = randomAddr.map((randomItem, idx) => {
@@ -69,24 +78,34 @@ export function getRandomIPv6(ip: string) {
     base10Mask -= staticBits;
     // Calculate the bitmask
     // lsb makes the calculation way more complicated
-    const mask = 0xffff - ((2 ** (16 - staticBits)) - 1);
+    const mask = 0xffff - (2 ** (16 - staticBits) - 1);
     // Combine base10addr and random
     return (base10addr[idx] & mask) + (randomItem & (mask ^ 0xffff));
   });
   // Return new addr
   return mergedAddr.map(x => x.toString(16)).join(':');
-};
+}
 
-export function buildArgumentErrorEmbed(errors: Record<string, Error>) {
+export async function buildArgumentErrorEmbed(
+  guild: Structures.Guild,
+  errors: Record<string, Error>
+) {
   const embed = new Utils.Embed({
-    title: Constants.EMOJIS.QUESTION_MARK + ' Argument Error',
+    title:
+      Constants.EMOJIS.QUESTION_MARK +
+      ' ' +
+      (await t(guild, 'commands.argument-error')),
     color: Constants.EMBED_COLORS.ERROR,
   });
 
   const description: string[] = [];
   for (const key in errors) {
     const message = errors[key].message;
-    description.push('`' + key + '`: ' + message);
+    const translated = await t(
+      guild,
+      'commands.' + message.toLowerCase().replaceAll(' ', '-')
+    );
+    description.push('`' + key + '`: ' + translated);
   }
 
   embed.setDescription(description.join('\n'));
@@ -104,10 +123,13 @@ export function sendFeedback(
 
   rest.executeWebhook(webhook.id, webhook.token, {
     content,
-    username: typeof user === 'object' ? `${user.tag} (${user.id})` : (user || 'Anonymous'),
+    username:
+      typeof user === 'object'
+        ? `${user.tag} (${user.id})`
+        : user || 'Anonymous',
     avatarUrl: typeof user === 'object' ? user.avatarUrl : undefined,
     allowedMentions: {
-      parse: [ 'users' ],
+      parse: ['users'],
     },
   });
 
@@ -125,7 +147,8 @@ export function durationInString(seconds: number) {
 
 const OPTIONS_PADDING = 2;
 
-export function listOptions(
+export async function listOptions(
+  guild: Structures.Guild,
   name: string,
   options: { [key: string]: any },
   ranges: { [key: string]: number[] }
@@ -155,26 +178,31 @@ export function listOptions(
   }, '');
 
   return new Utils.Embed({
-    title: 'Options for ' + Utils.Markup.codestring(name),
+    title: await t(guild, 'commands.effect.options-for', name),
     description: Utils.Markup.codeblock(description),
     color: Constants.EMBED_COLORS.DEFAULT,
   });
 }
 
-export function listEffects(list: string[], max: number) {
+export async function listEffects(
+  guild: Structures.Guild,
+  list: string[],
+  max: number
+) {
   const description = [];
   for (let i = 0; i < max; i++)
     description.push(i + ')' + (list[i] ? ' ' + list[i] : ''));
   return new Utils.Embed({
-    title: 'Effects',
+    title: await t(guild, 'commands.effect.effects'),
     description: Utils.Markup.codeblock(description.join('\n')),
     color: Constants.EMBED_COLORS.DEFAULT,
   });
 }
 
-export const NO_VALUE_PLACEHOLDER = '[no value]';
-
-export function listSettings(settings: GuildSettings) {
+export async function listSettings(
+  guild: Structures.Guild,
+  settings: GuildSettings
+) {
   const { properties } = GuildSettings.jsonSchema;
   const description = [];
   for (const key in properties)
@@ -183,10 +211,10 @@ export function listSettings(settings: GuildSettings) {
         key +
           ' = ' +
           (settings[key as keyof typeof settings]?.toString() ||
-            NO_VALUE_PLACEHOLDER)
+            (await t(guild, 'commands.settings.no-value')))
       );
   return new Utils.Embed({
-    title: 'Current guild-specific settings',
+    title: await t(guild, 'commands.settings.current'),
     color: Constants.EMBED_COLORS.DEFAULT,
     description: Utils.Markup.codeblock(description.join('\n')),
   });
@@ -199,7 +227,7 @@ export function convertToType(value: any, type: string) {
       break;
     case 'number':
       value = +value;
-      if (isNaN(value)) throw new UserError('invalid number value provided');
+      if (isNaN(value)) throw new UserError('invalid-number');
       break;
     case 'boolean':
       value = !(
@@ -231,7 +259,14 @@ export function convertToType(value: any, type: string) {
   return value;
 }
 
-export class UserError extends Error {}
+export class UserError extends Error {
+  public formatValues: any[];
+
+  constructor(message?: string, ...values: any[]) {
+    super(message);
+    this.formatValues = values;
+  }
+}
 
 export const Constants = constants;
 export { default as Logger } from './logger';

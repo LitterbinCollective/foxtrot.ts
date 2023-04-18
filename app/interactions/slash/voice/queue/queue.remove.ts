@@ -4,7 +4,7 @@ import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class QueueRemoveCommand extends BaseVoiceCommandOption {
   public name = 'remove';
-  public description = 'Remove item from the queue.';
+  public description = 'remove item from the queue';
 
   constructor() {
     super({
@@ -24,7 +24,7 @@ export class QueueRemoveCommand extends BaseVoiceCommandOption {
 
     const deleted = ctx.voice.queue.delete(id - 1);
     ctx.editOrRespond(
-      `Removed ${Utils.Markup.codestring(deleted.info.title)} from the queue`
+      await this.t(ctx, 'commands.queue.remove', deleted.info.title)
     );
   }
 }

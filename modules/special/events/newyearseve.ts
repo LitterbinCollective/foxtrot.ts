@@ -281,9 +281,7 @@ export default class NewYearsEveEvent extends BaseEvent {
       fields: [
         {
           name: 'Disable Special Events',
-          value: Utils.Markup.codestring(
-            `${prefix}settings set special false`
-          ),
+          value: Utils.Markup.codestring(`${prefix}settings set special false`),
         },
       ],
     });
@@ -295,10 +293,8 @@ export default class NewYearsEveEvent extends BaseEvent {
     const settings = await GuildSettingsStore.getOrCreate(guildId);
 
     if (settings.special) {
-      if (voice.initialized)
-        this.announce(voice)
-      else
-        voice.once('initialized', () => this.announce(voice));
+      if (voice.initialized) this.announce(voice);
+      else voice.once('initialized', () => this.announce(voice));
     }
   }
 

@@ -1,62 +1,60 @@
 import { Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
 
+import mediaservice from '@/modules/managers/mediaservices';
+import {
+  DownloadReturnedValue,
+  MediaServiceResponse,
+  MediaServiceResponseInformation,
+  MediaServiceResponseMediaType,
+} from '@/modules/managers/mediaservices/types';
 import { sendFeedback, UserError } from '@/modules/utils';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
-import {
-  VoiceFormatResponse,
-  VoiceFormatResponseType,
-  VoiceFormatResponseURL,
-  VoiceFormatResponseReadable,
-  VoiceFormatResponseFetch,
-  VoiceFormatResponseInfo,
-  formats,
-} from './managers';
 
 const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
 
 // exists solely so there will not be a racing condition
 class VoiceQueueMedia extends EventEmitter {
   private _children?: VoiceQueueMedia[];
-  private formatData!: VoiceFormatResponse | VoiceFormatResponse[];
+  private formatData!: DownloadReturnedValue;
   private _submittee?: Structures.User;
   private message?: Structures.Message;
   private url: string;
 
-  constructor(url: string | VoiceFormatResponse, message?: Structures.Message | Structures.User) {
+  constructor(
+    url: string | MediaServiceResponse,
+    message?: Structures.Message | Structures.User
+  ) {
     super();
 
-    if (message instanceof Structures.User)
-      this._submittee = message
-    else
-      this.message = message;
+    if (message instanceof Structures.User) this._submittee = message;
+    else this.message = message;
 
     if (typeof url === 'string') {
       this.url = url;
       this.fetchFormatData();
     } else {
-      this.url = url.info.url;
+      this.url = url.information.url;
       this.formatData = url;
     }
   }
 
   private get submittee(): Structures.User | undefined {
-    if (this._submittee)
-      return this._submittee;
+    if (this._submittee) return this._submittee;
     return this.message ? this.message.author : undefined;
   }
 
-  public get info(): VoiceFormatResponseInfo {
+  public get info(): MediaServiceResponseInformation {
     if (this.formatData && !Array.isArray(this.formatData))
-      return this.formatData.info;
+      return this.formatData.information;
 
     return {
       title: '[loading...]',
+      author: '',
       duration: 0,
       url: this.url,
-      image: ''
     };
   }
 
@@ -66,15 +64,15 @@ class VoiceQueueMedia extends EventEmitter {
 
   public get children() {
     if (!this.formatData)
-      throw new Error('children getter called on an invalid VoiceQueueMedia object');
+      throw new Error(
+        'children getter called on an invalid VoiceQueueMedia object'
+      );
 
-    if (!Array.isArray(this.formatData))
-      return [ this ];
+    if (!Array.isArray(this.formatData)) return [this];
 
-    if (this._children)
-      return this._children;
+    if (this._children) return this._children;
 
-    return this._children = this.formatData.map(x => new VoiceQueueMedia(x));
+    return (this._children = this.formatData.map(x => new VoiceQueueMedia(x)));
   }
 
   private async fetchFormatData() {
@@ -84,30 +82,37 @@ class VoiceQueueMedia extends EventEmitter {
       let timeoutHandle;
       const timeoutPromise = new Promise<void>((_, rej) => {
         timeoutHandle = setTimeout(
-          () => rej(new Error('fromURL timed out (' + FORMAT_FROMURL_TIMEOUT + ' seconds)')),
+          () =>
+            rej(
+              new Error(
+                'download timed out (' + FORMAT_FROMURL_TIMEOUT + ' seconds)'
+              )
+            ),
           FORMAT_FROMURL_TIMEOUT * 1000
         );
-      })
+      });
 
-      result = await Promise.race([ timeoutPromise, formats.fromURL(this.url) ]);
+      result = await Promise.race([
+        timeoutPromise,
+        mediaservice.download(this.url),
+      ]);
       clearTimeout(timeoutHandle);
 
-      if (!result)
-        throw new UserError('the requested URL is not supported');
+      if (!result) throw new UserError('queue.url-unsupported');
 
       if (this.submittee) {
         if (Array.isArray(result)) {
           for (let i = 0; i < result.length; i++)
-            result[i].info.author = {
+            result[i].information.metadata = {
               name: this.submittee.tag,
               icon_url: this.submittee.avatarUrl,
-              url: this.message ? this.message.jumpLink : undefined
+              url: this.message ? this.message.jumpLink : undefined,
             };
         } else
-          result.info.author = {
+          result.information.metadata = {
             name: this.submittee.tag,
             icon_url: this.submittee.avatarUrl,
-            url: this.message ? this.message.jumpLink : undefined
+            url: this.message ? this.message.jumpLink : undefined,
           };
       }
 
@@ -123,13 +128,11 @@ class VoiceQueueMedia extends EventEmitter {
     if (!this.formatData || Array.isArray(this.formatData))
       throw new Error('getStream called on an invalid VoiceQueueMedia object');
 
-    switch (this.formatData.type) {
-      case VoiceFormatResponseType.URL:
-        return (this.formatData as VoiceFormatResponseURL).url;
-      case VoiceFormatResponseType.READABLE:
-        return (this.formatData as VoiceFormatResponseReadable).readable;
-      case VoiceFormatResponseType.FETCH:
-        return await (this.formatData as VoiceFormatResponseFetch).fetch();
+    switch (this.formatData.media.type) {
+      case MediaServiceResponseMediaType.URL:
+        return this.formatData.media.url;
+      case MediaServiceResponseMediaType.FETCH:
+        return await this.formatData.media.fetch();
       default:
         throw new Error('unknown VoiceFormatResponseType');
     }
@@ -146,7 +149,10 @@ export default class VoiceQueue {
     this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
   }
 
-  public async push(url: string, message?: Structures.Message | Structures.User) {
+  public async push(
+    url: string,
+    message?: Structures.Message | Structures.User
+  ) {
     const object = new VoiceQueueMedia(url, message);
     this.queue.push(object);
 
@@ -156,18 +162,16 @@ export default class VoiceQueue {
         if (index === -1) return;
         this.queue.splice(index, 1, ...object.children);
 
-        if (!this.voice.isPlaying)
-          this.next();
+        if (!this.voice.isPlaying) this.next();
 
         res(true);
       });
 
-      object.once('error', (error) => {
+      object.once('error', error => {
         rej(error);
 
         const index = this.queue.indexOf(object);
-        if (index !== -1)
-          this.queue.splice(index, 1);
+        if (index !== -1) this.queue.splice(index, 1);
       });
     });
   }
@@ -177,8 +181,7 @@ export default class VoiceQueue {
   }
 
   public delete(id: number) {
-    if (!this.queue[id])
-      throw new UserError('specified id does not exist in the queue');
+    if (!this.queue[id]) throw new UserError('queue.not-found');
     return this.queue.splice(id, 1)[0];
   }
 

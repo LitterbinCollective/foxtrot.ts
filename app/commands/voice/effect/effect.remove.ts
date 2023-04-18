@@ -22,16 +22,18 @@ export default class EffectRemoveCommand extends BaseVoiceCommand {
     });
   }
 
-  public run(ctx: VoiceContext, { effect }: { effect: number }) {
+  public async run(ctx: VoiceContext, { effect }: { effect: number }) {
+    if (!ctx.guild) return;
     ctx.voice.effects.removeEffect(effect);
-    const embed = listEffects(
+    const embed = await listEffects(
+      ctx.guild,
       ctx.voice.effects.list,
       ctx.voice.effects.STACK_LIMIT
     );
     embed.setTitle(
       Constants.EMOJIS.MINUS +
-        ' Removed effect ' +
-        Utils.Markup.codestring(effect.toString())
+        ' ' +
+        (await this.t(ctx, 'commands.effect.remove', effect))
     );
     ctx.reply({ embed });
   }

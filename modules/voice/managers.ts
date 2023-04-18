@@ -5,13 +5,11 @@ import { Transform } from 'stream';
 
 import { Constants, convertToType, Logger, UserError } from '@/modules/utils';
 
-import config from '@/configs/formats.json';
 import {
   BaseEffect,
   BaseEffectOptions,
   BaseEffectOptionsRange,
 } from './effects/baseeffect';
-import { BaseFormat } from './formats/baseformat';
 import NewVoice from '.';
 
 interface BaseVoiceManagerOptions {
@@ -47,84 +45,6 @@ class BaseVoiceManager extends Transform {
   }
 }
 
-interface EmbedAuthorField {
-  name: string;
-  icon_url?: string;
-  url?: string;
-}
-
-export interface VoiceFormatResponseInfo {
-  author?: EmbedAuthorField
-  title: string;
-  url: string;
-  image: string | Buffer;
-  duration: number;
-}
-
-export enum VoiceFormatResponseType {
-  URL = 'url',
-  READABLE = 'readable',
-  FETCH = 'fetch',
-}
-
-export interface VoiceFormatResponse {
-  info: VoiceFormatResponseInfo;
-  type: VoiceFormatResponseType;
-}
-
-export interface VoiceFormatResponseURL extends VoiceFormatResponse {
-  url: string;
-  type: VoiceFormatResponseType.URL;
-}
-
-export interface VoiceFormatResponseFetch extends VoiceFormatResponse {
-  fetch: () => Promise<NodeJS.ReadableStream> | NodeJS.ReadableStream;
-  type: VoiceFormatResponseType.FETCH;
-}
-
-export interface VoiceFormatResponseReadable extends VoiceFormatResponse {
-  readable: NodeJS.ReadableStream;
-  type: VoiceFormatResponseType.READABLE;
-}
-
-class VoiceFormatManager extends BaseVoiceManager {
-  public readonly processors!: Record<string, BaseFormat>;
-
-  constructor() {
-    super({
-      create: true,
-      constructorArgs: [config],
-      loggerTag: 'Voice format manager',
-      scanPath: 'formats/',
-    });
-  }
-
-  public async fromURL(url: string) {
-    let result: VoiceFormatResponse[] | VoiceFormatResponse | false = false;
-
-    for (const formatName in this.processors) {
-      const format = this.processors[formatName];
-      const match = [...url.matchAll(format.regex)];
-      if (!match || match.length === 0) continue;
-
-      try {
-        result = await format.process(match[0][0], match[0]);
-        if (!result) continue;
-      } catch (err) {
-        this.logger.error(format.printName, 'spew an error: ', err);
-        this.logger.error('url used:', url);
-        continue;
-      }
-
-      break;
-    }
-
-    return result;
-  }
-}
-
-export const formats = new VoiceFormatManager();
-
 const VOICE_EFFECT_MANAGER_SCAN_PATH = 'effects/';
 
 export class VoiceEffectManager extends BaseVoiceManager {
@@ -154,9 +74,9 @@ export class VoiceEffectManager extends BaseVoiceManager {
 
   public addEffect(name: string, start?: number) {
     start = start || this.stack.length;
-    if (!this.processors[name]) throw new UserError('effect not found');
+    if (!this.processors[name]) throw new UserError('effects-mgr.not-found');
     if (this.stack.length === this.STACK_LIMIT)
-      throw new UserError('effect stack overflow');
+      throw new UserError('effects-mgr.stack-overflow');
 
     const effect = new this.processors[name]();
     effect.enabled = true;
@@ -167,8 +87,9 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public removeEffect(id: number) {
-    if (!this.stack[id]) throw new UserError('effect not found');
-    if (this.stack.length === 0) throw new UserError('effect stack underflow');
+    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
+    if (this.stack.length === 0)
+      throw new UserError('effects-mgr.stack-underflow');
 
     this.stack.splice(id, 1);
 
@@ -176,7 +97,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public getEffectInfo(id: number) {
-    if (!this.stack[id]) throw new UserError('effect not found');
+    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
 
     return {
       name: this.stack[id].name,
@@ -191,12 +112,13 @@ export class VoiceEffectManager extends BaseVoiceManager {
     if (this.sox) this.createAudioEffectManager();
   }
 
-  public setValue(id: number, name: string, value?: any) {
-    if (!this.stack[id]) throw new UserError('effect not found');
+  public setValue(id: number, name: string, value: any) {
+    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
     const afx = this.stack[id];
     const option = afx.options[name as keyof BaseEffectOptions];
-    if (option === undefined) throw new UserError('effect option not found');
-    if (value === undefined) throw new UserError('value has to be provided');
+    if (option === undefined)
+      throw new UserError('effects-mgr.option-not-found');
+    if (value === undefined) throw new UserError('effects-mgr.value-undefined');
 
     const type = typeof option;
     value = convertToType(value, type);
@@ -206,7 +128,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
     if (type === 'number' && range) {
       const [min, max] = range;
       if (value < min || value > max)
-        throw new UserError(`given value out of range (${min} - ${max})`);
+        throw new UserError('effects-mgr.out-of-range', min, max);
     }
 
     afx.options[name as keyof BaseEffectOptions] = value;
@@ -215,7 +137,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public getValue(id: number, option: string) {
-    if (!this.stack[id]) throw new UserError('effect not found');
+    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
 
     return this.stack[id].options[option];
   }

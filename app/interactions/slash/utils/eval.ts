@@ -1,15 +1,13 @@
-import { runJS } from '@/modules/utils/eval-helper';
 import axios from 'axios';
 import { Constants, Interaction, Utils } from 'detritus-client';
-import { inspect } from 'util';
+
+import { runJS } from '@/modules/utils/eval-helper';
 
 import { BaseSlashCommand } from '../../base';
 
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-
 export default class EvalCommand extends BaseSlashCommand {
   public name = 'eval';
-  public description = 'Application owners only.';
+  public description = 'application owners only';
   public ownerOnly = true;
 
   constructor() {

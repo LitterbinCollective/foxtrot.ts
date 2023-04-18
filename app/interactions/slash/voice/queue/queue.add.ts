@@ -3,21 +3,22 @@ import { Interaction, Constants, Structures } from 'detritus-client';
 import { VoiceStore } from '@/modules/stores';
 
 import { BaseCommandOption } from '../../../base';
+import { UserError } from '@/modules/utils';
 
-export const QUEUE_ADD_DESCRIPTION = 'Add URL to the queue.';
+export const QUEUE_ADD_DESCRIPTION = 'add media to the queue';
 export const QUEUE_ADD_OPTIONS = [
   {
     name: 'url',
-    description: 'URL',
+    description: 'url',
     type: Constants.ApplicationCommandOptionTypes.STRING,
     required: false,
   },
   {
     name: 'file',
-    description: 'Media file',
+    description: 'media file',
     type: Constants.ApplicationCommandOptionTypes.ATTACHMENT,
-    required: false
-  }
+    required: false,
+  },
 ];
 
 export class QueueAddCommand extends BaseCommandOption {
@@ -32,28 +33,28 @@ export class QueueAddCommand extends BaseCommandOption {
 
   public async run(
     ctx: Interaction.InteractionContext,
-    { url, file }: { url?: string, file?: Structures.Attachment }
+    { url, file }: { url?: string; file?: Structures.Attachment }
   ) {
     if (!ctx.guild || !ctx.member || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
-      return await ctx.editOrRespond('You are not in the voice channel.');
-    if (!url && !file)
-      return await ctx.editOrRespond('Either pass a URL or upload a file.');
+      throw new UserError('voice-check.member-not-in-voice');
+
+    if (!url && !file) throw new UserError('commands.url-or-file');
+
     // fuck you
     const media = url || (file ? file.url : '');
 
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
-      voice = VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+      voice = await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
       await voice.queue.push(media, ctx.user);
-      return await ctx.editOrRespond('Okay, joining...');
+      return await ctx.editOrRespond(await this.t(ctx, 'commands.join-msg'));
     }
+
     if (!voice.canExecuteVoiceCommands(ctx.member))
-      return await ctx.editOrRespond(
-        'You are not in the voice channel this bot is currently in.'
-      );
-    if (!voice.initialized)
-      return await ctx.editOrRespond('Voice not yet initialized!');
+      throw new UserError('voice-check.member-not-in-voice');
+
+    if (!voice.initialized) throw new UserError('voice-check.not-initialized');
 
     await voice.queue.push(media, ctx.user);
     await ctx.editOrRespond('Added to the queue.');

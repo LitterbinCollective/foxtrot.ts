@@ -3,22 +3,39 @@ import { Interaction } from 'detritus-client';
 import { VoiceStore } from '@/modules/stores';
 
 import { BaseSlashCommand } from '../../base';
+import { VoiceInteractionContext } from './base';
 
 export default class LeaveCommand extends BaseSlashCommand {
   public name = 'leave';
-  public description = 'Leaves the connected voice channel.';
+  public description = 'leaves the connected voice channel';
 
-  public async run(ctx: Interaction.InteractionContext) {
-    if (!ctx.member || !ctx.guild) return;
+  public async onBeforeRun(
+    ctx: Interaction.InteractionContext
+  ): Promise<boolean> {
+    if (!ctx.member || !ctx.guild) return false;
 
     const voice = VoiceStore.get(ctx.guild.id);
-    if (!voice) return await ctx.editOrRespond('Already gone.');
-    if (!voice.canLeave(ctx.member))
-      return await ctx.editOrRespond(
-        'You are not in the voice channel this bot is currently in.'
+    if (!voice) {
+      await ctx.editOrRespond(
+        await this.t(ctx, 'voice-check.bot-not-in-voice')
       );
+      return false;
+    }
 
-    voice.kill();
-    return await ctx.editOrRespond('Gone.');
+    if (!voice.canLeave(ctx.member)) {
+      await ctx.editOrRespond(
+        await this.t(ctx, 'voice-check.member-not-in-voice')
+      );
+      return false;
+    }
+
+    (ctx as VoiceInteractionContext).voice = voice;
+
+    return true;
+  }
+
+  public async run(ctx: VoiceInteractionContext) {
+    ctx.voice.kill();
+    return await ctx.editOrRespond(await this.t(ctx, 'commands.voice-leave'));
   }
 }

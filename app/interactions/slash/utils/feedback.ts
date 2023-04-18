@@ -6,7 +6,7 @@ import { BaseSlashCommand } from '../../base';
 
 export default class FeedbackCommand extends BaseSlashCommand {
   public name = 'feedback';
-  public description = 'Send us what do you think of this application!';
+  public description = 'send us what do you think of this application!';
 
   constructor() {
     super({
@@ -31,11 +31,11 @@ export default class FeedbackCommand extends BaseSlashCommand {
     ctx: Interaction.InteractionContext,
     { feedback, anonymous }: Interaction.ParsedArgs
   ) {
-    let text = 'Failed to submit feedback.';
+    let text = 'commands.feedback.fail';
 
     if (sendFeedback(ctx.rest, feedback, anonymous ? undefined : ctx.user))
-      text = 'Your feedback has been sent to our server, thank you!';
+      text = 'commands.feedback.success';
 
-    ctx.editOrRespond(text);
+    ctx.editOrRespond(await this.t(ctx, text));
   }
 }

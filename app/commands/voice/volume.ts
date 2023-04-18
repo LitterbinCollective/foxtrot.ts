@@ -8,12 +8,16 @@ export default class VolumeCommand extends BaseVoiceCommand {
       name: 'volume',
       aliases: ['v'],
       label: 'volume',
-      required: true,
+      required: false,
       type: Constants.CommandArgumentTypes.NUMBER,
     });
   }
 
   public async run(ctx: VoiceContext, { volume }: { volume: number }) {
-    ctx.voice.volume = volume / 100;
+    if (!isNaN(volume)) ctx.voice.volume = volume / 100;
+
+    return await ctx.reply(
+      await this.t(ctx, 'commands.current-volume', ctx.voice.volume * 100)
+    );
   }
 }

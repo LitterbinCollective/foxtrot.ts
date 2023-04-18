@@ -1,6 +1,7 @@
 import { Command, CommandClient, Constants } from 'detritus-client';
 
 import { VoiceStore } from '@/modules/stores';
+import { UserError } from '@/modules/utils';
 
 import { BaseCommand } from '../../base';
 
@@ -19,7 +20,8 @@ export default class QueueAddCommand extends BaseCommand {
   public async run(ctx: Command.Context, { url }: { url?: string }) {
     if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
-      return await ctx.reply('You are not in the voice channel.');
+      throw new UserError('voice-check.member-not-in-voice');
+
     if (!url) {
       const attachment = ctx.message.attachments.first();
       if (
@@ -37,15 +39,14 @@ export default class QueueAddCommand extends BaseCommand {
 
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
-      voice = VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+      voice = await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
       return await voice.queue.push(url, ctx.message);
     }
+
     if (!voice.canExecuteVoiceCommands(ctx.member))
-      return await ctx.reply(
-        'You are not in the voice channel this bot is currently in.'
-      );
-    if (!voice.initialized)
-      return await ctx.reply('Voice not yet initialized!');
+      throw new UserError('voice-check.member-not-in-voice');
+
+    if (!voice.initialized) throw new UserError('voice-check.not-initialized');
 
     await voice.queue.push(url, ctx.message);
   }

@@ -15,8 +15,6 @@ export default class QueueRemoveCommand extends BaseVoiceCommand {
 
   public async run(ctx: VoiceContext, { id }: { id: number }) {
     const deleted = ctx.voice.queue.delete(id - 1);
-    ctx.reply(
-      `Removed ${Utils.Markup.codestring(deleted.info.title)} from the queue`
-    );
+    ctx.reply(await this.t(ctx, 'commands.queue.remove', deleted.info.title));
   }
 }

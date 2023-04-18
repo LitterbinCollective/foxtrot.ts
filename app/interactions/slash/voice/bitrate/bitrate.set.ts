@@ -4,14 +4,14 @@ import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class BitrateSetCommand extends BaseVoiceCommandOption {
   public name = 'set';
-  public description = 'Set Opus encoder bitrate (in bps).';
+  public description = 'set opus encoder bitrate (in bps)';
 
   constructor() {
     super({
       options: [
         {
           name: 'value',
-          description: 'Bitrate value in bps',
+          description: 'bitrate value in bps',
           type: Constants.ApplicationCommandOptionTypes.INTEGER,
           required: true,
         },
@@ -19,16 +19,12 @@ export class BitrateSetCommand extends BaseVoiceCommandOption {
     });
   }
 
-  public async run(
-    ctx: VoiceInteractionContext,
-    { value }: { value: number }
-  ) {
+  public async run(ctx: VoiceInteractionContext, { value }: { value: number }) {
     if (!ctx.guild) return;
 
     ctx.voice.bitrate = value;
     ctx.editOrRespond(
-      'Set bitrate to ' +
-        Utils.Markup.codestring(ctx.voice.bitrate.toString()) + '.'
+      await this.t(ctx, 'commands.bitrate.set', ctx.voice.bitrate)
     );
   }
 }

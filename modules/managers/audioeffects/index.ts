@@ -1,3 +1,1 @@
-class AudioEffectManager {
-
-};
+class AudioEffectManager {}

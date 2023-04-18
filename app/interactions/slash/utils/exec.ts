@@ -12,7 +12,7 @@ import { BaseSlashCommand } from '../../base';
 
 export default class ExecCommand extends BaseSlashCommand {
   public name = 'exec';
-  public description = 'Application owners only.';
+  public description = 'application owners only';
   public ownerOnly = true;
 
   constructor() {

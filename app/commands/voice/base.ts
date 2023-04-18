@@ -14,19 +14,17 @@ export class BaseVoiceCommand extends BaseCommand {
 
     const voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
-      await ctx.reply('Not in the voice channel.');
+      await ctx.reply(await this.t(ctx, 'voice-check.bot-not-in-voice'));
       return false;
     }
 
     if (!voice.initialized) {
-      await ctx.reply('Voice not yet initialized!');
+      await ctx.reply(await this.t(ctx, 'voice-check.voice-not-init'));
       return false;
     }
 
     if (!voice.canExecuteVoiceCommands(ctx.member)) {
-      await ctx.reply(
-        'You are not in the voice channel this bot is currently in.'
-      );
+      await ctx.reply(await this.t(ctx, 'voice-check.member-not-in-voice'));
       return false;
     }
 

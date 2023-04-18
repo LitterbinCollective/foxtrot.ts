@@ -8,10 +8,7 @@ export default class BitrateCommand extends BaseVoiceSlashCommand {
 
   constructor() {
     super({
-      options: [
-        new BitrateGetCommand(),
-        new BitrateSetCommand(),
-      ],
+      options: [new BitrateGetCommand(), new BitrateSetCommand()],
     });
   }
 }

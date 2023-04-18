@@ -3,6 +3,7 @@ import { Command, CommandClient } from 'detritus-client';
 import { VoiceStore } from '@/modules/stores';
 
 import { BaseCommand } from '../base';
+import { UserError } from '@/modules/utils';
 
 export default class JoinCommand extends BaseCommand {
   constructor(commandClient: CommandClient) {
@@ -15,9 +16,7 @@ export default class JoinCommand extends BaseCommand {
   public async run(ctx: Command.Context) {
     if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
-      return ctx.reply(
-        'You are not connected to any voice channel on this server.'
-      );
+      throw new UserError('voice-check.member-not-in-voice');
 
     VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
   }

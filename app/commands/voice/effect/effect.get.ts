@@ -1,4 +1,4 @@
-import { CommandClient, Constants } from 'detritus-client';
+import { CommandClient, Constants, Utils } from 'detritus-client';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 
@@ -29,6 +29,6 @@ export default class EffectGetCommand extends BaseVoiceCommand {
     { effect, key }: { effect: number; key: string }
   ) {
     const value = ctx.voice.effects.getValue(effect, key);
-    ctx.reply(value.toString());
+    ctx.reply(Utils.Markup.codestring(value.toString()));
   }
 }

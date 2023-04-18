@@ -9,6 +9,7 @@ import { Model } from 'objection';
 
 import { Logger } from '@/modules/utils';
 import { applicationCreated } from '@/modules/stores';
+import mediaservice from '@/modules/managers/mediaservices';
 
 const knexConfig = require('@/knexfile');
 
@@ -58,6 +59,8 @@ export class Application {
           this.logger.error(err);
           process.exit(1);
         });
+
+      mediaservice.addPrefixedCommands(this.commandClient);
     }
 
     {
@@ -72,6 +75,8 @@ export class Application {
           this.logger.error(err);
           process.exit(1);
         });
+
+      mediaservice.addSlashCommands(this.interactionCommandClient);
     }
 
     const knex = Knex(knexConfig[process.env.NODE_ENV || 'development']);

@@ -4,7 +4,7 @@ import shConfig from '@/configs/shat.json';
 
 const sh = new Sh({
   gitHubToken: shConfig.gitHubToken,
-  modifiers: defaultModifiers
+  modifiers: defaultModifiers,
 });
 
 export async function getRepositories() {

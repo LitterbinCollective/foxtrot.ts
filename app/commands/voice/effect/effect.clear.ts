@@ -10,8 +10,8 @@ export default class EffectClearCommand extends BaseVoiceCommand {
     });
   }
 
-  public run(ctx: VoiceContext) {
+  public async run(ctx: VoiceContext) {
     ctx.voice.effects.clearEffects();
-    ctx.reply('Cleared effects.');
+    ctx.reply(await this.t(ctx, 'commands.effect.clear'));
   }
 }

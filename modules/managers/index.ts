@@ -12,8 +12,7 @@ interface BaseManagerOptions {
 function managerScan<T>(options: BaseManagerOptions) {
   const processors: Record<string, T> = {};
 
-  if (!options.scanPath)
-    return processors;
+  if (!options.scanPath) return processors;
 
   for (const fileName of readdirSync(__dirname + '/' + options.scanPath)) {
     const name = fileName.replace(Constants.FILENAME_REGEX, '');

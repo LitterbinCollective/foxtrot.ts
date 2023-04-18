@@ -29,10 +29,11 @@ export default class EffectOptionsCommand extends BaseVoiceCommand {
     });
   }
 
-  public run(ctx: VoiceContext, { effect }: { effect: number }) {
+  public async run(ctx: VoiceContext, { effect }: { effect: number }) {
+    if (!ctx.guild) return;
     const { name, options, optionsRange } =
       ctx.voice.effects.getEffectInfo(effect);
-    const embed = listOptions(name, options, optionsRange);
+    const embed = await listOptions(ctx.guild, name, options, optionsRange);
     ctx.reply({ embed });
   }
 }

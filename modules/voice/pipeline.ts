@@ -1,23 +1,26 @@
-import { GatewayClientEvents, Structures } from 'detritus-client';
+import { GatewayClientEvents, Structures, Utils } from 'detritus-client';
 import { VoiceConnection } from 'detritus-client/lib/media/voiceconnection';
 import { OpusEncoder } from '@discordjs/opus';
 import { EventEmitter } from 'events';
-import { Readable, Transform, TransformCallback } from 'stream';
+import { Transform, TransformCallback } from 'stream';
 
 import { Mixer } from '@/modules/mixer';
-import { Logger } from '@/modules/utils';
+import { Constants, Logger, UserError } from '@/modules/utils';
 
 import NewVoice from '.';
 
 class VoiceSafeConnection extends EventEmitter {
   public voiceConnection!: VoiceConnection;
+  private timeout: NodeJS.Timeout | null = null;
   private readonly logger: Logger;
+  private readonly TIMEOUT_LENGTH = 30000; // 30 seconds
 
   constructor(voiceChannel: Structures.ChannelGuildVoice) {
     super();
     this.logger = new Logger(`Voice safe connection [${voiceChannel.guildId}]`);
     this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
     this.onVoiceServerUpdate = this.onVoiceServerUpdate.bind(this);
+    this.destroy = this.destroy.bind(this);
     this.on('voiceStateUpdate', this.onVoiceStateUpdate);
     this.on('voiceServerUpdate', this.onVoiceServerUpdate);
     this.initialize(voiceChannel);
@@ -78,12 +81,35 @@ class VoiceSafeConnection extends EventEmitter {
     payload: GatewayClientEvents.VoiceStateUpdate
   ) {
     if (!this.channel) return;
-    if (
-      payload.voiceState.userId === this.channel.client.userId &&
-      payload.voiceState.guildId === this.channel.guildId &&
-      payload.leftChannel
-    )
-      return this.destroy();
+
+    if (payload.voiceState.guildId === this.channel.guildId) {
+      if (payload.leftChannel) {
+        if (payload.voiceState.userId === this.channel.client.userId) {
+          this.logger.debug('force disconnect');
+          return this.destroy();
+        }
+
+        if (
+          this.channel.members.size === 1 &&
+          payload.differences?.channelId === this.channel.id &&
+          !this.timeout
+        ) {
+          this.logger.debug("we're the only one left, starting timeout...");
+          this.timeout = setTimeout(this.destroy, this.TIMEOUT_LENGTH);
+          return;
+        }
+      }
+
+      if (
+        payload.joinedChannel &&
+        payload.voiceState.channelId === this.channel.id &&
+        this.timeout
+      ) {
+        this.logger.debug('stopping timeout, somebody joined!');
+        clearTimeout(this.timeout);
+        this.timeout = null;
+      }
+    }
   }
 
   public sendAudio(packet: Buffer) {
@@ -145,8 +171,7 @@ export default class VoicePipeline extends Transform {
   }
 
   public get channel() {
-    if (!this.connection || !this.connection.voiceConnection)
-      return null;
+    if (!this.connection || !this.connection.voiceConnection) return null;
     return this.connection.voiceConnection.channel;
   }
 
@@ -192,7 +217,7 @@ export default class VoicePipeline extends Transform {
     callback: TransformCallback
   ): void {
     if (!this.opus || !this.opusLeftover || !this.mixer) return callback();
-    const buffer = this.mixer.Process(chunk);
+    const buffer = this.mixer.process(chunk);
 
     this.opusLeftover = Buffer.concat([this.opusLeftover, buffer]);
 
@@ -232,20 +257,67 @@ export default class VoicePipeline extends Transform {
   }
 
   public playBuffer(buffer: Buffer) {
-    if (this.mixer) this.mixer.AddReadable(buffer);
+    if (this.mixer) this.mixer.addReadable(buffer);
   }
 
   public clearReadableArray() {
-    if (this.mixer) this.mixer.ClearReadables();
+    if (this.mixer) this.mixer.clearReadables();
   }
 
   public set volume(volume: number) {
-    if (this.mixer) this.mixer.SetVolume(volume);
+    if (this.mixer) this.mixer.setVolume(volume);
   }
 
   public get volume(): number {
-    if (this.mixer) return this.mixer.GetVolume();
+    if (this.mixer) return this.mixer.getVolume();
     return -1;
+  }
+
+  public set corrupt(corrupt: boolean) {
+    if (!this.voice.allowCorrupt)
+      throw new UserError('corrupt-mode-not-allowed');
+
+    if (this.mixer) this.mixer.setCorruptEnabled(corrupt);
+  }
+
+  public get corrupt(): boolean {
+    if (this.mixer) return this.mixer.getCorruptEnabled();
+    return false;
+  }
+
+  public set corruptEvery(every: number) {
+    if (this.mixer) this.mixer.setCorruptEvery(every);
+  }
+
+  public get corruptEvery() {
+    if (this.mixer) return this.mixer.getCorruptEvery();
+    return -1;
+  }
+
+  public set corruptMode(mode: string) {
+    if (this.mixer)
+      this.mixer.setCorruptMode(
+        Constants.CorruptModeMappings[
+          mode as keyof typeof Constants.CorruptModeMappings
+        ] || 0
+      );
+  }
+
+  public get corruptMode() {
+    if (this.mixer)
+      return (
+        Constants.CorruptModeMappings[this.mixer.getCorruptMode()] || 'add'
+      );
+    return 'add';
+  }
+
+  public set corruptRandSample(randSample: number) {
+    if (this.mixer) this.mixer.setCorruptRandSample(randSample);
+  }
+
+  public get corruptRandSample() {
+    if (this.mixer) return this.mixer.getCorruptRandSample();
+    return 1;
   }
 
   public destroy() {

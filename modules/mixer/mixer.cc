@@ -4,6 +4,7 @@
   is more performant.
 */
 #include <iostream>
+#include <cstdlib>
 #include <cmath>
 #include "mixer.h"
 
@@ -11,11 +12,19 @@ Napi::Object Mixer::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "Mixer", {
-    InstanceMethod<&Mixer::AddReadable>("AddReadable", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
-    InstanceMethod<&Mixer::ClearReadables>("ClearReadables", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
-    InstanceMethod<&Mixer::Process>("Process", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
-    InstanceMethod<&Mixer::SetVolume>("SetVolume", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
-    InstanceMethod<&Mixer::GetVolume>("GetVolume", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::AddReadable>("addReadable", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::ClearReadables>("clearReadables", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::Process>("process", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::GetVolume>("getVolume", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::SetVolume>("setVolume", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::GetCorruptEnabled>("getCorruptEnabled", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::SetCorruptEnabled>("setCorruptEnabled", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::GetCorruptEvery>("getCorruptEvery", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::SetCorruptEvery>("setCorruptEvery", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::GetCorruptRandSample>("getCorruptRandSample", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::SetCorruptRandSample>("setCorruptRandSample", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::GetCorruptMode>("getCorruptMode", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+    InstanceMethod<&Mixer::SetCorruptMode>("setCorruptMode", static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
   });
 
   Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -29,7 +38,12 @@ Napi::Object Mixer::Init(Napi::Env env, Napi::Object exports) {
 }
 
 Mixer::Mixer(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Mixer>(info) {
-  this->_volume = 1.0f;
+  this->_volume = 1;
+  this->_corrupt_enabled = false;
+  this->_corrupt_every = 8;
+  this->_corrupt_rand_sample = 0;
+  this->_corrupt_pos = 0;
+  srand(time(NULL));
 }
 
 Napi::Value Mixer::SetVolume(const Napi::CallbackInfo& info) {
@@ -40,6 +54,50 @@ Napi::Value Mixer::SetVolume(const Napi::CallbackInfo& info) {
 Napi::Value Mixer::GetVolume(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   return Napi::Number::New(env, this->_volume);
+}
+
+Napi::Value Mixer::SetCorruptRandSample(const Napi::CallbackInfo& info) {
+  this->_corrupt_rand_sample = info[0].As<Napi::Number>().Int64Value();
+  return this->GetCorruptRandSample(info);
+}
+
+Napi::Value Mixer::GetCorruptRandSample(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  return Napi::Number::New(env, this->_corrupt_rand_sample);
+}
+
+Napi::Value Mixer::SetCorruptEvery(const Napi::CallbackInfo& info) {
+  this->_corrupt_every = info[0].As<Napi::Number>().Int64Value();
+  if (this->_corrupt_every < 1)
+    this->_corrupt_every = 1;
+  if (this->_corrupt_every > CORRUPT_EVERY_MAX)
+    this->_corrupt_every = CORRUPT_EVERY_MAX;
+  return this->GetCorruptEvery(info);
+}
+
+Napi::Value Mixer::GetCorruptEvery(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  return Napi::Number::New(env, this->_corrupt_every);
+}
+
+Napi::Value Mixer::SetCorruptEnabled(const Napi::CallbackInfo& info) {
+  this->_corrupt_enabled = info[0].As<Napi::Boolean>().Value();
+  return this->GetCorruptEnabled(info);
+}
+
+Napi::Value Mixer::GetCorruptEnabled(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  return Napi::Boolean::New(env, this->_corrupt_enabled);
+}
+
+Napi::Value Mixer::SetCorruptMode(const Napi::CallbackInfo& info) {
+  this->_corrupt_mode = info[0].As<Napi::Number>().Int64Value();
+  return this->GetCorruptMode(info);
+}
+
+Napi::Value Mixer::GetCorruptMode(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  return Napi::Number::New(env, this->_corrupt_mode);
 }
 
 void Mixer::AddReadable(const Napi::CallbackInfo& info) {
@@ -117,6 +175,7 @@ Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
       // std::cout << i << " " << chunk.pos << " " << CHUNK_SIZE << std::endl;
       int16_t chunk_sample_l = chunk.data[chunk.pos];
       int16_t chunk_sample_r = chunk.data[chunk.pos + 1];
+
       sample_l = sample_l + chunk_sample_l;
       sample_r = sample_r + chunk_sample_r;
 
@@ -124,6 +183,39 @@ Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
         this->_chunks.erase(it);
       else
         (*it).pos += 2;
+    }
+
+    this->_corrupt_pos++;
+    if (this->_corrupt_pos >= this->_corrupt_every) {
+      if (this->_corrupt_enabled) {
+        int16_t rand_sample = this->_corrupt_rand_sample;
+        if (rand_sample == 0)
+          rand_sample = rand() % std::numeric_limits<int16_t>::max();
+        switch (this->_corrupt_mode) {
+          case CORRUPT_MODE_SHIFT_L:
+            sample_l = sample_l << rand_sample;
+            sample_r = sample_r << rand_sample;
+          case CORRUPT_MODE_SHIFT_R:
+            sample_l = sample_l >> rand_sample;
+            sample_r = sample_r >> rand_sample;
+          case CORRUPT_MODE_OR:
+            sample_l = sample_l | rand_sample;
+            sample_r = sample_r | rand_sample;
+          case CORRUPT_MODE_AND:
+            sample_l = sample_l & rand_sample;
+            sample_r = sample_r & rand_sample;
+          case CORRUPT_MODE_XOR:
+            sample_l = sample_l ^ rand_sample;
+            sample_r = sample_r ^ rand_sample;
+          case CORRUPT_MODE_NOT:
+            sample_l = ~sample_l;
+            sample_r = ~sample_r;
+          default:
+            sample_l += rand_sample;
+            sample_r += rand_sample;
+        }
+      }
+      this->_corrupt_pos = 0;
     }
 
     sample_l *= volume;

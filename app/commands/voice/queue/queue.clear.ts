@@ -12,6 +12,6 @@ export default class QueueClearCommand extends BaseVoiceCommand {
 
   public async run(ctx: VoiceContext) {
     ctx.voice.queue.clear();
-    ctx.reply('Cleared queue.');
+    ctx.reply(await this.t(ctx, 'commands.queue.clear'));
   }
 }

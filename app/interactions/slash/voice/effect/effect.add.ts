@@ -7,14 +7,14 @@ import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class EffectAddCommand extends BaseVoiceCommandOption {
   public name = 'add';
-  public description = 'Add an effect to the effect stack.';
+  public description = 'add an effect to the effect stack';
 
   constructor() {
     super({
       options: [
         {
           name: 'effect',
-          description: 'Effect to add',
+          description: 'effect to add',
           choices: VoiceEffectManager.getArgumentType(),
           required: true,
         },
@@ -22,19 +22,26 @@ export class EffectAddCommand extends BaseVoiceCommandOption {
     });
   }
 
-  public run(ctx: VoiceInteractionContext, { effect }: { effect: string }) {
+  public async run(
+    ctx: VoiceInteractionContext,
+    { effect }: { effect: string }
+  ) {
     if (!ctx.guild) return;
 
     const id = ctx.voice.effects.addEffect(effect);
-    const embed = listEffects(
+    const embed = await listEffects(
+      ctx.guild,
       ctx.voice.effects.list,
       ctx.voice.effects.STACK_LIMIT
     );
-    const { name } = ctx.voice.effects.getEffectInfo(id);
+
     embed.setTitle(
-      Constants.EMOJIS.PLUS + ' Added effect ' + Utils.Markup.codestring(effect)
+      Constants.EMOJIS.PLUS +
+        ' ' +
+        (await this.t(ctx, 'commands.effect.add', effect))
     );
-    embed.setFooter('Effect ID: ' + id + ' (' + name + ')');
+
+    embed.setFooter(await this.t(ctx, 'commands.effect.effect-id', id, effect));
     ctx.editOrRespond({ embed });
   }
 }

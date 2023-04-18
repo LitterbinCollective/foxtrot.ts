@@ -14,18 +14,22 @@ export default class PingCommand extends BaseCommand {
   public async run(ctx: Command.Context) {
     const { rest, gateway } = await ctx.client.ping();
 
+    const unit = await this.t(ctx, 'commands.ping.unit');
     const embed = new Utils.Embed({
-      title: 'Pong!',
+      title: await this.t(ctx, 'commands.ping.pong'),
       description:
         Constants.EMOJIS.LINK +
         ' ' +
         rest +
-        'ms\n' +
+        unit +
+        '\n' +
         Constants.EMOJIS.SATELLITE +
         ' ' +
         gateway +
-        'ms',
-      footer: { text: 'Shard ID: ' + ctx.shardId },
+        unit,
+      footer: {
+        text: await this.t(ctx, 'commands.ping.footer', ctx.client.shardId),
+      },
       color: Constants.EMBED_COLORS.DEFAULT,
     });
 

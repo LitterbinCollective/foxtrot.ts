@@ -14,9 +14,9 @@ export default class EffectCommand extends BaseVoiceCommand {
     });
   }
 
-  public run(ctx: VoiceContext) {
+  public async run(ctx: VoiceContext) {
     const embed = new Utils.Embed({
-      title: 'Available effects',
+      title: await this.t(ctx, 'commands.effect.available-effects'),
       description: Utils.Markup.codeblock(
         Object.keys(ctx.voice.effects.processors).join('\n')
       ),

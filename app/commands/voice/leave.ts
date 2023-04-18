@@ -18,14 +18,12 @@ export default class LeaveCommand extends BaseCommand {
 
     const voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
-      await ctx.reply('Not in the voice channel.');
+      await ctx.reply(await this.t(ctx, 'voice-check.bot-not-in-voice'));
       return false;
     }
 
     if (!voice.canLeave(ctx.member)) {
-      await ctx.reply(
-        'You are not in the voice channel this bot is currently in.'
-      );
+      await ctx.reply(await this.t(ctx, 'voice-check.member-not-in-voice'));
       return false;
     }
 
@@ -36,6 +34,6 @@ export default class LeaveCommand extends BaseCommand {
 
   public async run(ctx: VoiceContext) {
     ctx.voice.kill();
-    return await ctx.reply('Gone.');
+    return await ctx.reply(await this.t(ctx, 'commands.voice-leave'));
   }
 }

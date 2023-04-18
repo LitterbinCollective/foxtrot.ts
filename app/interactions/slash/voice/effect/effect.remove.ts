@@ -6,7 +6,7 @@ import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
 export class EffectRemoveCommand extends BaseVoiceCommandOption {
   public name = 'remove';
-  public description = 'Remove the specified effect from the effect stack.';
+  public description = 'remove the specified effect from the effect stack';
 
   constructor() {
     super({
@@ -21,16 +21,21 @@ export class EffectRemoveCommand extends BaseVoiceCommandOption {
     });
   }
 
-  public run(ctx: VoiceInteractionContext, { effect }: { effect: number }) {
+  public async run(
+    ctx: VoiceInteractionContext,
+    { effect }: { effect: number }
+  ) {
+    if (!ctx.guild) return;
     ctx.voice.effects.removeEffect(effect);
-    const embed = listEffects(
+    const embed = await listEffects(
+      ctx.guild,
       ctx.voice.effects.list,
       ctx.voice.effects.STACK_LIMIT
     );
     embed.setTitle(
       Constants.EMOJIS.MINUS +
-        ' Removed effect ' +
-        Utils.Markup.codestring(effect.toString())
+        ' ' +
+        (await this.t(ctx, 'commands.effect.remove', effect))
     );
     ctx.editOrRespond({ embed });
   }

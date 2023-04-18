@@ -1,20 +1,20 @@
-import { Constants, Utils } from 'detritus-client';
+import { Constants } from 'detritus-client';
 
 import { BaseVoiceSlashCommand, VoiceInteractionContext } from './base';
 
 export default class VolumeCommand extends BaseVoiceSlashCommand {
   public name = 'volume';
   public description =
-    'Set mixer volume. (currently playing media + sound effects)';
+    'set mixer volume (currently playing media + sound effects)';
 
   constructor() {
     super({
       options: [
         {
           name: 'volume',
-          description: 'Volume in percentages. (100%, 200%)',
+          description: 'volume in percentages. (100%, 200%)',
           type: Constants.ApplicationCommandOptionTypes.INTEGER,
-          required: true,
+          required: false,
         },
       ],
     });
@@ -22,13 +22,14 @@ export default class VolumeCommand extends BaseVoiceSlashCommand {
 
   public async run(
     ctx: VoiceInteractionContext,
-    { volume }: { volume: number }
+    { volume }: { volume?: number }
   ) {
     if (!ctx.guild) return;
 
-    ctx.voice.volume = volume / 100;
+    if (volume !== undefined) ctx.voice.volume = volume / 100;
+
     ctx.editOrRespond(
-      'Okay, set volume to ' + Utils.Markup.codestring(volume.toString() + '%')
+      await this.t(ctx, 'commands.current-volume', ctx.voice.volume)
     );
   }
 }

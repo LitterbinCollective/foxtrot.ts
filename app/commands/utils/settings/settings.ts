@@ -33,6 +33,7 @@ export default class SettingsCommand extends BaseSettingsCommand {
   }
 
   public async run(ctx: SettingsContext) {
-    ctx.reply({ embed: listSettings(ctx.settings) });
+    if (!ctx.guild) return;
+    ctx.reply({ embed: await listSettings(ctx.guild, ctx.settings) });
   }
 }

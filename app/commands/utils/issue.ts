@@ -1,7 +1,8 @@
 import { Command, CommandClient } from 'detritus-client';
 
-import { BaseCommand } from '../base';
 import { bugs } from '@/package.json';
+
+import { BaseCommand } from '../base';
 
 export default class IssueCommand extends BaseCommand {
   constructor(commandClient: CommandClient) {
@@ -13,7 +14,7 @@ export default class IssueCommand extends BaseCommand {
 
   public async run(ctx: Command.Context) {
     const url = typeof bugs === 'object' && bugs.url ? bugs.url : bugs;
-    if (!url) return ctx.reply('Submit issues directly to the hoster.');
+    if (!url) return ctx.reply(await this.t(ctx, 'commands.no-issue-url'));
     ctx.reply(url.toString());
   }
 }
