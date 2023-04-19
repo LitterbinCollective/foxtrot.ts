@@ -31,7 +31,7 @@ export const YOUTUBE_APPLICATION_ID = '880218394199220334';
 export const QUEUE_PAGE_ITEMS_MAXIMUM = 9;
 export const EMBEDDED_APPLICATION = 2;
 export const FILENAME_REGEX = /\.[^/.]+$/;
-export const CORRUPT_VOLUME_ON_ENABLE = 0.1;
+export const CORRUPT_VOLUME_ON_ENABLE = 10;
 
 export enum EXTERNAL_IPC_OP_CODES {
   STOP_MANAGER = 8,
