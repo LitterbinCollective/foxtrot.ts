@@ -24,7 +24,7 @@ export class CorruptEveryCommand extends BaseVoiceCommandOption {
     { value }: { value?: number }
   ) {
     if (!ctx.guild) return;
-    if (value) ctx.voice.corruptEvery = value;
+    if (value !== undefined) ctx.voice.corruptEvery = value;
 
     return ctx.editOrRespond(
       await this.t(

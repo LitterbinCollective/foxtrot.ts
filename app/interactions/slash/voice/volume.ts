@@ -29,7 +29,7 @@ export default class VolumeCommand extends BaseVoiceSlashCommand {
     if (volume !== undefined) ctx.voice.volume = volume / 100;
 
     ctx.editOrRespond(
-      await this.t(ctx, 'commands.current-volume', ctx.voice.volume)
+      await this.t(ctx, 'commands.current-volume', ctx.voice.volume * 100)
     );
   }
 }

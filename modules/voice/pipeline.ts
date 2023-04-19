@@ -142,6 +142,7 @@ export default class VoicePipeline extends Transform {
   private readonly logger: Logger;
   private readonly voice: NewVoice;
   private readonly REQUIRED_SAMPLES: number;
+  private readonly CORRUPT_MAP_MAX = 32767;
 
   public onVoiceServerUpdate: (
     payload: GatewayClientEvents.VoiceServerUpdate
@@ -312,11 +313,12 @@ export default class VoicePipeline extends Transform {
   }
 
   public set corruptRandSample(randSample: number) {
-    if (this.mixer) this.mixer.setCorruptRandSample(randSample);
+    randSample = Math.max(Math.min(Math.floor(randSample), 10), -10);
+    if (this.mixer) this.mixer.setCorruptRandSample(randSample * this.CORRUPT_MAP_MAX / 10);
   }
 
   public get corruptRandSample() {
-    if (this.mixer) return this.mixer.getCorruptRandSample();
+    if (this.mixer) return Math.ceil(this.mixer.getCorruptRandSample() / this.CORRUPT_MAP_MAX * 10);
     return 1;
   }
 

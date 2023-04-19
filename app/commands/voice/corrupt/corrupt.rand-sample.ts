@@ -13,9 +13,9 @@ export default class CorruptRandSampleCommand extends BaseVoiceCommand {
     });
   }
 
-  public async run(ctx: VoiceContext, { value }: { value?: number }) {
+  public async run(ctx: VoiceContext, { value }: { value: number }) {
     if (!ctx.guild) return;
-    if (value) ctx.voice.corruptRandSample = value;
+    if (!isNaN(value)) ctx.voice.corruptRandSample = value;
 
     return ctx.reply(
       await this.t(
