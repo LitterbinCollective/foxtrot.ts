@@ -1,9 +1,14 @@
-import { Command, CommandClient } from 'detritus-client';
+import {
+  Constants as DetritusConstants,
+  Command,
+  CommandClient,
+} from 'detritus-client';
 
 import { t } from '@/modules/translations';
 import {
   buildArgumentErrorEmbed,
   buildRuntimeErrorEmbed,
+  checkPermission,
   Constants,
   UserError,
 } from '@/modules/utils';
@@ -21,9 +26,8 @@ export class BaseCommand extends Command.Command {
 
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly
-      ? (ctx.member &&
-          (ctx.member.permissions & Constants.MANAGE_GUILD_PERMISSION) ===
-            Constants.MANAGE_GUILD_PERMISSION) ||
+      ? checkPermission(ctx, DetritusConstants.Permissions.ADMINISTRATOR) ||
+        checkPermission(ctx, DetritusConstants.Permissions.MANAGE_GUILD) ||
         ctx.user.isClientOwner
       : true;
     if (ownerCheck && manageGuildCheck) {

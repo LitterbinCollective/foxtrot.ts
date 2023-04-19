@@ -1,4 +1,4 @@
-import { Structures, Utils } from 'detritus-client';
+import { Command, Interaction, Structures, Utils } from 'detritus-client';
 import { RestClient } from 'detritus-client/lib/rest';
 import { Client } from 'detritus-client-rest';
 
@@ -84,6 +84,14 @@ export function getRandomIPv6(ip: string) {
   });
   // Return new addr
   return mergedAddr.map(x => x.toString(16)).join(':');
+}
+
+export function checkPermission(
+  ctx: Interaction.InteractionContext | Command.Context,
+  permission: bigint
+) {
+  if (!ctx.member) return false;
+  return (ctx.member.permissions & permission) === permission;
 }
 
 export async function buildArgumentErrorEmbed(

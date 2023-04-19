@@ -1,6 +1,10 @@
 import { Constants as DetritusConstants, Interaction } from 'detritus-client';
 
-import { buildRuntimeErrorEmbed, Constants, UserError } from '@/modules/utils';
+import {
+  buildRuntimeErrorEmbed,
+  checkPermission,
+  UserError,
+} from '@/modules/utils';
 
 import app from '..';
 import { t } from '@/modules/translations';
@@ -25,9 +29,9 @@ export class BaseInteractionCommand<
 
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly
-      ? ctx.member &&
-        (ctx.member.permissions & Constants.MANAGE_GUILD_PERMISSION) ===
-          Constants.MANAGE_GUILD_PERMISSION
+      ? checkPermission(ctx, DetritusConstants.Permissions.ADMINISTRATOR) ||
+        checkPermission(ctx, DetritusConstants.Permissions.MANAGE_GUILD) ||
+        ctx.user.isClientOwner
       : true;
     if (ownerCheck || manageGuildCheck) {
       return true;
