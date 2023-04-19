@@ -267,11 +267,11 @@ export default class VoicePipeline extends Transform {
   }
 
   public set volume(volume: number) {
-    if (this.mixer) this.mixer.setVolume(volume);
+    if (this.mixer) this.mixer.setVolume(volume / 100);
   }
 
   public get volume(): number {
-    if (this.mixer) return this.mixer.getVolume();
+    if (this.mixer) return Math.ceil(this.mixer.getVolume() * 100);
     return -1;
   }
 
