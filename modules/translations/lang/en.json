@@ -67,7 +67,7 @@
     "skipped": "skipped!",
     "play-sfx": "playing `{0}`.",
     "join-msg": "hoi!",
-    "url-or-file": "you need to either pass a url or upload a file.",
+    "url-or-file": "you need to either pass a URL or upload a file.",
     "query-not-found": "not found.",
 
     "queue": {
