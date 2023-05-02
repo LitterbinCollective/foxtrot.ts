@@ -35,7 +35,7 @@ export class CorruptEnableCommand extends BaseVoiceCommandOption {
       await this.t(
         ctx,
         'commands.corrupt.' + postfix,
-        Constants.CORRUPT_VOLUME_ON_ENABLE * 100
+        Constants.CORRUPT_VOLUME_ON_ENABLE
       )
     );
   }
