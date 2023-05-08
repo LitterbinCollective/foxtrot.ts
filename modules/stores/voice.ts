@@ -78,6 +78,10 @@ class VoiceStore extends Store<string, NewVoice> {
     if (!voiceChannel.canJoin || !voiceChannel.canSpeak)
       throw new UserError('voice-check.not-enough-perms-speak');
 
+    const channelSize = voiceChannel.memberCount || voiceChannel.members.size;
+    if (voiceChannel.userLimit !== 0 && channelSize >= voiceChannel.userLimit)
+      throw new UserError('voice-check.too-many-members');
+
     if (voiceChannel.guildId !== textChannel.guildId)
       throw new Error(
         'The specified text channel is not in the same ' +
@@ -89,7 +93,7 @@ class VoiceStore extends Store<string, NewVoice> {
 
     const voice = new NewVoice(voiceChannel, textChannel);
     this.set(voiceChannel.guildId, voice);
-    this.emit('voiceCreated', voiceChannel.guildId, voice);
+    this.emit('voiceCreate', voiceChannel.guildId, voice);
     return voice;
   }
 

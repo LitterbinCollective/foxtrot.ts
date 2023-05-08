@@ -30,11 +30,11 @@ export default class CorruptModeCommand extends BaseVoiceCommand {
         return ctx.reply(
           await this.t(ctx, 'commands.corrupt.invalid-mode', choices.join(', '))
         );
-      ctx.voice.corruptMode = mode;
+      ctx.voice.pipeline.corruptMode = mode;
     }
 
     return ctx.reply(
-      await this.t(ctx, 'commands.corrupt.current-mode', ctx.voice.corruptMode)
+      await this.t(ctx, 'commands.corrupt.current-mode', ctx.voice.pipeline.corruptMode)
     );
   }
 }

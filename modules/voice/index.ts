@@ -20,12 +20,12 @@ export default class Voice extends EventEmitter {
   public allowCorrupt = false;
   public effects!: VoiceEffectManager;
   public initialized = false;
+  public pipeline!: VoicePipeline;
   public queue!: VoiceQueue;
   public special = true;
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
   private ffmpeg?: FFMpeg;
-  private pipeline!: VoicePipeline;
 
   constructor(
     channel: Structures.ChannelGuildVoice,
@@ -35,7 +35,7 @@ export default class Voice extends EventEmitter {
     this.initialize(channel, logChannel);
   }
 
-  private get channel() {
+  public get channel() {
     return this.pipeline.channel;
   }
 
@@ -121,54 +121,6 @@ export default class Voice extends EventEmitter {
     }
 
     this.ffmpeg.pipe(this.effects, { end: false });
-  }
-
-  public set volume(value: number) {
-    this.pipeline.volume = value;
-  }
-
-  public get volume() {
-    return this.pipeline.volume;
-  }
-
-  public set bitrate(value: number) {
-    this.pipeline.bitrate = value;
-  }
-
-  public get bitrate() {
-    return this.pipeline.bitrate;
-  }
-
-  public set corrupt(enable: boolean) {
-    this.pipeline.corrupt = enable;
-  }
-
-  public get corrupt() {
-    return this.pipeline.corrupt;
-  }
-
-  public set corruptEvery(every: number) {
-    this.pipeline.corruptEvery = every;
-  }
-
-  public get corruptEvery() {
-    return this.pipeline.corruptEvery;
-  }
-
-  public set corruptMode(mode: string) {
-    this.pipeline.corruptMode = mode;
-  }
-
-  public get corruptMode() {
-    return this.pipeline.corruptMode;
-  }
-
-  public set corruptRandSample(randSample: number) {
-    this.pipeline.corruptRandSample = randSample;
-  }
-
-  public get corruptRandSample() {
-    return this.pipeline.corruptRandSample;
   }
 
   public skip() {

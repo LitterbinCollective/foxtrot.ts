@@ -5,7 +5,7 @@ import { PassThrough } from 'stream';
 
 import { Proxy, UserError } from '@/modules/utils';
 
-import { MediaService } from '../baseservice';
+import { MediaService } from './baseservice';
 import { MediaServiceResponse, MediaServiceResponseMediaType } from '../types';
 
 const BLOWFISH_CIPHER = 'BF_CBC_STRIPE';

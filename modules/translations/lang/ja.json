@@ -64,6 +64,8 @@
     "nothing-is-playing": "現在何も遊びされていません.",
     "voice-leave": "バイバイ!",
     "current-volume": "現在音量: `{0}`%.",
+    "current-packet-loss": "現在のパケット損失: `{0}`%.",
+    "current-bitrate": "現在のビットレート: `{0}`.",
     "skipped": "とばす!",
     "play-sfx": "遊び `{0}`.",
     "join-msg": "ちっす!",
@@ -77,11 +79,6 @@
       "paginator": "待ち行列 - {0}"
     },
 
-    "bitrate": {
-      "current": "現在opusビットレート `{0}`.",
-      "set": "せとビットレート `{0}`."
-    },
-
     "runtime-error": "ランタイムエラー",
     "argument-error": "引数エラー.",
     "missing-required-parameter": "行方不明引数."
@@ -93,7 +90,8 @@
     "member-not-in-voice": "あなたは声チャンネルにいません.",
     "not-enough-perms-send-messages": "テキスト チャネル許可がありません.",
     "not-enough-perms-speak": "声チャネル許可がありません.",
-    "already-connected": "既に通話中つく声 チャネル."
+    "already-connected": "既に通話中つく声 チャネル.",
+    "too-many-members": "チャネルのユーザー制限に達しました."
   },
 
   "effects-mgr": {

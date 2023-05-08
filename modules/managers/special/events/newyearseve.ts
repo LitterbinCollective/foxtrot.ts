@@ -10,6 +10,7 @@ import { Constants } from '@/modules/utils';
 import Voice from '@/modules/voice';
 
 import { BaseEvent } from './baseevent';
+import { t } from '@/modules/translations';
 
 dayjs.extend(utc);
 
@@ -268,19 +269,16 @@ export default class NewYearsEveEvent extends BaseEvent {
     }
   }
 
-  private announce(voice: Voice) {
+  private async announce(voice: Voice) {
     const prefix = app.commandClient.prefixes.custom.first();
+    const guild = (voice.channel as any).guild;
     const embed = new Utils.Embed({
-      title: "Happy New Year's Eve!",
+      title: await t(guild, 'special.nye.title'),
       color: Constants.EMBED_COLORS.DEFAULT,
-      description:
-        `As this year is coming to an end, ${Constants.APPLICATION_NAME} is going to ` +
-        'play Westminster Quarter melody and fireworks sounds every time a new year has just begun in other ' +
-        'locations. See the current status of the bot for more information on which countries or islands ' +
-        "are going to celebrate New Year's Eve next!",
+      description: await t(guild, 'special.nye.description', Constants.APPLICATION_NAME),
       fields: [
         {
-          name: 'Disable Special Events',
+          name: await t(guild, 'special.to-disable'),
           value: Utils.Markup.codestring(`${prefix}settings set special false`),
         },
       ],

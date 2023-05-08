@@ -16,8 +16,8 @@ export default class CorruptEnableCommand extends BaseVoiceCommand {
     if (!ctx.guild) return;
     let enable = false;
 
-    ctx.voice.corrupt = enable = !ctx.voice.corrupt;
-    if (enable) ctx.voice.volume = Constants.CORRUPT_VOLUME_ON_ENABLE;
+    ctx.voice.pipeline.corrupt = enable = !ctx.voice.pipeline.corrupt;
+    if (enable) ctx.voice.pipeline.volume = Constants.CORRUPT_VOLUME_ON_ENABLE;
 
     let postfix = enable ? 'enabled' : 'disabled';
     ctx.reply(

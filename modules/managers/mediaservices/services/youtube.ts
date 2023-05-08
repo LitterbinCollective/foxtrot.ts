@@ -3,7 +3,7 @@ import { Innertube } from 'youtubei.js';
 
 import { UserError } from '@/modules/utils';
 
-import { MediaService } from '../baseservice';
+import { MediaService } from './baseservice';
 import { MediaServiceResponse, MediaServiceResponseMediaType } from '../types';
 
 export default class YouTubeService extends MediaService {

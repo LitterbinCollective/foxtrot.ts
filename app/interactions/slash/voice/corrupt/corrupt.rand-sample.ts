@@ -26,14 +26,14 @@ export class CorruptRandSampleCommand extends BaseVoiceCommandOption {
     if (!ctx.guild) return;
     if (value !== undefined) {
       console.log(value);
-      ctx.voice.corruptRandSample = value;
+      ctx.voice.pipeline.corruptRandSample = value;
     }
 
     return ctx.editOrRespond(
       await this.t(
         ctx,
         'commands.corrupt.current-rand-sample',
-        ctx.voice.corruptRandSample
+        ctx.voice.pipeline.corruptRandSample
       )
     );
   }

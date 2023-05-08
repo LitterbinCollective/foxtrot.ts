@@ -64,6 +64,8 @@
     "nothing-is-playing": "nothing is playing right now.",
     "voice-leave": "hear you later.",
     "current-volume": "current volume: `{0}`%.",
+    "current-packet-loss": "current packet loss: `{0}`%.",
+    "current-bitrate": "current bitrate: `${0}`.",
     "skipped": "skipped!",
     "play-sfx": "playing `{0}`.",
     "join-msg": "hoi!",
@@ -77,11 +79,6 @@
       "paginator": "queue - {0}"
     },
 
-    "bitrate": {
-      "current": "the current opus encoder bitrate is `{0}`.",
-      "set": "set bitrate to `{0}`."
-    },
-
     "runtime-error": "runtime error!!",
     "argument-error": "argument error.",
     "missing-required-parameter": "missing required parameter."
@@ -93,7 +90,8 @@
     "member-not-in-voice": "you're not in the voice channel.",
     "not-enough-perms-send-messages": "not enough permissions to talk in this text channel.",
     "not-enough-perms-speak": "not enough permissions to speak in this voice channel.",
-    "already-connected": "already connected to a voice channel on this server"
+    "already-connected": "already connected to a voice channel on this server",
+    "too-many-members": "channel user limit reached."
   },
 
   "effects-mgr": {
@@ -112,5 +110,14 @@
 
   "corrupt-mode-not-allowed": "you cannot enable corrupt mode. (if you want to risk your and everyone else's hearing, set `allowCorrupt` setting to `true` and reconnect the bot.)",
   "invalid-number": "invalid number value provided.",
-  "page": "page {0}/{1}"
+  "page": "page {0}/{1}",
+
+  "special": {
+    "to-disable": "disable special events",
+
+    "nye": {
+      "title": "happy new years eve!",
+      "description": "as this year is coming to an end, {0} is going to play westminster melody and fireworks every time a new year has just begun in other locations. see the current status of the bot for more information on which timezone is going to celebrate new year's eve next!"
+    }
+  }
 }

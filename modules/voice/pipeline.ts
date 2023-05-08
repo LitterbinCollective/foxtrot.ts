@@ -133,6 +133,7 @@ export default class VoicePipeline extends Transform {
   public readonly OPUS_FRAME_LENGTH = 20;
   public readonly OPUS_FRAME_SIZE = 960;
   public readonly SAMPLE_BYTE_LEN = 2;
+  private _packetLoss = 0;
   private silent: boolean = false;
   private opus?: OpusEncoder;
   private opusLeftover? = Buffer.alloc(0);
@@ -186,13 +187,22 @@ export default class VoicePipeline extends Transform {
     return -1;
   }
 
+  public set packetLoss(value: number) {
+    this._packetLoss = Math.min(100, Math.max(0, value));
+  }
+
+  public get packetLoss(): number {
+    return this._packetLoss;
+  }
+
   private onConnectionDestroy() {
     this.voice.kill(true);
   }
 
   public update() {
     const packet = this.read();
-    if (packet) {
+    const lost = this._packetLoss > 0 && Math.random() < this._packetLoss / 100;
+    if (packet && !lost) {
       this.connection.sendAudio(packet);
       this.opusPacketsReceived++;
     }

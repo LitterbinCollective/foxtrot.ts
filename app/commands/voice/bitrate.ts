@@ -14,16 +14,11 @@ export default class BitrateCommand extends BaseVoiceCommand {
   }
 
   public async run(ctx: VoiceContext, { bitrate }: { bitrate?: number }) {
-    let current = ctx.voice.bitrate;
-    let message = 'current';
-
-    if (bitrate) {
-      ctx.voice.bitrate = current = bitrate;
-      message = 'set';
-    }
+    if (bitrate)
+      ctx.voice.pipeline.bitrate = bitrate;
 
     return await ctx.reply(
-      await this.t(ctx, 'commands.bitrate.' + message, current)
+      await this.t(ctx, 'commands.current-bitrate', ctx.voice.pipeline.bitrate)
     );
   }
 }

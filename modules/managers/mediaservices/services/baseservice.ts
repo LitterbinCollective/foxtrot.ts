@@ -1,4 +1,4 @@
-import { DownloadReturnedValue, MediaServiceResponse } from './types';
+import { DownloadReturnedValue, MediaServiceResponse } from '../types';
 
 export class MediaService {
   public hosts: string[] = [];

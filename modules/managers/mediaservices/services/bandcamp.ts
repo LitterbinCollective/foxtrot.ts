@@ -1,6 +1,6 @@
 import { Proxy } from '@/modules/utils';
 
-import { MediaService } from '../baseservice';
+import { MediaService } from './baseservice';
 import {
   DownloadReturnedValue,
   MediaServiceResponse,

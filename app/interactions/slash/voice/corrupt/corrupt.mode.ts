@@ -25,10 +25,10 @@ export class CorruptModeCommand extends BaseVoiceCommandOption {
 
   public async run(ctx: VoiceInteractionContext, { mode }: { mode?: string }) {
     if (!ctx.guild) return;
-    if (mode) ctx.voice.corruptMode = mode;
+    if (mode) ctx.voice.pipeline.corruptMode = mode;
 
     return ctx.editOrRespond(
-      await this.t(ctx, 'commands.corrupt.current-mode', ctx.voice.corruptMode)
+      await this.t(ctx, 'commands.corrupt.current-mode', ctx.voice.pipeline.corruptMode)
     );
   }
 }

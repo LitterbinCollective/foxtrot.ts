@@ -1,31 +1,28 @@
 import dayjs from 'dayjs';
-import { readdirSync } from 'fs';
-import { VoiceStore } from '../stores';
 
-import { Constants, Logger } from '../utils';
-import Voice from '../voice';
+import { VoiceStore } from '@/modules/stores';
+import Voice from '@/modules/voice';
+
+import BaseManager from '..';
 import { BaseEvent } from './events/baseevent';
 
-class Special {
+export class Special extends BaseManager<any> {
   public current?: BaseEvent;
   public interval: NodeJS.Timeout;
-  private readonly events: Record<string, any> = {};
-  private readonly logger = new Logger('Special');
 
   constructor() {
-    for (const fileName of readdirSync(__dirname + '/events')) {
-      const name = fileName.replace(Constants.FILENAME_REGEX, '');
-      const any: typeof BaseEvent = require('./events/' + fileName).default;
-      if (!any) continue;
-      this.events[name] = any;
-    }
+    super({
+      create: false,
+      loggerTag: 'Special',
+      scanPath: 'special/events/',
+    });
 
     this.checkDate = this.checkDate.bind(this);
     this.interval = setInterval(this.checkDate, 60000);
     this.checkDate();
 
     VoiceStore.subscribe(
-      'voiceCreated',
+      'voiceCreate',
       (guildId: string, voice: Voice) =>
         this.current && this.current.onVoiceCreated(guildId, voice)
     );
@@ -35,8 +32,8 @@ class Special {
   public checkDate() {
     let matched = false;
 
-    for (const eventName in this.events) {
-      const event = this.events[eventName];
+    for (const eventName in this.processors) {
+      const event = this.processors[eventName];
 
       if (event.timeRange.length === 0) continue;
 
@@ -68,6 +65,6 @@ class Special {
       this.current = undefined;
     }
   }
-}
+};
 
 export default new Special();

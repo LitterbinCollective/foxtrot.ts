@@ -24,13 +24,13 @@ export class CorruptEveryCommand extends BaseVoiceCommandOption {
     { value }: { value?: number }
   ) {
     if (!ctx.guild) return;
-    if (value !== undefined) ctx.voice.corruptEvery = value;
+    if (value !== undefined) ctx.voice.pipeline.corruptEvery = value;
 
     return ctx.editOrRespond(
       await this.t(
         ctx,
         'commands.corrupt.current-infrequency',
-        ctx.voice.corruptEvery
+        ctx.voice.pipeline.corruptEvery
       )
     );
   }

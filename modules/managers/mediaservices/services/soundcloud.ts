@@ -3,7 +3,7 @@ import m3u8stream from 'm3u8stream';
 
 import { Proxy, UserError } from '@/modules/utils';
 
-import { MediaService } from '../baseservice';
+import { MediaService } from './baseservice';
 import {
   DownloadReturnedValue,
   MediaServiceResponse,

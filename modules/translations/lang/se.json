@@ -64,6 +64,8 @@
     "nothing-is-playing": "ingenting spelas upp just nu.",
     "voice-leave": "vi hörs senare.",
     "current-volume": "volymen just nu: `{0}`%.",
+    "current-packet-loss": "paketförlust just nu: `{0}`%.",
+    "current-bitrate": "bithastighet just nu: `{0}`.",
     "skipped": "skippade!",
     "play-sfx": "spelar upp `{0}`.",
     "join-msg": "tja!",
@@ -77,11 +79,6 @@
       "paginator": "kö - {0}"
     },
 
-    "bitrate": {
-      "current": "opus kodarens bithastighet just nu är `{0}`.",
-      "set": "satte bithastighet till `{0}`."
-    },
-
     "runtime-error": "körtidsfel!!",
     "argument-error": "argumentfel.",
     "missing-required-parameter": "saknar nödvändig parameter."
@@ -93,7 +90,8 @@
     "member-not-in-voice": "du är inte i röstkanalen.",
     "not-enough-perms-send-messages": "inte tillräckligt med behörigheter att prata i textkanalen.",
     "not-enough-perms-speak": "inte tillräckligt med behörigheter för att prata i röstkanalen.",
-    "already-connected": "redan kopplad till en röstkanal på denna server"
+    "already-connected": "redan kopplad till en röstkanal på denna server",
+    "too-many-members": "kanalanvändargräns nådd."
   },
 
   "effects-mgr": {

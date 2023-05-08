@@ -13,7 +13,7 @@ import mediaservice from '@/modules/managers/mediaservices';
 
 const knexConfig = require('@/knexfile');
 
-import '@/modules/special';
+import '@/modules/managers/special';
 
 export class Application {
   public startAt: number;

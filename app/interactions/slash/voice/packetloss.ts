@@ -3,16 +3,16 @@ import { Constants } from 'detritus-client';
 import { BaseVoiceSlashCommand, VoiceInteractionContext } from './base';
 
 export default class VolumeCommand extends BaseVoiceSlashCommand {
-  public name = 'volume';
+  public name = 'packetloss';
   public description =
-    'get/set mixer volume (currently playing media + sound effects)';
+    'get/set packet loss percentages (simulate packet loss)';
 
   constructor() {
     super({
       options: [
         {
-          name: 'volume',
-          description: 'volume in percentages. (100%, 200%)',
+          name: 'percent',
+          description: 'packet loss in percentages.',
           type: Constants.ApplicationCommandOptionTypes.INTEGER,
           required: false,
         },
@@ -22,13 +22,13 @@ export default class VolumeCommand extends BaseVoiceSlashCommand {
 
   public async run(
     ctx: VoiceInteractionContext,
-    { volume }: { volume?: number }
+    { percent }: { percent?: number }
   ) {
     if (!ctx.guild) return;
-    if (volume !== undefined) ctx.voice.pipeline.volume = volume;
+    if (percent !== undefined) ctx.voice.pipeline.packetLoss = percent;
 
     ctx.editOrRespond(
-      await this.t(ctx, 'commands.current-volume', ctx.voice.pipeline.volume)
+      await this.t(ctx, 'commands.current-packet-loss', ctx.voice.pipeline.packetLoss)
     );
   }
 }

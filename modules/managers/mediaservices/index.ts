@@ -15,7 +15,7 @@ import { BaseCommand } from '@/app/commands/base';
 import config from '@/configs/app.json';
 
 import BaseManager from '..';
-import { MediaService } from './baseservice';
+import { MediaService } from './services/baseservice';
 import {
   DownloadReturnedValue,
   MediaServiceResponse,
