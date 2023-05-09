@@ -65,7 +65,7 @@
     "voice-leave": "ще почуємось.",
     "current-volume": "поточна гучність: `{0}`%.",
     "current-packet-loss": "поточна втрата пакетів: `{0}`%.",
-    "current-bitrate": "поточний битрейт: `${0}`.",
+    "current-bitrate": "поточний битрейт: `{0}`.",
     "skipped": "пропущено!",
     "play-sfx": "граю `{0}`.",
     "join-msg": "приф!",

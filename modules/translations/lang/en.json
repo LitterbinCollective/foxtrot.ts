@@ -65,7 +65,7 @@
     "voice-leave": "hear you later.",
     "current-volume": "current volume: `{0}`%.",
     "current-packet-loss": "current packet loss: `{0}`%.",
-    "current-bitrate": "current bitrate: `${0}`.",
+    "current-bitrate": "current bitrate: `{0}`.",
     "skipped": "skipped!",
     "play-sfx": "playing `{0}`.",
     "join-msg": "hoi!",
