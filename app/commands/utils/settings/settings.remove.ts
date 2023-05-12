@@ -43,10 +43,13 @@ export default class SettingsRemoveCommand extends BaseSettingsCommand {
     const embed = await listSettings(ctx.guild, ctx.settings);
     embed.setTitle(
       Constants.EMOJIS.CHECK +
-        ' Set ' +
-        Utils.Markup.codestring(key) +
-        ' to ' +
-        Utils.Markup.codestring(await this.t(ctx, 'commands.settings.no-value'))
+        ' ' +
+        (await this.t(
+          ctx,
+          'commands.settings.set',
+          key,
+          await this.t(ctx, 'commands.settings.no-value')
+        ))
     );
     ctx.reply({ embed });
   }
