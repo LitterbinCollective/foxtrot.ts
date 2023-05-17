@@ -12,10 +12,8 @@
   },
   "author": "Litterbin Collective",
   "license": "AGPL-3.0-or-later",
-  "overrides": {
-    "@discordjs/opus": "^0.8.0"
-  },
   "dependencies": {
+    "@discordjs/opus": "^0.9.0",
     "axios": "^0.21.2",
     "better-ytdl-core": "github:be195/better-ytdl-core#patch-1",
     "dayjs": "^1.11.7",
@@ -31,7 +29,7 @@
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
     "url-pattern": "^1.0.3",
-    "youtubei.js": "^4.1.0"
+    "youtubei.js": "^4.3.0"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",

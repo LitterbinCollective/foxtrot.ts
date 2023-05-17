@@ -18,6 +18,6 @@ export default class JoinCommand extends BaseCommand {
     if (!ctx.member.voiceChannel)
       throw new UserError('voice-check.member-not-in-voice');
 
-    VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+    await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
   }
 }
