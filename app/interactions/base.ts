@@ -8,6 +8,7 @@ import {
 
 import app from '..';
 import { t } from '@/modules/translations';
+import { GuildSettingsStore } from '@/modules/stores';
 
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
@@ -16,16 +17,20 @@ export class BaseInteractionCommand<
   public ownerOnly = false;
   public readonly disableDm = true;
 
-  public onBefore(
+  public async onBefore(
     ctx: Interaction.InteractionContext
-  ): boolean | Promise<boolean> {
-    ctx.respond(
-      DetritusConstants.InteractionCallbackTypes
-        .DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-      {
-        flags: DetritusConstants.MessageFlags.EPHEMERAL,
-      }
-    );
+  ): Promise<boolean> {
+    if (!ctx.guild) return false;
+
+    const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
+    if (settings.ephemeral)
+      ctx.respond(
+        DetritusConstants.InteractionCallbackTypes
+          .DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+        {
+          flags: DetritusConstants.MessageFlags.EPHEMERAL,
+        }
+      );
 
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly

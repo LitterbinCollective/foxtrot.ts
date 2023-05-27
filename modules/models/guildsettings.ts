@@ -2,6 +2,7 @@ import { Model } from 'objection';
 
 export default class GuildSettings extends Model {
   public allowCorrupt!: boolean;
+  public ephemeral!: boolean;
   public prefix?: string;
   public special!: boolean;
   public lang?: string;
@@ -17,6 +18,7 @@ export default class GuildSettings extends Model {
       special: { type: 'boolean', default: false },
       allowCorrupt: { type: 'boolean', default: false },
       lang: { type: ['string', 'null'] },
+      ephemeral: { type: 'boolean', default: true }
     },
   };
 
