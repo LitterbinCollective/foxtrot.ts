@@ -12,6 +12,6 @@ export default class HelpCommand extends BaseCommand {
   }
 
   public async run(ctx: Command.Context) {
-    ctx.reply(homepage + '/wiki');
+    ctx.reply(homepage + '/commands/utils/\n');
   }
 }

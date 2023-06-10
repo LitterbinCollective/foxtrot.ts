@@ -1,22 +1,22 @@
-import { Interaction, Constants, Structures } from 'detritus-client';
+import { Interaction, Constants as DetritusConstants, Structures } from 'detritus-client';
 
 import { VoiceStore } from '@/modules/stores';
 
 import { BaseCommandOption } from '../../../base';
-import { UserError } from '@/modules/utils';
+import { Constants, UserError } from '@/modules/utils';
 
 export const QUEUE_ADD_DESCRIPTION = 'add media to the queue';
 export const QUEUE_ADD_OPTIONS = [
   {
     name: 'url',
     description: 'url',
-    type: Constants.ApplicationCommandOptionTypes.STRING,
+    type: DetritusConstants.ApplicationCommandOptionTypes.STRING,
     required: false,
   },
   {
     name: 'file',
     description: 'media file',
-    type: Constants.ApplicationCommandOptionTypes.ATTACHMENT,
+    type: DetritusConstants.ApplicationCommandOptionTypes.ATTACHMENT,
     required: false,
   },
 ];
@@ -57,6 +57,6 @@ export class QueueAddCommand extends BaseCommandOption {
     if (!voice.initialized) throw new UserError('voice-check.not-initialized');
 
     await voice.queue.push(media, ctx.user);
-    await ctx.editOrRespond('Added to the queue.');
+    await ctx.editOrRespond(Constants.EMOJIS.CHECK);
   }
 }

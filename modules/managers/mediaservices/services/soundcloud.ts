@@ -83,7 +83,7 @@ export default class SoundCloudService extends MediaService {
       for (let script of scripts) {
         let url = script[1];
 
-        if (url && !url.startsWith('https://a-v2.sndcdn.com')) return;
+        if (url && !url.startsWith('https://a-v2.sndcdn.com')) continue;
 
         const { data: scrf } = await Proxy.get(url);
         const id = scrf.match(/\("client_id=[A-Za-z0-9]{32}"\)/);
