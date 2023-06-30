@@ -1,9 +1,9 @@
 import { DownloadReturnedValue, MediaServiceResponse } from '../types';
 
 export class MediaService {
+  public disableSearch = false;
   public hosts: string[] = [];
   public patterns: string[] | ((url: URL) => Record<string, string>) = [];
-  public noSearch = false;
 
   public test(url: URL): Promise<URL> | URL {
     return url;

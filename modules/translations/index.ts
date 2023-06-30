@@ -26,8 +26,11 @@ async function translate(
   for (let i = 0; i < hierarchy.length; i++) {
     const child = hierarchy[i];
     if (!(child in parent)) break;
+
     parent = parent[child as keyof typeof parent];
-    if (i === hierarchy.length - 1) template = parent;
+
+    if (i === hierarchy.length - 1)
+      template = parent;
   }
 
   return template.replace(

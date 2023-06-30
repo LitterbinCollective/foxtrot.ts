@@ -1,4 +1,4 @@
-import { Proxy } from '@/modules/utils';
+import { Proxy, parseHTMLEntities } from '@/modules/utils';
 
 import { MediaService } from './baseservice';
 import {
@@ -28,19 +28,11 @@ interface BandcampInfo {
 }
 
 export default class BandcampService extends MediaService {
+  public disableSearch = true;
   public hosts = ['bandcamp.com'];
   public patterns = ['/album/:album', '/track/:track'];
-  public noSearch = true;
   private readonly TRALBUM_REGEX =
     /<script.+src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-.+\.js".+data-tralbum="(.*?)".+><\/script>/g;
-
-  private readonly CHARS = { quot: '"', amp: '&' };
-  private decodeHTML(str: string) {
-    return str.replaceAll(
-      /&(.+?);/g,
-      m => this.CHARS[m.slice(1, -1) as keyof typeof this.CHARS]
-    );
-  }
 
   public test(url: URL): URL | Promise<URL> {
     if (url.hostname.split('.').length !== 3) throw new Error('no subdomain');
@@ -55,7 +47,7 @@ export default class BandcampService extends MediaService {
     if (match.length === 0)
       throw new Error('no tralbum data matches, something must be broken');
 
-    const processed: BandcampInfo = JSON.parse(this.decodeHTML(match[0][1]));
+    const processed: BandcampInfo = JSON.parse(parseHTMLEntities(match[0][1]));
 
     const array = processed.trackinfo.map(
       track =>

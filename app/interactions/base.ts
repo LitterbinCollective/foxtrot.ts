@@ -38,7 +38,7 @@ export class BaseInteractionCommand<
         checkPermission(ctx, DetritusConstants.Permissions.MANAGE_GUILD) ||
         ctx.user.isClientOwner
       : true;
-    if (ownerCheck || manageGuildCheck) {
+    if (ownerCheck && manageGuildCheck) {
       return true;
     }
 

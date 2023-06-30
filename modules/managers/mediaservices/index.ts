@@ -22,7 +22,7 @@ import {
   MediaServiceResponseMediaType,
 } from './types';
 
-class URLMediaService extends MediaService {
+export class URLMediaService extends MediaService {
   public noSearch = true;
 
   private readonly LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1'];
@@ -67,7 +67,7 @@ class URLMediaService extends MediaService {
     });
   }
 
-  private probe(url: string): Promise<{ duration: number; isVideo: boolean }> {
+  static probe(url: string): Promise<{ duration: number; isVideo: boolean }> {
     return new Promise((res, rej) => {
       const args = [
         '-v',
@@ -126,7 +126,7 @@ class URLMediaService extends MediaService {
     let cover: string | Buffer =
       (config as any).soundIcon || 'https://foxtrot.litterbin.dev/sound.png';
     try {
-      const info = await this.probe(url);
+      const info = await URLMediaService.probe(url);
       duration = info.duration;
       if (info.isVideo) cover = await this.createThumbnail(url);
     } catch (err) {
@@ -219,7 +219,7 @@ export class MediaServiceManager extends BaseManager<MediaService> {
   public addPrefixedCommands(client: CommandClient) {
     for (const name in this.processors) {
       const service = this.processors[name];
-      if (service.noSearch) continue;
+      if (service.disableSearch) continue;
 
       client.add({
         _class: BaseCommand,
@@ -243,7 +243,7 @@ export class MediaServiceManager extends BaseManager<MediaService> {
 
     for (const name in this.processors) {
       const service = this.processors[name];
-      if (service.noSearch) continue;
+      if (service.disableSearch) continue;
 
       const option = new BaseCommandOption({
         name,

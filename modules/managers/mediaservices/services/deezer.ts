@@ -9,6 +9,10 @@ import { MediaService } from './baseservice';
 import { MediaServiceResponse, MediaServiceResponseMediaType } from '../types';
 
 const BLOWFISH_CIPHER = 'BF_CBC_STRIPE';
+const BLOWFISH_SECRET = 'g4el58wc0zvf9na1';
+const DEEZER_APP_STATE_REGEX =
+  /<script.*>window\.__DZR_APP_STATE__\s*=\s*(.+?)\s*<\/script>/g;
+const EMBED_APP_ID = '430922';
 
 interface DeezerGetUserDataResponse {
   results?: {
@@ -90,10 +94,6 @@ export default class DeezerService extends MediaService {
   private authTokenFetching: boolean = false;
   private authTokenPromises: ((value?: any) => void)[][] = [];
   private userExpiration: number = -1;
-  private readonly BLOWFISH_SECRET = 'g4el58wc0zvf9na1';
-  private readonly DEEZER_APP_STATE_REGEX =
-    /<script.*>window\.__DZR_APP_STATE__\s*=\s*(.+?)\s*<\/script>/g;
-  private readonly EMBED_APP_ID = '430922';
 
   private formGwlightURL(method: string, apiToken = '') {
     const url = new URL('https://www.deezer.com/ajax/gw-light.php');
@@ -107,18 +107,18 @@ export default class DeezerService extends MediaService {
   }
 
   private async getAuthTokens() {
+    // if license token is going to expire in 30 seconds
+    // we have to refetch it, so there would not be a problem
+    if (this.authTokens && this.userExpiration - Date.now() / 1000 >= 30)
+      return;
+    if (this.authTokenFetching)
+      return await new Promise<undefined>((res, rej) =>
+        this.authTokenPromises.push([res, rej])
+      );
+
+    this.authTokenFetching = true;
+
     try {
-      // if license token is going to expire in 30 seconds
-      // we have to refetch it, so there would not be a problem
-      if (this.authTokens && this.userExpiration - Date.now() / 1000 >= 30)
-        return;
-      if (this.authTokenFetching)
-        return await new Promise<undefined>((res, rej) =>
-          this.authTokenPromises.push([res, rej])
-        );
-
-      this.authTokenFetching = true;
-
       const { data: userData } = await Proxy.post<DeezerGetUserDataResponse>(
         this.formGwlightURL('deezer.getUserData')
       );
@@ -133,7 +133,7 @@ export default class DeezerService extends MediaService {
 
       const { data: apiToken } = await this.fetchAPI<DeezerAPIToken>(
         '/platform/generic/token/unlogged',
-        { data: 'app_id=' + this.EMBED_APP_ID, method: 'post' },
+        { data: 'app_id=' + EMBED_APP_ID, method: 'post' },
         true
       );
       if (!apiToken.data) throw new Error('invalid response from deezer api');
@@ -178,7 +178,7 @@ export default class DeezerService extends MediaService {
       'https://www.deezer.com/us/track/' + trackId
     );
 
-    const matches = [...html.matchAll(this.DEEZER_APP_STATE_REGEX)];
+    const matches = [...html.matchAll(DEEZER_APP_STATE_REGEX)];
     if (matches.length === 0)
       throw new Error(
         'no deezer app state data matches, something must be broken'
@@ -227,7 +227,7 @@ export default class DeezerService extends MediaService {
       bfKey += String.fromCharCode(
         idMd5.charCodeAt(i) ^
           idMd5.charCodeAt(i + 16) ^
-          this.BLOWFISH_SECRET.charCodeAt(i)
+          BLOWFISH_SECRET.charCodeAt(i)
       );
 
     return bfKey;

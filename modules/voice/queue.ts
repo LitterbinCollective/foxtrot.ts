@@ -101,16 +101,18 @@ class VoiceQueueMedia extends EventEmitter {
       if (!result) throw new UserError('queue.url-unsupported');
 
       if (this.submittee) {
+        const name = this.submittee.discriminator === '0' ? this.submittee.username : this.submittee.tag;
+
         if (Array.isArray(result)) {
           for (let i = 0; i < result.length; i++)
             result[i].information.metadata = {
-              name: this.submittee.tag,
+              name,
               icon_url: this.submittee.avatarUrl,
               url: this.message ? this.message.jumpLink : undefined,
             };
         } else
           result.information.metadata = {
-            name: this.submittee.tag,
+            name,
             icon_url: this.submittee.avatarUrl,
             url: this.message ? this.message.jumpLink : undefined,
           };
@@ -201,15 +203,6 @@ export default class VoiceQueue {
     console.error(err);
   }
 
-  private async continue(media: VoiceQueueMedia) {
-    this.announcer.play(media.info);
-    try {
-      this.voice.play(await media.getStream());
-    } catch (err: any) {
-      this.streamingError(err);
-    }
-  }
-
   public async next() {
     if (this.voice.isPlaying) return;
     this.announcer.reset();
@@ -224,7 +217,13 @@ export default class VoiceQueue {
     }
 
     this.queue.shift();
-    this.continue(media);
+
+    this.announcer.play(media.info);
+    try {
+      this.voice.play(await media.getStream());
+    } catch (err: any) {
+      this.streamingError(err);
+    }
 
     // this.voice.playStream(singleResponse.readable ? singleResponse.readable : await singleResponse.fetch());
   }

@@ -18,6 +18,12 @@ export default class YouTubeService extends MediaService {
   }
 
   public match(url: URL): Record<string, string> {
+    let id = url.searchParams.get('v') || '';
+
+    const shorts = '/shorts/';
+    if (url.pathname.startsWith(shorts))
+      id = url.pathname.substring(shorts.length);
+
     return {
       id: url.searchParams.get('v') || '',
     };
