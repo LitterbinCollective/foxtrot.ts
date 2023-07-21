@@ -5,7 +5,11 @@ export class MediaService {
   public hosts: string[] = [];
   public patterns: string[] | ((url: URL) => Record<string, string>) = [];
 
-  public test(url: URL): Promise<URL> | URL {
+  public before(url: URL): URL | Promise<URL> {
+    const parts = url.hostname.split('.');
+    if (parts.length >= 3 && parts[0] !== 'www')
+      throw new Error("hostname has a subdomain, can't continue");
+
     return url;
   }
 

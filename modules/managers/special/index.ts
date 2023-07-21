@@ -35,7 +35,7 @@ export class Special extends BaseManager<any> {
     for (const eventName in this.processors) {
       const event = this.processors[eventName];
 
-      if (event.timeRange.length === 0) continue;
+      if (event.timeRange.length !== 2) continue;
 
       const [start, end] = event.timeRange as string[];
       const [startDay, startMonth] = start.split('/').map(n => +n);

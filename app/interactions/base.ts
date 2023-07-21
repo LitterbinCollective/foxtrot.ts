@@ -62,7 +62,7 @@ export class BaseInteractionCommand<
   ) {
     if (!ctx.guild) return;
     if (error instanceof UserError)
-      return ctx.editOrRespond(await this.t(ctx, error.message));
+      return ctx.editOrRespond(await this.t(ctx, error.message, ...error.formatValues));
     const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
     ctx.editOrRespond({ embed });
 

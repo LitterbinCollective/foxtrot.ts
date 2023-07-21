@@ -6,6 +6,8 @@ import {
   LOG_LEVEL_COLOR_MAPPINGS,
 } from './constants';
 
+const LEVEL_IDENTATION = 5;
+
 export default class Logger {
   public loggingLevel: number = LOG_LEVELS.LOG;
   private indentation: number = 20;
@@ -46,7 +48,7 @@ export default class Logger {
 
     func.call(
       console,
-      this.colorize('GRAY', '[' + new Date().toUTCString() + ']'),
+      this.colorize('DIM', '[' + new Date().toUTCString() + ']'),
       tag,
       ...data
     );
@@ -59,7 +61,16 @@ export default class Logger {
       LOG_LEVEL_COLOR_MAPPINGS[
         level as keyof typeof LOG_LEVEL_COLOR_MAPPINGS
       ] || 'GRAY';
-    return `[${this.moduleName}/${this.colorize(color, level.toLowerCase())}]`;
+
+    const indentation = LEVEL_IDENTATION - level.length + 2;
+    const levelTag = this.colorize(
+      color,
+      ' '.repeat(Math.floor(indentation / 2)) +
+      level.toLowerCase() +
+      ' '.repeat(Math.ceil(indentation / 2))
+    );
+
+    return `${levelTag} ${this.colorize('BRIGHT', this.moduleName)}`;
   }
 
   private getColor(color: keyof typeof COLORS) {

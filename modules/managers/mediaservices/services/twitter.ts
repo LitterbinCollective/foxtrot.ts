@@ -1,122 +1,93 @@
 import { Proxy } from '@/modules/utils';
-import { DownloadReturnedValue } from '../types';
+import { DownloadReturnedValue, MediaServiceResponse, MediaServiceResponseMediaType } from '../types';
 import { MediaService } from './baseservice';
-import { AxiosRequestConfig, AxiosResponse } from 'axios';
 
-const TWITTER_GUEST_TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
-const GUEST_TOKEN_AGE = 10740000;
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36';
-
-interface TwitterGuestActivate {
-  guest_token: string;
+interface SyndicationResult {
+  __typename: string;
 };
 
-interface TwitterAPIError {
-  code: number;
+interface TweetUserDetails {
+  name: string;
+  screen_name: string;
 };
 
-interface TwitterPost {
-  retweeted_status_id_str: string;
+interface TweetVideoVariant {
+  bitrate: number;
+  content_type: 'video/mp4' | 'application/x-mpegURL';
+  url: string;
 };
 
-interface TwitterConversation {
-  errors?: TwitterAPIError[];
-  conversation?: {
-    globalObjects?: {
-      tweets?: Record<string, TwitterPost>
-    }
-  }
+interface TweetMediaDetailVideoInfo {
+  duration_millis: number;
+  variants: TweetVideoVariant[];
+}
+
+interface TweetMediaDetail {
+  expanded_url: string;
+  media_url_https: string;
+  type: string;
+  video_info: TweetMediaDetailVideoInfo;
+};
+
+interface TweetSyndicationResult extends SyndicationResult {
+  __typename: 'Tweet';
+  created_at: string;
+  mediaDetails: TweetMediaDetail[];
+  text: string;
+  user: TweetUserDetails;
 };
 
 export default class TwitterService extends MediaService {
-  public disableSearch: boolean = true;
-  public patterns = [
-    '/:user/status/:tweet/video/:v',
-    '/:user/status/:tweet',
-    '/i/spaces/:space'
+  public hosts: string[] = [
+    'twitter.com',
+    'vxtwitter.com',
+    'fxtwitter.com'
   ];
-  private guestToken: string | null = null;
-  private guestTokenFetching = false;
-  private guestTokenPromises: ((value?: any) => void)[][] = [];
-  private guestTokenLast = -1;
+  public patterns = [
+    '/:user/status/:id/video/:v',
+    '/:user/status/:id.mp4',
+    '/:user/status/:id'
+  ];
 
-  private get guestTokenUsable() {
-    return this.guestToken && Date.now() - this.guestTokenLast < GUEST_TOKEN_AGE;
-  }
+  private formVideoResponse(text: string, user: TweetUserDetails, media: TweetMediaDetail): MediaServiceResponse {
+    let bestMatch: TweetVideoVariant = media.video_info.variants
+      .filter(x => x.content_type === 'video/mp4')
+      .sort((a, b) =>  b.bitrate - a.bitrate)[0];
 
-  private async fetchAPI<T>(version: string, path: string, options: AxiosRequestConfig = {}) {
-    if (!this.guestTokenUsable)
-      await this.assignGuestToken();
-
-    const headers = {
-      'authorization': 'Bearer ' + TWITTER_GUEST_TOKEN,
-      'x-twitter-client-language': 'en',
-      'x-twitter-active-user': 'yes',
-      'user-agent': USER_AGENT,
-      'x-guest-token': this.guestToken
-    };
-    options.headers = Object.assign(options.headers || {}, headers);
-
-    return (
-      await Proxy(
-        'https://api.twitter.com/' + version + path,
-        options
-      )
-    ) as AxiosResponse<T>;
-  }
-
-  private async assignGuestToken(force = false) {
-    if (this.guestTokenUsable && !force) return;
-    if (this.guestTokenFetching)
-      return await new Promise<undefined>((res, rej) =>
-        this.guestTokenPromises.push([res, rej])
-      );
-
-    this.guestTokenFetching = true;
-
-    try {
-      const { data: activate } = await Proxy.get<TwitterGuestActivate>('https://api.twitter.com/1.1/guest/activate.json', {
-        headers: {
-          authorization: 'Bearer ' + TWITTER_GUEST_TOKEN,
-          'user-agent': USER_AGENT
-        }
-      });
-      this.guestTokenLast = Date.now();
-      this.guestToken = activate.guest_token;
-
-      this.guestTokenFetching = false;
-      this.guestTokenPromises.forEach(([res]) => res());
-      this.guestTokenPromises = [];
-    } catch (err) {
-      this.guestTokenFetching = false;
-      this.guestTokenPromises.forEach(([_, rej]) => rej(err));
-      this.guestTokenPromises = [];
-    }
-  }
-
-  private async getPost(id: string, retry = true): Promise<any> {
-    try {
-      const { data: post } = await this.fetchAPI<TwitterConversation>('2', '/timeline/conversation/' + id + '.json?tweet_mode=extended&include_user_entities=1');
-
-      if (post.errors)
-        throw new Error('Twitter API responded with errors: ' + post.errors.map(x => x.code).join(', '));
-
-      if (!post.conversation || !post.conversation.globalObjects || !post.conversation.globalObjects.tweets)
-        throw new Error('Twitter API did not respond with conversation.globalObjects.tweets');
-
-      const { tweets } = post.conversation.globalObjects;
-
-      if (!tweets[id])
-        throw new Error('Twitter API responded, but the tweet with the specified id is missing?');
-
-      return tweets[tweets[id].retweeted_status_id_str || id];
-    } catch(err) {
-      if (retry) {
-        await this.assignGuestToken();
-        return await this.getPost(id, false);
+    const { screen_name, name } = user;
+    return {
+      information: {
+        title: text,
+        cover: media.media_url_https,
+        author: `${name} (@${screen_name})`,
+        duration: media.video_info.duration_millis / 1000,
+        url: media.expanded_url,
+      },
+      media: {
+        type: MediaServiceResponseMediaType.URL,
+        url: bestMatch.url
       }
+    };
+  }
 
-      throw err;
+  public async download(_: string, matches: Record<string, string>): Promise<DownloadReturnedValue> {
+    const { data: synd } = await Proxy.get<TweetSyndicationResult>('https://cdn.syndication.twimg.com/tweet-result?id=' + matches.id);
+    if (synd.__typename !== 'Tweet')
+      throw new Error('invalid syndication response, received type ' + synd.__typename);
+
+    const videos = synd.mediaDetails.filter(x => x.type === 'video');
+
+    if (videos.length === 0)
+      throw new Error('specified tweet does not contain a video');
+
+    if (matches.v) {
+      const media = videos[+matches.v - 1];
+      if (!media)
+        throw new Error('no such video');
+
+      return this.formVideoResponse(synd.text, synd.user, media);
     }
+
+    return videos.map(media => this.formVideoResponse(synd.text, synd.user, media));
   }
 };

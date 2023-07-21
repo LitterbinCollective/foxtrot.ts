@@ -34,7 +34,7 @@ export default class BandcampService extends MediaService {
   private readonly TRALBUM_REGEX =
     /<script.+src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-.+\.js".+data-tralbum="(.*?)".+><\/script>/g;
 
-  public test(url: URL): URL | Promise<URL> {
+  public before(url: URL): URL | Promise<URL> {
     if (url.hostname.split('.').length !== 3) throw new Error('no subdomain');
 
     return url;

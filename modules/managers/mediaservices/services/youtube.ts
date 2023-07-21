@@ -24,12 +24,10 @@ export default class YouTubeService extends MediaService {
     if (url.pathname.startsWith(shorts))
       id = url.pathname.substring(shorts.length);
 
-    return {
-      id: url.searchParams.get('v') || '',
-    };
+    return { id };
   }
 
-  public test(url: URL): URL | Promise<URL> {
+  public before(url: URL): URL | Promise<URL> {
     if (url.hostname === 'youtu.be') {
       url.hostname = 'youtube.com';
       url.searchParams.append('v', url.pathname.slice(1));

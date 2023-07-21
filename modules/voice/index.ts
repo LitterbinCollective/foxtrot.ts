@@ -3,16 +3,21 @@ import { EventEmitter } from 'events';
 
 import chatsounds from '@/modules/chatsounds';
 import { GuildSettingsStore, VoiceStore } from '@/modules/stores';
+import { UserError } from '@/modules/utils';
 import config from '@/configs/app.json';
 
 import VoicePipeline from './pipeline';
 import { VoiceEffectManager } from './managers';
 import FFMpeg from './ffmpeg';
 import VoiceQueue from './queue';
+import modules from './modules';
+import BaseModule from './modules/basemodule';
+import { t } from '../translations';
 
 export * as Announcer from './announcer';
 export * as FFMpeg from './ffmpeg';
 export * as Managers from './managers';
+export * as Modules from './modules';
 export * as Pipeline from './pipeline';
 export * as Queue from './queue';
 
@@ -25,6 +30,7 @@ export default class Voice extends EventEmitter {
   public special = true;
   public readonly AUDIO_CHANNELS = 2;
   public readonly SAMPLE_RATE = 48000;
+  private activeModule?: BaseModule;
   private ffmpeg?: FFMpeg;
 
   constructor(
@@ -78,7 +84,26 @@ export default class Voice extends EventEmitter {
   }
 
   public update() {
+    if (this.activeModule) this.activeModule.internalUpdate();
     if (this.pipeline) this.pipeline.update();
+  }
+
+  public assignModule(module: keyof typeof modules) {
+    if (this.activeModule)
+      this.destroyModule();
+    this.activeModule = new modules[module](this);
+  }
+
+  public async destroyModule(err?: UserError) {
+    if (!this.activeModule)
+      throw new UserError('voice-mod.no-active');
+    this.activeModule.internalCleanUp();
+    delete this.activeModule;
+
+    if (err && this.channel?.guild)
+      await this.queue.announcer.createMessage(
+        await t(this.channel.guild, err.message, ...err.formatValues)
+      );
   }
 
   public play(stream: NodeJS.ReadableStream | string) {
@@ -161,6 +186,7 @@ export default class Voice extends EventEmitter {
 
   public kill(forceLeave: boolean = false) {
     this.cleanUp();
+    this.destroyModule();
     this.pipeline.destroy();
     if (this.channel) VoiceStore.delete(this.channel.guildId as string);
   }

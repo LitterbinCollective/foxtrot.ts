@@ -42,6 +42,7 @@ class VoiceSafeConnection extends EventEmitter {
       voice: true,
     });
     this.voiceConnection.sendAudioSilenceFrame();
+    this.voiceConnection.on('packet', (packet) => this.emit('packet', packet));
 
     /*
       what we are essentially doing here is not using detritus'
@@ -132,6 +133,7 @@ export default class VoicePipeline extends Transform {
   public mixer?: Mixer;
   public readonly OPUS_FRAME_LENGTH = 20;
   public readonly OPUS_FRAME_SIZE = 960;
+  public readonly REQUIRED_SAMPLES: number;
   public readonly SAMPLE_BYTE_LEN = 2;
   private _packetLoss = 0;
   private silent: boolean = false;
@@ -142,7 +144,6 @@ export default class VoicePipeline extends Transform {
   private readonly connection: VoiceSafeConnection;
   private readonly logger: Logger;
   private readonly voice: NewVoice;
-  private readonly REQUIRED_SAMPLES: number;
   private readonly CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE = 32767;
   private readonly CORRUPT_RANDSAMPLE_MINMAX_RELATIVE = 10;
 
@@ -157,7 +158,7 @@ export default class VoicePipeline extends Transform {
     super({ readableObjectMode: true });
 
     this.voice = voice;
-    this.logger = new Logger(`Voice pipeline [${voiceChannel.guildId}]`);
+    this.logger = new Logger(`VoicePipeline [${voiceChannel.guildId}]`);
     this.connection = new VoiceSafeConnection(voiceChannel);
     this.mixer = new Mixer();
     this.opus = new OpusEncoder(this.SAMPLE_RATE, this.AUDIO_CHANNELS);
@@ -170,6 +171,7 @@ export default class VoicePipeline extends Transform {
     this.onVoiceStateUpdate = this.connection.onVoiceStateUpdate;
 
     this.connection.on('connected', () => this.emit('connected'));
+    this.connection.on('packet', (packet) => this.emit('receive', packet));
     this.connection.on('destroy', this.onConnectionDestroy);
   }
 
@@ -244,7 +246,7 @@ export default class VoicePipeline extends Transform {
       this.push(frame);
       n++;
     }
-    this.logger.debug('converted opus frames ', n);
+    // this.logger.debug('converted opus frames ', n);
     if (n > 0)
       this.opusLeftover = this.opusLeftover.subarray(n * this.REQUIRED_SAMPLES);
     return callback();

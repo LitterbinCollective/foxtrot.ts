@@ -157,7 +157,7 @@ export class MediaServiceManager extends BaseManager<MediaService> {
   constructor() {
     super({
       create: true,
-      loggerTag: 'Media service manager',
+      loggerTag: 'MediaServiceManager',
       scanPath: 'mediaservices/services/',
     });
 
@@ -175,7 +175,11 @@ export class MediaServiceManager extends BaseManager<MediaService> {
   public async download(
     url: string | URL
   ): Promise<DownloadReturnedValue | false> {
-    if (typeof url === 'string') url = new URL(url);
+    try {
+      if (typeof url === 'string') url = new URL(url);
+    } catch (err) {
+      return false;
+    }
 
     const domainParts = url.hostname.split('.');
 
@@ -188,7 +192,7 @@ export class MediaServiceManager extends BaseManager<MediaService> {
       if (!matched) throw new Error('nothing found');
 
       const service = this.processors[matched];
-      url = await service.test(url);
+      url = await service.before(url);
 
       let matches: Record<string, string> | null = null;
 

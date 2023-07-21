@@ -19,13 +19,6 @@ export default class VineService extends MediaService {
     '/v/:id',
   ];
 
-  public test(url: URL) {
-    if (url.hostname.split('.').length >= 3)
-      throw new Error("hostname has a subdomain, can't continue");
-
-    return url;
-  }
-
   public async download(_: string, matches: Record<string, string>): Promise<DownloadReturnedValue> {
     const { data: post } = await Proxy.get<VineArchivePost>(`https://archive.vine.co/posts/${matches.id}.json`);
 

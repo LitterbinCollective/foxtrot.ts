@@ -5,12 +5,12 @@ import { Timers } from 'detritus-utils';
 
 import app from '@/app';
 import sh from '@/modules/chatsounds';
+import { t } from '@/modules/translations';
 import { GuildSettingsStore, VoiceStore } from '@/modules/stores';
 import { Constants } from '@/modules/utils';
 import Voice from '@/modules/voice';
 
 import { BaseEvent } from './baseevent';
-import { t } from '@/modules/translations';
 
 dayjs.extend(utc);
 

@@ -1,9 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { Structures } from 'detritus-client';
-import fs from 'fs';
-import { Transform } from 'stream';
 
-import { Constants, convertToType, Logger, UserError } from '@/modules/utils';
+import { convertToType, UserError } from '@/modules/utils';
 
 import {
   BaseEffect,
@@ -11,44 +8,11 @@ import {
   BaseEffectOptionsRange,
 } from './effects/baseeffect';
 import NewVoice from '.';
+import { BaseTransformManager, managerScan } from '../managers';
 
-interface BaseVoiceManagerOptions {
-  create?: boolean;
-  constructorArgs?: any[];
-  loggerTag?: string;
-  scanPath: string;
-}
+const VOICE_EFFECT_MANAGER_SCAN_PATH = '../voice/effects/';
 
-class BaseVoiceManager extends Transform {
-  public readonly logger!: Logger;
-  public readonly processors: Record<string, any> = {};
-
-  constructor(options: BaseVoiceManagerOptions) {
-    super();
-    if (options.loggerTag) this.logger = new Logger(options.loggerTag);
-    this.processors = BaseVoiceManager.standaloneScan(options);
-  }
-
-  public static standaloneScan(options: BaseVoiceManagerOptions) {
-    const processors: Record<string, any> = {};
-    for (const fileName of fs.readdirSync(__dirname + '/' + options.scanPath)) {
-      const name = fileName.replace(Constants.FILENAME_REGEX, '');
-      const any: any = require('./' + options.scanPath + fileName).default;
-      if (!any) continue;
-      if (options.create)
-        if (options.constructorArgs)
-          processors[name] = new any(...options.constructorArgs);
-        else processors[name] = new any();
-      else processors[name] = any;
-    }
-    return processors;
-  }
-}
-
-const VOICE_EFFECT_MANAGER_SCAN_PATH = 'effects/';
-
-export class VoiceEffectManager extends BaseVoiceManager {
-  public readonly processors!: Record<string, new () => BaseEffect>;
+export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffect> {
   public readonly STACK_LIMIT = 8;
   private sox?: ChildProcessWithoutNullStreams;
   private stack: BaseEffect[] = [];
@@ -63,7 +27,7 @@ export class VoiceEffectManager extends BaseVoiceManager {
   }
 
   public static getArgumentType() {
-    const effects = this.standaloneScan({
+    const effects = managerScan<new () => BaseEffect>({
       scanPath: VOICE_EFFECT_MANAGER_SCAN_PATH,
     });
     return Object.keys(effects).map(effect => ({

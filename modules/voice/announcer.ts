@@ -1,10 +1,12 @@
-import { Structures, Utils } from 'detritus-client';
+import { Constants as DetritusConstants, Structures, Utils } from 'detritus-client';
 import { RequestTypes } from 'detritus-client-rest';
 
 import { MediaServiceResponseInformation } from '@/modules/managers/mediaservices/types';
 import { Constants, durationInString } from '@/modules/utils';
 
 import NewVoice from '.';
+
+const ELLIPSIS = '...';
 
 export default class VoiceQueueAnnouncer {
   public channel: Structures.ChannelTextType;
@@ -63,14 +65,18 @@ export default class VoiceQueueAnnouncer {
     }
 
     const fromURL = typeof streamInfo.cover === 'string';
+    const title = Constants.EMOJIS.PLAY +
+      ' ' +
+      streamInfo.author +
+      ' - ' +
+      streamInfo.title;
+    const truncatedTitle = title.length > DetritusConstants.MAX_LENGTH_EMBED_TITLE ?
+      title.substring(DetritusConstants.MAX_LENGTH_EMBED_TITLE - ELLIPSIS.length - 1) + ELLIPSIS :
+      title;
+
     const embed = new Utils.Embed({
       author: streamInfo.metadata,
-      title:
-        Constants.EMOJIS.PLAY +
-        ' ' +
-        streamInfo.author +
-        ' - ' +
-        streamInfo.title,
+      title: truncatedTitle,
       description: this.playProgress(streamInfo.duration),
       color: Constants.EMBED_COLORS.DEFAULT,
       url: streamInfo.url,

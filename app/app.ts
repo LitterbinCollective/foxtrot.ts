@@ -8,7 +8,7 @@ import Knex from 'knex';
 import { Model } from 'objection';
 
 import { Logger } from '@/modules/utils';
-import { applicationCreated } from '@/modules/stores';
+import { GuildSettingsStore, applicationCreated } from '@/modules/stores';
 import mediaservice from '@/modules/managers/mediaservices';
 
 const knexConfig = require('@/knexfile');
@@ -50,6 +50,14 @@ export class Application {
       this.commandClient = new CommandClient(this.clusterClient, {
         prefix,
         activateOnEdits: true,
+        onPrefixCheck: async (ctx) => {
+          if (ctx.guildId) {
+            const settings = await GuildSettingsStore.getOrCreate(ctx.guildId);
+            if (settings.prefix)
+              return [settings.prefix];
+          }
+          return this.commandClient.prefixes.custom;
+        }
       });
       this.commandClient
         .addMultipleIn('app/commands/', {
