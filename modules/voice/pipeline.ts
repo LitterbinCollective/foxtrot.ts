@@ -270,6 +270,10 @@ export default class VoicePipeline extends Transform {
     this.silent = false;
   }
 
+  public sendEmptyOpusPacket() {
+    this.connection.sendEmpty();
+  }
+
   public playBuffer(buffer: Buffer) {
     if (this.mixer) this.mixer.addReadable(buffer);
   }
