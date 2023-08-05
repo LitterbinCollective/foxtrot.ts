@@ -197,10 +197,10 @@ export default class Voice extends EventEmitter {
     if (buffer) this.pipeline.playBuffer(buffer);
   }
 
-  public kill(forceLeave: boolean = false) {
+  public async kill(forceLeave: boolean = false) {
     this.cleanUp();
     try {
-      this.destroyModule();
+      await this.destroyModule();
     } catch (err) {}
 
     this.pipeline.destroy();
