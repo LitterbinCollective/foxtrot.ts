@@ -1,6 +1,7 @@
 import { Constants as DetritusConstants, Utils } from 'detritus-client';
 
-import { Constants, listEffects } from '@/modules/utils';
+import { Constants } from '@/modules/utils';
+import { listEffects } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -29,8 +30,7 @@ export class EffectRemoveCommand extends BaseVoiceCommandOption {
     ctx.voice.effects.removeEffect(effect);
     const embed = await listEffects(
       ctx.guild,
-      ctx.voice.effects.list,
-      ctx.voice.effects.STACK_LIMIT
+      ctx.voice.effects.list
     );
     embed.setTitle(
       Constants.EMOJIS.MINUS +

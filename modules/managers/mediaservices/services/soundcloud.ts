@@ -54,6 +54,9 @@ interface SoundCloudTrackInfo {
   user: SoundCloudUserInfo;
 }
 
+const HYDRATION_REGEX = /<script.*>window\.__sc_hydration\s*=\s*(.+?);*\s*<\/script>/g;
+const SC_VERSION_REGEX = /<script>window\.__sc_version="[0-9]{10}"<\/script>/;
+
 export default class SoundCloudService extends MediaService {
   public hosts = ['soundcloud.com'];
   public patterns = [
@@ -64,16 +67,11 @@ export default class SoundCloudService extends MediaService {
   ];
   private idCache: SoundCloudIDCache = { version: '', id: '' };
 
-  private readonly HYDRATION_REGEX =
-    /<script.*>window\.__sc_hydration\s*=\s*(.+?);*\s*<\/script>/g;
-  private readonly SC_VERSION_REGEX =
-    /<script>window\.__sc_version="[0-9]{10}"<\/script>/;
-
   async findClientID() {
     try {
       const { data: sc } = await Proxy.get('https://soundcloud.com/');
       let scVersion = String(
-        sc.match(this.SC_VERSION_REGEX)[0].match(/[0-9]{10}/)
+        sc.match(SC_VERSION_REGEX)[0].match(/[0-9]{10}/)
       );
 
       if (this.idCache.version === scVersion) return this.idCache.id;
@@ -158,7 +156,7 @@ export default class SoundCloudService extends MediaService {
 
     if (!response) throw new Error('no response. unsupported link format?');
 
-    const match = [...response.data.matchAll(this.HYDRATION_REGEX)];
+    const match = [...response.data.matchAll(HYDRATION_REGEX)];
     if (match.length === 0)
       throw new Error(
         'no soundcloud hydration matches, something must be broken'

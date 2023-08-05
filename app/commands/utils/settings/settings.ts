@@ -2,7 +2,7 @@ import { Command, CommandClient } from 'detritus-client';
 
 import { GuildSettings } from '@/modules/models';
 import { GuildSettingsStore } from '@/modules/stores';
-import { listSettings } from '@/modules/utils';
+import { listSettings } from '@/modules/utils/shard-specific';
 
 import { BaseCommand } from '../../base';
 
@@ -34,6 +34,6 @@ export default class SettingsCommand extends BaseSettingsCommand {
 
   public async run(ctx: SettingsContext) {
     if (!ctx.guild) return;
-    ctx.reply({ embed: await listSettings(ctx.guild, ctx.settings) });
+    return await ctx.reply({ embed: await listSettings(ctx.guild, ctx.settings) });
   }
 }

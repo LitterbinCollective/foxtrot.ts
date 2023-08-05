@@ -1,4 +1,4 @@
-import { listEffects } from '@/modules/utils';
+import { listEffects } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -10,8 +10,7 @@ export class EffectListCommand extends BaseVoiceCommandOption {
     if (!ctx.guild) return;
     const embed = await listEffects(
       ctx.guild,
-      ctx.voice.effects.list,
-      ctx.voice.effects.STACK_LIMIT
+      ctx.voice.effects.list
     );
     ctx.editOrRespond({ embed });
   }

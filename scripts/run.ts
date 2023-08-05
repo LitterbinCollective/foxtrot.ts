@@ -1,8 +1,7 @@
-import { ClusterManager } from 'detritus-client';
+import { ClusterManager, Utils } from 'detritus-client';
 
 import config from '@/configs/app.json';
 import { Logger, sendFeedback } from '@/modules/utils';
-import { Markup } from 'detritus-client/lib/utils';
 
 const logger = new Logger('Runner');
 const manager = new ClusterManager('../', config.token, {
@@ -25,7 +24,7 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
       sendFeedback(
         manager.rest,
         `<@${config.devId}> Cluster ${clusterProcess.clusterId} [${config.shardStart} ` +
-          `- ${config.shardEnd}] has died: ${Markup.codestring(
+          `- ${config.shardEnd}] has died: ${Utils.Markup.codestring(
             code + ' ' + signal
           )}`
       );

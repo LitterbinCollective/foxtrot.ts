@@ -1,4 +1,4 @@
-{
+export default {
   "commands": {
     "settings": {
       "unknown": "okänd inställning.",
@@ -11,6 +11,12 @@
     "feedback": {
       "fail": "kunde inte skicka feedback.",
       "success": "tackar! din feedback har skickats till vår server."
+    },
+
+    "module": {
+      "assigned": "tilldelad {0} modul!",
+      "destroy": "förstör modulen...",
+      "switched": "bytte till {0} modul!"
     },
 
     "no-issue-url": "skicka rapporter direkt till värden.",
@@ -91,7 +97,7 @@
     "not-enough-perms-send-messages": "inte tillräckligt med behörigheter att prata i textkanalen.",
     "not-enough-perms-speak": "inte tillräckligt med behörigheter för att prata i röstkanalen.",
     "already-connected": "redan kopplad till en röstkanal på denna server",
-    "too-many-members": "kanalanvändargräns nådd."
+    "members-overflow": "kanalanvändargräns nådd."
   },
 
   "effects-mgr": {
@@ -110,5 +116,10 @@
 
   "corrupt-mode-not-allowed": "du kan inte sätta på korrupterad läge. (om du vill riskera din och alla andras hörförmåga, sätt `allowCorrupt` inställningen till `true` och återkoppla botten.)",
   "invalid-number": "ogiltig numerisk värde har getts.",
-  "page": "sida {0}/{1}"
-}
+  "page": "sida {0}/{1}",
+
+  "voice-modules": {
+    "no-active": "ingen modul är aktiv",
+    "not-found": "angiven modul hittades inte."
+  }
+};

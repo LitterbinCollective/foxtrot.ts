@@ -1,40 +1,39 @@
-import {
-  CommandClient,
-  Constants as DetritusConstants,
-  Utils,
-} from 'detritus-client';
+import { Constants as DetritusConstants, Utils } from 'detritus-client';
 
-import { GuildSettings } from '@/modules/models';
 import {
-  Constants,
-  convertToType,
-  UserError,
-} from '@/modules/utils';
+  BaseSettingsCommandOption,
+  SettingChoices,
+  SettingsInteractionContext
+} from './settings';
+import { GuildSettings } from '@/modules/models';
+import { Constants, UserError, convertToType } from '@/modules/utils';
 import { listSettings } from '@/modules/utils/shard-specific';
 
-import { BaseSettingsCommand, SettingsContext } from './settings';
+export class SettingsSetCommand extends BaseSettingsCommandOption {
+  public name = 'set';
+  public description = "set a setting's value";
 
-export default class SettingsSetCommand extends BaseSettingsCommand {
-  constructor(commandClient: CommandClient) {
-    super(commandClient, {
-      name: 'settings set',
-      type: [
+  constructor() {
+    super({
+      options: [
         {
           name: 'key',
-          type: DetritusConstants.CommandArgumentTypes.STRING,
+          description: 'setting name.',
+          choices: SettingChoices,
           required: true,
         },
         {
           name: 'value',
-          type: DetritusConstants.CommandArgumentTypes.STRING,
-          required: true,
+          description: 'a new value for the selected setting.',
+          type: DetritusConstants.ApplicationCommandOptionTypes.STRING,
+          required: true
         },
       ],
     });
   }
 
   public async run(
-    ctx: SettingsContext,
+    ctx: SettingsInteractionContext,
     { key, value }: { key: string; value: any }
   ) {
     if (!ctx.guild) return;
@@ -58,6 +57,6 @@ export default class SettingsSetCommand extends BaseSettingsCommand {
         ' ' +
         (await this.t(ctx, 'commands.settings.set', key, value))
     );
-    return await ctx.reply({ embed });
+    return await ctx.editOrRespond({ embed });
   }
 }

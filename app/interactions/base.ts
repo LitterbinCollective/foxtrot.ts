@@ -1,13 +1,10 @@
 import { Constants as DetritusConstants, Interaction } from 'detritus-client';
 
-import {
-  buildRuntimeErrorEmbed,
-  checkPermission,
-  UserError,
-} from '@/modules/utils';
+import { checkPermission, UserError } from '@/modules/utils';
+import { buildRuntimeErrorEmbed } from '@/modules/utils/shard-specific';
 
 import app from '..';
-import { t } from '@/modules/translations';
+import { t } from '@/modules/managers/i18n/';
 import { GuildSettingsStore } from '@/modules/stores';
 
 export class BaseInteractionCommand<
@@ -46,6 +43,13 @@ export class BaseInteractionCommand<
     return false;
   }
 
+  /**
+   * shorthand for "translate"
+   * @param ctx command context
+   * @param text i18n template key
+   * @param values values for the template
+   * @returns a promise for language string
+   */
   public t(
     ctx: Interaction.InteractionContext,
     text: string,

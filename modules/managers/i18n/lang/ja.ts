@@ -1,4 +1,4 @@
-{
+export default {
   "commands": {
     "settings": {
       "unknown": "不詳-設定.",
@@ -11,6 +11,12 @@
     "feedback": {
       "fail": "饋還-失敗.",
       "success": "ありがと!うきみの饋還わ送信されました."
+    },
+
+    "module": {
+      "assigned": "{0}モジュールが割り当てられた！",
+      "destroy": "モジュールを破壊する",
+      "switched": "{0}モジュールに切り替わった！"
     },
 
     "no-issue-url": "提出-発行.",
@@ -91,7 +97,7 @@
     "not-enough-perms-send-messages": "テキスト チャネル許可がありません.",
     "not-enough-perms-speak": "声チャネル許可がありません.",
     "already-connected": "既に通話中つく声 チャネル.",
-    "too-many-members": "チャネルのユーザー制限に達しました."
+    "members-overflow": "チャネルのユーザー制限に達しました."
   },
 
   "effects-mgr": {
@@ -110,5 +116,10 @@
 
   "corrupt-mode-not-allowed": "腐敗有効にすることはできません. (有効にするには, セット `allowCorrupt` に設定 `true` そして再起動.)",
   "invalid-number": "無効番号価値は提供.",
-  "page": "頁 {0}/{1}"
-}
+  "page": "頁 {0}/{1}",
+
+  "voice-modules": {
+    "no-active": "モジュールがアクティブでない",
+    "not-found": "指定されたモジュールが見つかりません。"
+  }
+};

@@ -1,5 +1,7 @@
 import { BaseEffect } from './baseeffect';
 
+const MAX_ECHOS = 7;
+
 export default class EchoEffect extends BaseEffect {
   public name = 'echos';
   public options = {
@@ -15,8 +17,6 @@ export default class EchoEffect extends BaseEffect {
     decay: [0, 90],
   };
 
-  private readonly MAX_ECHOS = 7;
-
   public get args(): any[] | boolean {
     if (!this.enabled) return false;
     const { gainIn, gainOut, delay, decay } = this.options;
@@ -26,7 +26,7 @@ export default class EchoEffect extends BaseEffect {
     let delayFactor = 0;
     for (let i = 1 - decayFactor; i > 0; i -= decayFactor) {
       if (Math.floor(i * 100) / 100 == 0) break;
-      if (delayFactor >= this.MAX_ECHOS) break;
+      if (delayFactor >= MAX_ECHOS) break;
       delayFactor++;
       args.push(delay * delayFactor, i.toFixed(2));
     }

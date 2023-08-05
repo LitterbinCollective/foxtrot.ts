@@ -7,7 +7,7 @@ import {
 } from 'detritus-client';
 import { RequestTypes } from 'detritus-client-rest';
 
-import { t } from '@/modules/translations';
+import { t } from '@/modules/managers/i18n/';
 
 import * as Constants from './constants';
 

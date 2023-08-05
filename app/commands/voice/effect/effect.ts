@@ -1,6 +1,5 @@
 import { CommandClient, Utils } from 'detritus-client';
 
-import { VoiceStore } from '@/modules/stores';
 import { Constants } from '@/modules/utils';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';

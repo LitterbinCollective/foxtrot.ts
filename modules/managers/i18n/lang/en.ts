@@ -1,4 +1,4 @@
-{
+export default {
   "commands": {
     "settings": {
       "unknown": "unknown setting.",
@@ -11,6 +11,12 @@
     "feedback": {
       "fail": "failed to submit feedback.",
       "success": "thanks! your feedback has been sent to our server."
+    },
+
+    "module": {
+      "assigned": "assigned {0} module!",
+      "destroy": "destroying module...",
+      "switched": "switched to {0} module!"
     },
 
     "no-issue-url": "submit issues directly to the host.",
@@ -91,7 +97,7 @@
     "not-enough-perms-send-messages": "not enough permissions to talk in this text channel.",
     "not-enough-perms-speak": "not enough permissions to speak in this voice channel.",
     "already-connected": "already connected to a voice channel on this server",
-    "too-many-members": "channel user limit reached."
+    "members-overflow": "channel user limit reached."
   },
 
   "effects-mgr": {
@@ -111,6 +117,11 @@
   "corrupt-mode-not-allowed": "you cannot enable corrupt mode. (if you want to risk your and everyone else's hearing, set `allowCorrupt` setting to `true` and reconnect the bot.)",
   "invalid-number": "invalid number value provided.",
   "page": "page {0}/{1}",
+  
+  "voice-modules": {
+    "no-active": "no module is active",
+    "not-found": "specified module not found."
+  },
 
   "special": {
     "to-disable": "disable special events",
@@ -120,4 +131,4 @@
       "description": "as this year is coming to an end, {0} is going to play westminster melody and fireworks every time a new year has just begun in other locations. see the current status of the bot for more information on which timezone is going to celebrate new year's eve next!"
     }
   }
-}
+};

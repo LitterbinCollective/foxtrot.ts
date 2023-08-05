@@ -1,6 +1,6 @@
-import { ApplicationCommandOptionTypes } from 'detritus-client/lib/constants';
+import { Constants } from 'detritus-client';
 
-import { listOptions } from '@/modules/utils';
+import { listOptions } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -14,7 +14,7 @@ export class EffectOptionsCommand extends BaseVoiceCommandOption {
         {
           name: 'effect',
           description: '# of the effect',
-          type: ApplicationCommandOptionTypes.INTEGER,
+          type: Constants.ApplicationCommandOptionTypes.INTEGER,
           required: true,
         },
       ],

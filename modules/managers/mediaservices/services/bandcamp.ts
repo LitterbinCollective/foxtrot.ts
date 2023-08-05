@@ -27,12 +27,12 @@ interface BandcampInfo {
   url: string;
 }
 
+const TRALBUM_REGEX = /<script.+src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-.+\.js".+data-tralbum="(.*?)".+><\/script>/g;
+
 export default class BandcampService extends MediaService {
   public disableSearch = true;
   public hosts = ['bandcamp.com'];
   public patterns = ['/album/:album', '/track/:track'];
-  private readonly TRALBUM_REGEX =
-    /<script.+src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-.+\.js".+data-tralbum="(.*?)".+><\/script>/g;
 
   public before(url: URL): URL | Promise<URL> {
     if (url.hostname.split('.').length !== 3) throw new Error('no subdomain');
@@ -43,7 +43,7 @@ export default class BandcampService extends MediaService {
   public async download(url: string): Promise<DownloadReturnedValue> {
     const { data: info } = await Proxy(url);
 
-    const match = [...info.matchAll(this.TRALBUM_REGEX)];
+    const match = [...info.matchAll(TRALBUM_REGEX)];
     if (match.length === 0)
       throw new Error('no tralbum data matches, something must be broken');
 

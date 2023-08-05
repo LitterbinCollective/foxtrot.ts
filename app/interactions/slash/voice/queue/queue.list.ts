@@ -5,11 +5,12 @@ import { MediaServiceResponseInformation } from '@/modules/managers/mediaservice
 import {
   Constants,
   durationInString,
-  Paginator,
   UserError,
 } from '@/modules/utils';
+import { Paginator } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
+
 export class QueueListCommand extends BaseVoiceCommandOption {
   public name = 'list';
   public description = 'list queue';

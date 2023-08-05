@@ -4,14 +4,16 @@ import {
   CommandClient,
 } from 'detritus-client';
 
-import { t } from '@/modules/translations';
+import { t } from '@/modules/managers/i18n/';
 import {
-  buildArgumentErrorEmbed,
-  buildRuntimeErrorEmbed,
   checkPermission,
   Constants,
   UserError,
 } from '@/modules/utils';
+import {
+  buildArgumentErrorEmbed,
+  buildRuntimeErrorEmbed
+} from '@/modules/utils/shard-specific';
 
 import app from '..';
 
@@ -38,6 +40,13 @@ export class BaseCommand extends Command.Command {
     return false;
   }
 
+  /**
+   * shorthand for "translate"
+   * @param ctx command context
+   * @param text i18n template key
+   * @param values values for the template
+   * @returns a promise for language string
+   */
   public t(ctx: Command.Context, text: string, ...values: any[]) {
     if (!ctx.guild) return 'no guild';
     return t(ctx.guild, text, ...values);

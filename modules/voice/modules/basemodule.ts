@@ -2,7 +2,7 @@ import { OpusEncoder } from '@discordjs/opus';
 import EventEmitter from 'events';
 
 import { Mixer } from '@/modules/mixer';
-import { Logger } from '@/modules/utils';
+import { Constants, Logger } from '@/modules/utils';
 
 import Voice from '..';
 
@@ -39,7 +39,7 @@ export default class BaseModule extends EventEmitter {
       const decoded = this.opus.decode(data);
       this.mixer.addReadable(
         Buffer.concat([
-          Buffer.alloc((this.voice.pipeline.REQUIRED_SAMPLES) * this.packets[userId]),
+          Buffer.alloc((Constants.OPUS_REQUIRED_SAMPLES) * this.packets[userId]),
           decoded
         ])
       );
@@ -51,7 +51,7 @@ export default class BaseModule extends EventEmitter {
     if (this.mixer || this.opus) return;
     this.logger.debug('used voice receiver');
     this.mixer = new Mixer();
-    this.opus = new OpusEncoder(this.voice.SAMPLE_RATE, this.voice.AUDIO_CHANNELS);
+    this.opus = new OpusEncoder(Constants.OPUS_SAMPLE_RATE, Constants.OPUS_AUDIO_CHANNELS);
 
     // this.voice.pipeline.sendEmptyOpusPacket();
     this.voice.pipeline.on('receive', this.receivePacket);
@@ -71,7 +71,7 @@ export default class BaseModule extends EventEmitter {
     let packet;
 
     if (this.mixer) {
-      packet = this.mixer.process(Buffer.alloc(this.voice.pipeline.REQUIRED_SAMPLES));
+      packet = this.mixer.process(Buffer.alloc(Constants.OPUS_REQUIRED_SAMPLES));
 
       for (const userId in this.packets)
         this.packets[userId] = Math.max(this.packets[userId] - 1, 0);
@@ -89,5 +89,5 @@ export default class BaseModule extends EventEmitter {
     this.cleanUp();
   }
 
-  public action(line: string) {}
+  public action(line?: string) {}
 }

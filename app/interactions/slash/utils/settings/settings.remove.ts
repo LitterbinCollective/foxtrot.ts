@@ -1,30 +1,31 @@
-import {
-  CommandClient,
-  Constants as DetritusConstants
-} from 'detritus-client';
-
 import { GuildSettings } from '@/modules/models';
 import { Constants, UserError } from '@/modules/utils';
 import { listSettings } from '@/modules/utils/shard-specific';
 
-import { BaseSettingsCommand, SettingsContext } from './settings';
+import {
+  BaseSettingsCommandOption,
+  SettingChoices,
+  SettingsInteractionContext
+} from './settings';
 
-export default class SettingsRemoveCommand extends BaseSettingsCommand {
-  constructor(commandClient: CommandClient) {
-    super(commandClient, {
-      name: 'settings remove',
-      aliases: ['settings rm'],
-      type: [
+export class SettingsRemoveCommand extends BaseSettingsCommandOption {
+  public name = 'remove';
+  public description = "remove a setting's value (if possible)";
+
+  constructor() {
+    super({
+      options: [
         {
           name: 'key',
-          type: DetritusConstants.CommandArgumentTypes.STRING,
+          description: 'setting name.',
+          choices: SettingChoices,
           required: true,
         },
       ],
     });
   }
 
-  public async run(ctx: SettingsContext, { key }: { key: string }) {
+  public async run(ctx: SettingsInteractionContext, { key }: { key: string }) {
     if (!ctx.guild) return;
     const { properties } = GuildSettings.jsonSchema;
     let prop;
@@ -51,6 +52,6 @@ export default class SettingsRemoveCommand extends BaseSettingsCommand {
           await this.t(ctx, 'commands.settings.no-value')
         ))
     );
-    return await ctx.reply({ embed });
+    return await ctx.editOrRespond({ embed });
   }
 }

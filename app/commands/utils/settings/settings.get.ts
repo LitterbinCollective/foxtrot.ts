@@ -1,4 +1,4 @@
-import { CommandClient, Constants } from 'detritus-client';
+import { CommandClient, Constants, Utils } from 'detritus-client';
 
 import { GuildSettings } from '@/modules/models';
 import { UserError } from '@/modules/utils';
@@ -29,9 +29,10 @@ export default class SettingsGetCommand extends BaseSettingsCommand {
     )
       throw new UserError('commands.settings.unknown');
 
-    const value =
-      ctx.settings[key as keyof typeof ctx.settings] ||
-      (await this.t(ctx, 'commands.settings.no-value'));
-    ctx.reply(value.toString());
+    let value = ctx.settings[key as keyof typeof ctx.settings];
+    if (value === undefined)
+      value = await this.t(ctx, 'commands.settings.no-value');
+
+    return await ctx.reply(Utils.Markup.codestring(value.toString()));
   }
 }

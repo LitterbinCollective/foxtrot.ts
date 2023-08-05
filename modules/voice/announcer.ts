@@ -7,6 +7,7 @@ import { Constants, durationInString } from '@/modules/utils';
 import NewVoice from '.';
 
 const ELLIPSIS = '...';
+const PROGRESS_BAR_LENGTH = 16;
 
 export default class VoiceQueueAnnouncer {
   public channel: Structures.ChannelTextType;
@@ -43,12 +44,11 @@ export default class VoiceQueueAnnouncer {
     const progressStr = durationInString(progress),
       durationStr = durationInString(duration);
 
-    const LENGTH = 16;
-    const repeatCount = ~~(factor * LENGTH);
+    const repeatCount = ~~(factor * PROGRESS_BAR_LENGTH);
     const progressBar =
       '-'.repeat(Math.max(repeatCount, 0)) +
       Constants.EMOJIS.RADIO +
-      '-'.repeat(Math.max(LENGTH - repeatCount, 0));
+      '-'.repeat(Math.max(PROGRESS_BAR_LENGTH - repeatCount, 0));
     return Utils.Markup.codestring(
       `${progressStr} ${progressBar} ${durationStr}`
     );

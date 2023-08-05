@@ -5,9 +5,9 @@ import { MediaServiceResponseInformation } from '@/modules/managers/mediaservice
 import {
   Constants,
   durationInString,
-  Paginator,
   UserError,
 } from '@/modules/utils';
+import { Paginator } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 

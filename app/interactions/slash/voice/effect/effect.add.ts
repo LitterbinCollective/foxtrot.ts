@@ -1,7 +1,8 @@
 import { Utils } from 'detritus-client';
 
 import { VoiceEffectManager } from '@/modules/voice/managers';
-import { Constants, listEffects } from '@/modules/utils';
+import { Constants } from '@/modules/utils';
+import { listEffects } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -31,8 +32,7 @@ export class EffectAddCommand extends BaseVoiceCommandOption {
     const id = ctx.voice.effects.addEffect(effect);
     const embed = await listEffects(
       ctx.guild,
-      ctx.voice.effects.list,
-      ctx.voice.effects.STACK_LIMIT
+      ctx.voice.effects.list
     );
 
     embed.setTitle(

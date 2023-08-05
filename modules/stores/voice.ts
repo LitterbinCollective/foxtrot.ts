@@ -1,19 +1,18 @@
-import { Constants, GatewayClientEvents, Structures } from 'detritus-client';
+import { Constants as DetritusConstants, GatewayClientEvents, Structures } from 'detritus-client';
 
 import NewVoice from '@/modules/voice';
 import { Application } from '@/app/app';
+import { Constants, UserError } from '@/modules/utils';
 
 import Store from './store';
-import { UserError } from '../utils';
 
 class VoiceStore extends Store<string, NewVoice> {
   private cycleTimeout: NodeJS.Timeout | null = null;
   private nextCycle: number = 0;
-  private readonly OPUS_FRAME_LENGTH = 20;
 
   public applicationCreated(app: Application) {
     app.clusterClient.on(
-      Constants.ClientEvents.VOICE_SERVER_UPDATE,
+      DetritusConstants.ClientEvents.VOICE_SERVER_UPDATE,
       (payload: GatewayClientEvents.VoiceServerUpdate) => {
         if (!payload.guildId) return;
         if (this.has(payload.guildId))
@@ -22,7 +21,7 @@ class VoiceStore extends Store<string, NewVoice> {
     );
 
     app.clusterClient.on(
-      Constants.ClientEvents.VOICE_STATE_UPDATE,
+      DetritusConstants.ClientEvents.VOICE_STATE_UPDATE,
       (payload: GatewayClientEvents.VoiceStateUpdate) => {
         if (!payload.voiceState.guildId) return;
         if (this.has(payload.voiceState.guildId))
@@ -31,7 +30,7 @@ class VoiceStore extends Store<string, NewVoice> {
     );
 
     app.clusterClient.on(
-      Constants.ClientEvents.GUILD_DELETE,
+      DetritusConstants.ClientEvents.GUILD_DELETE,
       (payload: GatewayClientEvents.GuildDelete) => {
         if (this.has(payload.guildId)) this.delete(payload.guildId);
       }
@@ -44,7 +43,7 @@ class VoiceStore extends Store<string, NewVoice> {
     if (!next) {
       if (this.nextCycle !== -1) {
         this.cycleTimeout = setTimeout(() => {
-          this.nextCycle += this.OPUS_FRAME_LENGTH;
+          this.nextCycle += Constants.OPUS_FRAME_LENGTH;
           this.cycleOverVoices(this.values());
         }, this.nextCycle - Date.now());
       }
@@ -80,7 +79,7 @@ class VoiceStore extends Store<string, NewVoice> {
 
     const channelSize = voiceChannel.memberCount || voiceChannel.members.size;
     if (voiceChannel.userLimit !== 0 && channelSize >= voiceChannel.userLimit)
-      throw new UserError('voice-check.too-many-members');
+      throw new UserError('voice-check.members-overflow');
 
     if (voiceChannel.guildId !== textChannel.guildId)
       throw new Error(

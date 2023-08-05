@@ -1,4 +1,16 @@
+// these constants are used universally!
+
 export const APPLICATION_NAME = 'foxtrot';
+
+export const OPUS_FRAME_LENGTH = 20;
+export const OPUS_FRAME_SIZE = 960;
+export const OPUS_SAMPLE_BYTE_LEN = 2;
+export const OPUS_AUDIO_CHANNELS = 2;
+export const OPUS_SAMPLE_RATE = 48000;
+export const OPUS_REQUIRED_SAMPLES =
+  OPUS_FRAME_SIZE * OPUS_AUDIO_CHANNELS * OPUS_SAMPLE_BYTE_LEN;
+
+export const VOICE_EFFECTS_STACK_LIMIT = 8;
 
 export enum EMBED_COLORS {
   DEFAULT = 0xf9d158,

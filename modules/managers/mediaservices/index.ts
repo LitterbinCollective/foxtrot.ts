@@ -22,16 +22,16 @@ import {
   MediaServiceResponseMediaType,
 } from './types';
 
+const LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1']
+
 export class URLMediaService extends MediaService {
   public noSearch = true;
-
-  private readonly LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1'];
 
   private isUrlLocal(url: string) {
     const { hostname } = new URL(url);
     return new Promise((res, rej) => {
       lookup(hostname, (err, address) =>
-        err ? rej(err) : res(this.LOCAL_IPS.indexOf(address) !== -1)
+        err ? rej(err) : res(LOCAL_IPS.indexOf(address) !== -1)
       );
     });
   }

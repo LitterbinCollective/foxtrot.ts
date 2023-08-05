@@ -1,4 +1,4 @@
-import { Constants, Utils } from 'detritus-client';
+import { Constants } from 'detritus-client';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 

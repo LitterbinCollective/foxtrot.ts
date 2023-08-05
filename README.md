@@ -5,7 +5,7 @@ If you're planning to host this not only for yourself, shard it and host it on
 multiple servers as it can take up many resources for audio processing.
 
 ## Translations/Localization
-See `modules/translations/lang/`.
+See `modules/managers/i18n/` for information on this topic.
 
 ## Prerequisites
 - Node.js

@@ -5,9 +5,9 @@ import { UserError } from '@/modules/utils';
 
 import { BaseCommand } from '../../base';
 
-export default class QueueAddCommand extends BaseCommand {
-  private readonly CONTENT_TYPE_REGEX = /(audio|video)\/.+/;
+const CONTENT_TYPE_REGEX = /(audio|video)\/.+/;
 
+export default class QueueAddCommand extends BaseCommand {
   constructor(commandClient: CommandClient) {
     super(commandClient, {
       name: 'play',
@@ -26,7 +26,7 @@ export default class QueueAddCommand extends BaseCommand {
       const attachment = ctx.message.attachments.first();
       if (
         !attachment ||
-        attachment.mimetype.match(this.CONTENT_TYPE_REGEX)?.length === 0 ||
+        attachment.mimetype.match(CONTENT_TYPE_REGEX)?.length === 0 ||
         !attachment.url
       )
         return this.onTypeError(

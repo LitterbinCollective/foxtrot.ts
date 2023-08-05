@@ -2,8 +2,9 @@ import { GatewayClientEvents, Structures } from 'detritus-client';
 import { EventEmitter } from 'events';
 
 import chatsounds from '@/modules/chatsounds';
+import { t } from '@/modules/managers/i18n/';
 import { GuildSettingsStore, VoiceStore } from '@/modules/stores';
-import { UserError } from '@/modules/utils';
+import { Constants, UserError } from '@/modules/utils';
 import config from '@/configs/app.json';
 
 import VoicePipeline from './pipeline';
@@ -12,7 +13,6 @@ import FFMpeg from './ffmpeg';
 import VoiceQueue from './queue';
 import modules from './modules';
 import BaseModule from './modules/basemodule';
-import { t } from '../translations';
 
 export * as Announcer from './announcer';
 export * as FFMpeg from './ffmpeg';
@@ -28,8 +28,6 @@ export default class Voice extends EventEmitter {
   public pipeline!: VoicePipeline;
   public queue!: VoiceQueue;
   public special = true;
-  public readonly AUDIO_CHANNELS = 2;
-  public readonly SAMPLE_RATE = 48000;
   private activeModule?: BaseModule;
   private ffmpeg?: FFMpeg;
 
@@ -88,15 +86,20 @@ export default class Voice extends EventEmitter {
     if (this.pipeline) this.pipeline.update();
   }
 
-  public assignModule(module: keyof typeof modules) {
-    if (this.activeModule)
+  public assignModule(module: string) {
+    if (!(module in modules))
+      throw new UserError('voice-modules.not-found');
+
+    const isNew = this.activeModule === undefined;
+    if (!isNew)
       this.destroyModule();
-    this.activeModule = new modules[module](this);
+    this.activeModule = new modules[module as keyof typeof modules](this);
+    return isNew;
   }
 
   public async destroyModule(err?: UserError) {
     if (!this.activeModule)
-      throw new UserError('voice-mod.no-active');
+      throw new UserError('voice-modules.no-active');
     this.activeModule.internalCleanUp();
     delete this.activeModule;
 
@@ -104,6 +107,13 @@ export default class Voice extends EventEmitter {
       await this.queue.announcer.createMessage(
         await t(this.channel.guild, err.message, ...err.formatValues)
       );
+  }
+
+  public invokeModule(line?: string) {
+    if (!this.activeModule)
+      throw new UserError('voice-modules.no-active');
+
+    this.activeModule.action(line);
   }
 
   public play(stream: NodeJS.ReadableStream | string) {
@@ -124,9 +134,9 @@ export default class Voice extends EventEmitter {
         '-loglevel',
         process.env.NODE_ENV === 'production' ? '0' : '32',
         '-ar',
-        this.SAMPLE_RATE.toString(),
+        Constants.OPUS_SAMPLE_RATE.toString(),
         '-ac',
-        this.AUDIO_CHANNELS.toString(),
+        Constants.OPUS_AUDIO_CHANNELS.toString(),
         '-f',
         's16le',
       ],
@@ -186,7 +196,10 @@ export default class Voice extends EventEmitter {
 
   public kill(forceLeave: boolean = false) {
     this.cleanUp();
-    this.destroyModule();
+    try {
+      this.destroyModule();
+    } catch (err) {}
+
     this.pipeline.destroy();
     if (this.channel) VoiceStore.delete(this.channel.guildId as string);
   }

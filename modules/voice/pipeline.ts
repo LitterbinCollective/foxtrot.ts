@@ -9,11 +9,12 @@ import { Constants, Logger, UserError } from '@/modules/utils';
 
 import NewVoice from '.';
 
+const LEAVE_TIMEOUT_LENGTH = 30000; // 30 seconds
+
 class VoiceSafeConnection extends EventEmitter {
   public voiceConnection!: VoiceConnection;
   private timeout: NodeJS.Timeout | null = null;
   private readonly logger: Logger;
-  private readonly TIMEOUT_LENGTH = 30000; // 30 seconds
 
   constructor(voiceChannel: Structures.ChannelGuildVoice) {
     super();
@@ -96,7 +97,7 @@ class VoiceSafeConnection extends EventEmitter {
           !this.timeout
         ) {
           this.logger.debug("we're the only one left, starting timeout...");
-          this.timeout = setTimeout(this.destroy, this.TIMEOUT_LENGTH);
+          this.timeout = setTimeout(this.destroy, LEAVE_TIMEOUT_LENGTH);
           return;
         }
       }
@@ -129,12 +130,11 @@ class VoiceSafeConnection extends EventEmitter {
   }
 }
 
+const CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE = 32767;
+const CORRUPT_RANDSAMPLE_MINMAX_RELATIVE = 10;
+
 export default class VoicePipeline extends Transform {
   public mixer?: Mixer;
-  public readonly OPUS_FRAME_LENGTH = 20;
-  public readonly OPUS_FRAME_SIZE = 960;
-  public readonly REQUIRED_SAMPLES: number;
-  public readonly SAMPLE_BYTE_LEN = 2;
   private _packetLoss = 0;
   private silent: boolean = false;
   private opus?: OpusEncoder;
@@ -144,8 +144,6 @@ export default class VoicePipeline extends Transform {
   private readonly connection: VoiceSafeConnection;
   private readonly logger: Logger;
   private readonly voice: NewVoice;
-  private readonly CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE = 32767;
-  private readonly CORRUPT_RANDSAMPLE_MINMAX_RELATIVE = 10;
 
   public onVoiceServerUpdate: (
     payload: GatewayClientEvents.VoiceServerUpdate
@@ -161,10 +159,7 @@ export default class VoicePipeline extends Transform {
     this.logger = new Logger(`VoicePipeline [${voiceChannel.guildId}]`);
     this.connection = new VoiceSafeConnection(voiceChannel);
     this.mixer = new Mixer();
-    this.opus = new OpusEncoder(this.SAMPLE_RATE, this.AUDIO_CHANNELS);
-
-    this.REQUIRED_SAMPLES =
-      this.AUDIO_CHANNELS * this.OPUS_FRAME_SIZE * this.SAMPLE_BYTE_LEN;
+    this.opus = new OpusEncoder(Constants.OPUS_SAMPLE_RATE, Constants.OPUS_AUDIO_CHANNELS);
 
     this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
     this.onVoiceServerUpdate = this.connection.onVoiceServerUpdate;
@@ -209,7 +204,7 @@ export default class VoicePipeline extends Transform {
       this.opusPacketsReceived++;
     }
 
-    if (this.silent) this.write(Buffer.alloc(this.REQUIRED_SAMPLES));
+    if (this.silent) this.write(Buffer.alloc(Constants.OPUS_REQUIRED_SAMPLES));
 
     const time = Date.now() - this.opusPacketCheck;
     if (time >= 1000) {
@@ -236,11 +231,11 @@ export default class VoicePipeline extends Transform {
     this.opusLeftover = Buffer.concat([this.opusLeftover, buffer]);
 
     let n = 0;
-    while (this.opusLeftover.length >= this.REQUIRED_SAMPLES * (n + 1)) {
+    while (this.opusLeftover.length >= Constants.OPUS_REQUIRED_SAMPLES * (n + 1)) {
       const frame = this.opus.encode(
         this.opusLeftover.subarray(
-          n * this.REQUIRED_SAMPLES,
-          (n + 1) * this.REQUIRED_SAMPLES
+          n * Constants.OPUS_REQUIRED_SAMPLES,
+          (n + 1) * Constants.OPUS_REQUIRED_SAMPLES
         )
       );
       this.push(frame);
@@ -248,16 +243,8 @@ export default class VoicePipeline extends Transform {
     }
     // this.logger.debug('converted opus frames ', n);
     if (n > 0)
-      this.opusLeftover = this.opusLeftover.subarray(n * this.REQUIRED_SAMPLES);
+      this.opusLeftover = this.opusLeftover.subarray(n * Constants.OPUS_REQUIRED_SAMPLES);
     return callback();
-  }
-
-  public get SAMPLE_RATE() {
-    return this.voice.SAMPLE_RATE;
-  }
-
-  public get AUDIO_CHANNELS() {
-    return this.voice.AUDIO_CHANNELS;
   }
 
   public playSilence() {
@@ -333,14 +320,14 @@ export default class VoicePipeline extends Transform {
     randSample = Math.max(
       Math.min(
         Math.floor(randSample),
-        this.CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
+        CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
       ),
-      -this.CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
+      -CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
     );
     if (this.mixer)
       this.mixer.setCorruptRandSample(
-        (randSample * this.CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE) /
-          this.CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
+        (randSample * CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE) /
+          CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
       );
   }
 
@@ -348,8 +335,8 @@ export default class VoicePipeline extends Transform {
     if (this.mixer)
       return Math.ceil(
         (this.mixer.getCorruptRandSample() /
-          this.CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE) *
-          this.CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
+          CORRUPT_RANDSAMPLE_MINMAX_ABSOLUTE) *
+          CORRUPT_RANDSAMPLE_MINMAX_RELATIVE
       );
     return 1;
   }

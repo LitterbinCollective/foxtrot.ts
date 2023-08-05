@@ -1,6 +1,7 @@
 import { Constants as DetritusConstants, Utils } from 'detritus-client';
 
-import { Constants, listOptions } from '@/modules/utils';
+import { Constants } from '@/modules/utils';
+import { listOptions } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 

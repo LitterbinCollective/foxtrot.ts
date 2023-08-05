@@ -1,6 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 
-import { convertToType, UserError } from '@/modules/utils';
+import { Constants, convertToType, UserError } from '@/modules/utils';
 
 import {
   BaseEffect,
@@ -13,7 +13,6 @@ import { BaseTransformManager, managerScan } from '../managers';
 const VOICE_EFFECT_MANAGER_SCAN_PATH = '../voice/effects/';
 
 export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffect> {
-  public readonly STACK_LIMIT = 8;
   private sox?: ChildProcessWithoutNullStreams;
   private stack: BaseEffect[] = [];
   private readonly voice: NewVoice;
@@ -39,7 +38,7 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
   public addEffect(name: string, start?: number) {
     start = start || this.stack.length;
     if (!this.processors[name]) throw new UserError('effects-mgr.not-found');
-    if (this.stack.length === this.STACK_LIMIT)
+    if (this.stack.length === Constants.VOICE_EFFECTS_STACK_LIMIT)
       throw new UserError('effects-mgr.stack-overflow');
 
     const effect = new this.processors[name]();
@@ -50,23 +49,23 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
     return start;
   }
 
-  public removeEffect(id: number) {
-    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
+  public removeEffect(index: number) {
+    if (!this.stack[index]) throw new UserError('effects-mgr.not-found');
     if (this.stack.length === 0)
       throw new UserError('effects-mgr.stack-underflow');
 
-    this.stack.splice(id, 1);
+    this.stack.splice(index, 1);
 
     if (this.sox) this.createAudioEffectManager();
   }
 
-  public getEffectInfo(id: number) {
-    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
+  public getEffectInfo(index: number) {
+    if (!this.stack[index]) throw new UserError('effects-mgr.not-found');
 
     return {
-      name: this.stack[id].name,
-      options: this.stack[id].options,
-      optionsRange: this.stack[id].optionsRange,
+      name: this.stack[index].name,
+      options: this.stack[index].options,
+      optionsRange: this.stack[index].optionsRange,
     };
   }
 
@@ -76,10 +75,11 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
     if (this.sox) this.createAudioEffectManager();
   }
 
-  public setValue(id: number, name: string, value: any) {
-    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
-    const afx = this.stack[id];
-    const option = afx.options[name as keyof BaseEffectOptions];
+  public setValue(index: number, name: string, value: any) {
+    if (!this.stack[index]) throw new UserError('effects-mgr.not-found');
+
+    const audioEffect = this.stack[index];
+    const option = audioEffect.options[name as keyof BaseEffectOptions];
     if (option === undefined)
       throw new UserError('effects-mgr.option-not-found');
     if (value === undefined) throw new UserError('effects-mgr.value-undefined');
@@ -88,22 +88,22 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
     value = convertToType(value, type);
 
     const range: number[] | undefined =
-      afx.optionsRange[name as keyof BaseEffectOptionsRange];
+      audioEffect.optionsRange[name as keyof BaseEffectOptionsRange];
     if (type === 'number' && range) {
       const [min, max] = range;
       if (value < min || value > max)
         throw new UserError('effects-mgr.out-of-range', min, max);
     }
 
-    afx.options[name as keyof BaseEffectOptions] = value;
+    audioEffect.options[name as keyof BaseEffectOptions] = value;
 
     if (this.sox) this.createAudioEffectManager();
   }
 
-  public getValue(id: number, option: string) {
-    if (!this.stack[id]) throw new UserError('effects-mgr.not-found');
+  public getValue(index: number, option: string) {
+    if (!this.stack[index]) throw new UserError('effects-mgr.not-found');
 
-    return this.stack[id].options[option];
+    return this.stack[index].options[option];
   }
 
   private get args() {
@@ -115,14 +115,6 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
           ...effect.args.map((x: string | number) => x.toString()),
         ]);
     return result;
-  }
-
-  private get SAMPLE_RATE() {
-    return this.voice.SAMPLE_RATE;
-  }
-
-  private get AUDIO_CHANNELS() {
-    return this.voice.AUDIO_CHANNELS;
   }
 
   public get list() {
@@ -147,9 +139,9 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
 
     this.sox = spawn('sox', [
       '-r',
-      this.SAMPLE_RATE.toString(),
+      Constants.OPUS_SAMPLE_RATE.toString(),
       '-c',
-      this.AUDIO_CHANNELS.toString(),
+      Constants.OPUS_AUDIO_CHANNELS.toString(),
       '-t',
       'raw',
       '-b',
@@ -158,9 +150,9 @@ export class VoiceEffectManager extends BaseTransformManager<new () => BaseEffec
       'signed-integer',
       '-',
       '-r',
-      this.SAMPLE_RATE.toString(),
+      Constants.OPUS_SAMPLE_RATE.toString(),
       '-c',
-      this.AUDIO_CHANNELS.toString(),
+      Constants.OPUS_AUDIO_CHANNELS.toString(),
       '-t',
       'raw',
       '-b',

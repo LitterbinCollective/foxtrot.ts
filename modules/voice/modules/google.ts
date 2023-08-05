@@ -11,6 +11,10 @@ import { Constants, UserError } from '@/modules/utils';
 import Voice from '..';
 import BaseModule from './basemodule';
 
+const AUDIO_CHANNELS = 1;
+const MIN_DELAY_BETWEEN_TRANSCRIPTION_EDITS = 300;
+const SAMPLE_RATE = 24000;
+
 export default class GoogleAssistantModule extends BaseModule {
   private active = false;
   private assistant: GoogleAssistant;
@@ -19,9 +23,6 @@ export default class GoogleAssistantModule extends BaseModule {
   private lastTranscribed = 0;
   private response?: Structures.Message | true;
   private transcription?: Structures.Message | true;
-  private readonly AUDIO_CHANNELS = 1;
-  private readonly MIN_DELAY_BETWEEN_TRANSCRIPTION_EDITS = 300;
-  private readonly SAMPLE_RATE = 24000;
 
   constructor(voice: Voice) {
     super(voice);
@@ -49,11 +50,11 @@ export default class GoogleAssistantModule extends BaseModule {
     if (this.ffmpeg) return;
     this.ffmpeg = spawn('ffmpeg', [
       '-f', 's16le',
-      '-ar', this.voice.SAMPLE_RATE.toString(),
-      '-ac', this.voice.AUDIO_CHANNELS.toString(),
+      '-ar', Constants.OPUS_SAMPLE_RATE.toString(),
+      '-ac', Constants.OPUS_AUDIO_CHANNELS.toString(),
       '-i', '-',
-      '-ar', this.SAMPLE_RATE.toString(),
-      '-ac', this.AUDIO_CHANNELS.toString(),
+      '-ar', SAMPLE_RATE.toString(),
+      '-ac', AUDIO_CHANNELS.toString(),
       '-f', 's16le',
       '-',
     ]);
@@ -96,7 +97,7 @@ export default class GoogleAssistantModule extends BaseModule {
           return;
         }
 
-        if (typeof this.transcription !== 'boolean' && Date.now() - this.lastTranscribed >= this.MIN_DELAY_BETWEEN_TRANSCRIPTION_EDITS) {
+        if (typeof this.transcription !== 'boolean' && Date.now() - this.lastTranscribed >= MIN_DELAY_BETWEEN_TRANSCRIPTION_EDITS) {
           await this.transcription.edit({ embed })
           this.lastTranscribed = Date.now()
         }
@@ -169,11 +170,11 @@ export default class GoogleAssistantModule extends BaseModule {
   private conversationStarted(conv: EventEmitter) {
     const ffmpeg = spawn('ffmpeg', [
       '-f', 's16le',
-      '-ar', this.SAMPLE_RATE.toString(),
-      '-ac', this.AUDIO_CHANNELS.toString(),
+      '-ar', SAMPLE_RATE.toString(),
+      '-ac', AUDIO_CHANNELS.toString(),
       '-i', '-',
-      '-ar', this.voice.SAMPLE_RATE.toString(),
-      '-ac', this.voice.AUDIO_CHANNELS.toString(),
+      '-ar', Constants.OPUS_SAMPLE_RATE.toString(),
+      '-ac', Constants.OPUS_AUDIO_CHANNELS.toString(),
       '-f', 's16le',
       '-'
     ]);
@@ -188,7 +189,7 @@ export default class GoogleAssistantModule extends BaseModule {
       this.logger.debug('playing sound...');
       setTimeout(
         () => this.emit('continue'),
-        Math.floor(sound.length / (this.voice.SAMPLE_RATE * this.voice.AUDIO_CHANNELS * 2) * 1000)
+        Math.floor(sound.length / (Constants.OPUS_SAMPLE_RATE * Constants.OPUS_AUDIO_CHANNELS * 2) * 1000)
       );
     });
 
@@ -227,9 +228,9 @@ export default class GoogleAssistantModule extends BaseModule {
       lang: settings.lang,
       audio: {
         encodingIn: 'LINEAR16',
-        sampleRateIn: this.SAMPLE_RATE,
+        sampleRateIn: SAMPLE_RATE,
         encodingOut: 'LINEAR16',
-        sampleRateOut: this.SAMPLE_RATE
+        sampleRateOut: SAMPLE_RATE
       }
     });
   }

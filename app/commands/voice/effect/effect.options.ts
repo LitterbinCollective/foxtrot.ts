@@ -1,6 +1,6 @@
 import { CommandClient, Constants } from 'detritus-client';
 
-import { listOptions } from '@/modules/utils';
+import { listOptions } from '@/modules/utils/shard-specific';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 
