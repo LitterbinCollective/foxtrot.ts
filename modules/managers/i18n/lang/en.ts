@@ -117,10 +117,10 @@ export default {
   "corrupt-mode-not-allowed": "you cannot enable corrupt mode. (if you want to risk your and everyone else's hearing, set `allowCorrupt` setting to `true` and reconnect the bot.)",
   "invalid-number": "invalid number value provided.",
   "page": "page {0}/{1}",
-  
+
   "voice-modules": {
     "no-active": "no module is active",
-    "not-found": "specified module not found."
+    "not-found": "specified module not found. available modules: {0}."
   },
 
   "special": {

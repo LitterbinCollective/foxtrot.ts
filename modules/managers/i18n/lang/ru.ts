@@ -120,6 +120,6 @@ export default {
 
   "voice-modules": {
     "no-active": "нет модуля.",
-    "not-found": "указанный модуль не найден."
+    "not-found": "указанный модуль не найден. {0}"
   }
 };

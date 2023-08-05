@@ -120,6 +120,6 @@ export default {
 
   "voice-modules": {
     "no-active": "モジュールがアクティブでない",
-    "not-found": "指定されたモジュールが見つかりません。"
+    "not-found": "指定されたモジュールが見つかりません。 {0}"
   }
 };

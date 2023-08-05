@@ -1,4 +1,4 @@
-import { GatewayClientEvents, Structures } from 'detritus-client';
+import { GatewayClientEvents, Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
 
 import chatsounds from '@/modules/chatsounds';
@@ -88,7 +88,10 @@ export default class Voice extends EventEmitter {
 
   public assignModule(module: string) {
     if (!(module in modules))
-      throw new UserError('voice-modules.not-found');
+      throw new UserError(
+        'voice-modules.not-found',
+        Object.keys(modules).map(x => Utils.Markup.codestring(x)).join(', ')
+      );
 
     const isNew = this.activeModule === undefined;
     if (!isNew)
