@@ -28,9 +28,6 @@ export default class GoogleAssistantModule extends BaseModule {
   constructor(voice: Voice) {
     super(voice);
 
-    if (!settings.allowedServers.includes(voice.channel?.guildId || ''))
-      voice.destroyModule();
-
     const configBase = join(__dirname, '../../../configs/');
     this.assistant = new GoogleAssistant({
       keyFilePath: join(configBase, 'google-assistant-client-secret.json'),
@@ -45,6 +42,11 @@ export default class GoogleAssistantModule extends BaseModule {
 
     this.assistant.on('started', this.conversationStarted);
     this.startFFMpeg();
+  }
+
+  public postAssign() {
+    if (!settings.allowedServers.includes(this.voice.channel?.guildId || ''))
+      this.voice.destroyModule();
   }
 
   private startFFMpeg() {

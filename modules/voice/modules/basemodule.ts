@@ -80,6 +80,8 @@ export default class BaseModule extends EventEmitter {
     this.update(packet);
   }
 
+  public postAssign() {}
+
   public cleanUp() {}
 
   public internalCleanUp() {

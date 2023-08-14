@@ -97,6 +97,7 @@ export default class Voice extends EventEmitter {
     if (!isNew)
       this.destroyModule();
     this.activeModule = new modules[module as keyof typeof modules](this);
+    this.activeModule.postAssign();
     return isNew;
   }
 
