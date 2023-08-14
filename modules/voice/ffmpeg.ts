@@ -80,7 +80,7 @@ export default class FFMpeg extends Transform {
   }
 
   public destroy(error?: Error) {
-    if (!this.instance.killed) this.instance.kill();
+    if (!this.instance.killed) this.instance.kill('SIGKILL');
     return super.destroy(error);
   }
 }

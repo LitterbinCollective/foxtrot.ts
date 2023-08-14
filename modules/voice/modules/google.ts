@@ -172,7 +172,7 @@ export default class GoogleAssistantModule extends BaseModule {
 
   private conversationStarted(conv: EventEmitter) {
     if (this.ffmpegConversation && !this.ffmpegConversation.killed)
-      this.ffmpegConversation.kill();
+      this.ffmpegConversation.kill('SIGKILL');
 
     const ffmpeg = this.ffmpegConversation = spawn('ffmpeg', [
       '-f', 's16le',
@@ -213,7 +213,7 @@ export default class GoogleAssistantModule extends BaseModule {
       .on('transcription', this.onTranscription)
       .on('response', this.onResponse)
       .once('ended', this.conversationEnded)
-      .once('ended', (text?: string) => !text && ffmpeg.kill())
+      .once('ended', (text?: string) => !text && ffmpeg.kill('SIGKILL'))
       .on('error', this.onError)
       .on('data', (data) => this.logger.debug(data));
 
@@ -243,9 +243,9 @@ export default class GoogleAssistantModule extends BaseModule {
 
   public cleanUp(): void {
     if (this.ffmpeg && !this.ffmpeg.killed)
-      this.ffmpeg.kill();
+      this.ffmpeg.kill('SIGKILL');
 
     if (this.ffmpegConversation && !this.ffmpegConversation.killed)
-      this.ffmpegConversation.kill();
+      this.ffmpegConversation.kill('SIGKILL');
   }
 }
