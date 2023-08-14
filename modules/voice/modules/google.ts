@@ -20,6 +20,7 @@ export default class GoogleAssistantModule extends BaseModule {
   private assistant: GoogleAssistant;
   private conversation: any;
   private ffmpeg: ChildProcessWithoutNullStreams | null = null;
+  private ffmpegConversation: ChildProcessWithoutNullStreams | null = null;
   private lastTranscribed = 0;
   private response?: Structures.Message | true;
   private transcription?: Structures.Message | true;
@@ -168,7 +169,10 @@ export default class GoogleAssistantModule extends BaseModule {
   }
 
   private conversationStarted(conv: EventEmitter) {
-    const ffmpeg = spawn('ffmpeg', [
+    if (this.ffmpegConversation && !this.ffmpegConversation.killed)
+      this.ffmpegConversation.kill();
+
+    const ffmpeg = this.ffmpegConversation = spawn('ffmpeg', [
       '-f', 's16le',
       '-ar', SAMPLE_RATE.toString(),
       '-ac', AUDIO_CHANNELS.toString(),
@@ -236,9 +240,10 @@ export default class GoogleAssistantModule extends BaseModule {
   }
 
   public cleanUp(): void {
-    if (this.ffmpeg) {
-      this.ffmpeg.kill(9);
-      this.ffmpeg = null;
-    }
+    if (this.ffmpeg && !this.ffmpeg.killed)
+      this.ffmpeg.kill();
+
+    if (this.ffmpegConversation && !this.ffmpegConversation.killed)
+      this.ffmpegConversation.kill();
   }
 }
