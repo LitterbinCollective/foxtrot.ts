@@ -249,8 +249,8 @@ export default class VoiceQueue {
     this.announcer.play(media.info);
 
     try {
-      const TypeScriptPlease = await media.getPlayable();
-      this.voice.play(...TypeScriptPlease);
+      const playable = await media.getPlayable();
+      this.voice.play(...playable);
     } catch (err: any) {
       this.streamingError(err);
     }
