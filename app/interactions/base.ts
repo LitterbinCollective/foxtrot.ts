@@ -20,14 +20,19 @@ export class BaseInteractionCommand<
     if (!ctx.guild) return false;
 
     const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
+    let options: { flags: DetritusConstants.MessageFlags } | undefined;
+
     if (settings.ephemeral)
-      ctx.respond(
-        DetritusConstants.InteractionCallbackTypes
-          .DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-        {
-          flags: DetritusConstants.MessageFlags.EPHEMERAL,
-        }
-      );
+      options = {
+        flags: DetritusConstants.MessageFlags.EPHEMERAL,
+      };
+
+    // this will probably keep the interaction valid
+    await ctx.respond(
+      DetritusConstants.InteractionCallbackTypes
+        .DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+      options
+    );
 
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly

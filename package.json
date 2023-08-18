@@ -25,6 +25,7 @@
     "m3u8stream": "^0.8.6",
     "objection": "github:Vincit/objection.js",
     "pg": "^8.7.3",
+    "s-dl": "git+https://codeberg.org/b195/s-dl.git",
     "sh": "github:LitterbinCollective/sh",
     "sqlite3": "^5.0.11",
     "tweetnacl": "^1.0.3",

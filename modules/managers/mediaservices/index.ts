@@ -23,6 +23,7 @@ import {
 } from './types';
 
 const LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1']
+export const DEFAULT_SOUND_ICON = 'https://foxtrot.litterbin.dev/sound.png';
 
 export class URLMediaService extends MediaService {
   public noSearch = true;
@@ -124,7 +125,7 @@ export class URLMediaService extends MediaService {
 
     let duration: number;
     let cover: string | Buffer =
-      (config as any).soundIcon || 'https://foxtrot.litterbin.dev/sound.png';
+      (config as any).soundIcon || DEFAULT_SOUND_ICON;
     try {
       const info = await URLMediaService.probe(url);
       duration = info.duration;

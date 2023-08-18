@@ -28,7 +28,7 @@ export default class VoiceQueueAnnouncer {
   }
 
   public async createLoadingMessage() {
-    this.loadingMessage = await this.createMessage('Loading...');
+    this.loadingMessage = await this.createMessage(Constants.EMOJIS.HOURGLASS);
   }
 
   private playProgress(duration?: number) {

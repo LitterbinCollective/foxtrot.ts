@@ -27,3 +27,11 @@ To run the application in production mode:
 3. Run `npm start`.
 
 Or if you are running under a development mode, just run 2 latter commands.
+
+### Spotify support
+1. Extract client ID and private key with https://github.com/wvdumper/dumper.
+2. Extract cookies (in Netscape format) from open.spotify.com while being logged in.
+3. Put these files into `configs/` folder and name them accordingly:
+  * Widevine client ID: `widevine_client_id.bin`
+  * Widevine device private key: `widevine_private_key.pem`
+  * Cookies: `spotify_cookies.txt`

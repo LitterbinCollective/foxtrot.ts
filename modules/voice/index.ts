@@ -120,7 +120,7 @@ export default class Voice extends EventEmitter {
     this.activeModule.action(line);
   }
 
-  public play(stream: NodeJS.ReadableStream | string) {
+  public play(stream: NodeJS.ReadableStream | string, decryptionKey?: string) {
     if (this.ffmpeg) this.cleanUp();
 
     this.pipeline.stopSilence();
@@ -130,6 +130,9 @@ export default class Voice extends EventEmitter {
     const pre = ['-re'];
     if (fromURL && config.proxy.length !== 0)
       pre.unshift('-http_proxy', config.proxy);
+
+    if (decryptionKey)
+      pre.push('-decryption_key', decryptionKey);
 
     this.ffmpeg = new FFMpeg(
       [

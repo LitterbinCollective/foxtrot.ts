@@ -152,9 +152,7 @@ export default class SoundCloudService extends MediaService {
   }
 
   public async download(url: string): Promise<DownloadReturnedValue> {
-    let response: AxiosResponse<string> = await Proxy.get(url);
-
-    if (!response) throw new Error('no response. unsupported link format?');
+    const response: AxiosResponse<string> = await Proxy.get(url);
 
     const match = [...response.data.matchAll(HYDRATION_REGEX)];
     if (match.length === 0)
@@ -179,16 +177,18 @@ export default class SoundCloudService extends MediaService {
     for (const hydratable of hydrationData)
       sorted[hydratable.hydratable] = hydratable.data;
 
-    if (sorted.playlist) {
-      const playlist = sorted.playlist as { tracks: SoundCloudTrackInfo[] };
-      return playlist.tracks.map(x =>
-        this.formMediaServiceResponse(x)
-      ) as DownloadReturnedValue;
-    } else if (sorted.sound)
-      return this.formMediaServiceResponse(
-        sorted.sound as SoundCloudTrackInfo
-      ) as DownloadReturnedValue;
-    else throw new Error('invalid URL');
+    switch (true) {
+      case ('playlist' in sorted):
+        return sorted.playlist.tracks.map((x: SoundCloudTrackInfo) =>
+          this.formMediaServiceResponse(x)
+        );
+      case ('sound' in sorted):
+        return this.formMediaServiceResponse(
+          sorted.sound as SoundCloudTrackInfo
+        );
+    }
+
+    throw new Error('invalid URL');
   }
 
   public async findOne(query: string) {
@@ -203,8 +203,8 @@ export default class SoundCloudService extends MediaService {
 
     if (data.collection.length === 0) throw new UserError('query-not-found');
 
-    return (await this.download(
+    return await this.download(
       data.collection[0].permalink_url
-    )) as MediaServiceResponse;
+    ) as MediaServiceResponse;
   }
 }

@@ -1,19 +1,24 @@
 import { Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
+import { unlinkSync } from 'fs';
 
 import mediaservice from '@/modules/managers/mediaservices';
 import {
   DownloadReturnedValue,
   MediaServiceResponse,
   MediaServiceResponseInformation,
+  MediaServiceResponseMedia,
   MediaServiceResponseMediaType,
 } from '@/modules/managers/mediaservices/types';
-import { sendFeedback, UserError } from '@/modules/utils';
+import { Constants, sendFeedback, UserError } from '@/modules/utils';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
+import { Readable } from 'stream';
 
-const FORMAT_FROMURL_TIMEOUT = 30; // in seconds
+const FORMAT_FROMURL_TIMEOUT_MS = 30000;
+
+type GetPlayable = [ string | Readable, string | undefined ];
 
 // exists solely so there will not be a racing condition
 class VoiceQueueMedia extends EventEmitter {
@@ -51,7 +56,7 @@ class VoiceQueueMedia extends EventEmitter {
       return this.formatData.information;
 
     return {
-      title: '[loading...]',
+      title: '[...]',
       author: '',
       duration: 0,
       url: this.url,
@@ -85,10 +90,10 @@ class VoiceQueueMedia extends EventEmitter {
           () =>
             rej(
               new Error(
-                'download timed out (' + FORMAT_FROMURL_TIMEOUT + ' seconds)'
+                'download timed out (' + FORMAT_FROMURL_TIMEOUT_MS + 'ms)'
               )
             ),
-          FORMAT_FROMURL_TIMEOUT * 1000
+            FORMAT_FROMURL_TIMEOUT_MS
         );
       });
 
@@ -126,22 +131,41 @@ class VoiceQueueMedia extends EventEmitter {
     this.emit('finish');
   }
 
-  public async getStream() {
+  public async getPlayable(media?: MediaServiceResponseMedia): Promise<GetPlayable> {
     if (!this.formatData || Array.isArray(this.formatData))
-      throw new Error('getStream called on an invalid VoiceQueueMedia object');
+      throw new Error('getPlayable called on an invalid VoiceQueueMedia object');
 
-    switch (this.formatData.media.type) {
+    if (!media)
+      media = this.formatData.media;
+
+    switch (media.type) {
       case MediaServiceResponseMediaType.URL:
-        return this.formatData.media.url;
+        return [ media.url, media.decryptionKey ];
+      case MediaServiceResponseMediaType.FILE:
+        throw new Error('not implemented');
       case MediaServiceResponseMediaType.FETCH:
-        return await this.formatData.media.fetch();
+        const data = await media.fetch();
+
+        if (data instanceof Readable)
+          return [ data, undefined ];
+
+        return await this.getPlayable(data);
       default:
         throw new Error('unknown VoiceFormatResponseType');
     }
   }
+
+  public after() {
+    if (!this.formatData || Array.isArray(this.formatData))
+      throw new Error('after called on an invalid VoiceQueueMedia object');
+
+    if (this.formatData.media.type === MediaServiceResponseMediaType.FILE)
+      unlinkSync(this.formatData.media.path);
+  }
 }
 
 export default class VoiceQueue {
+  public currentlyPlaying?: VoiceQueueMedia;
   public readonly announcer: VoiceQueueAnnouncer;
   private queue: VoiceQueueMedia[] = [];
   private readonly voice: NewVoice;
@@ -193,7 +217,7 @@ export default class VoiceQueue {
 
   public streamingError(err: any) {
     const error = Utils.Markup.codestring(err.toString());
-    this.announcer.createMessage('Skipping due to a streaming error: ' + error);
+    this.announcer.createMessage(Constants.EMOJIS.BOMB + ' ' + error);
     this.next();
 
     sendFeedback(
@@ -216,11 +240,17 @@ export default class VoiceQueue {
       return;
     }
 
+    if (this.currentlyPlaying)
+      this.currentlyPlaying.after();
+
     this.queue.shift();
 
+    this.currentlyPlaying = media;
     this.announcer.play(media.info);
+
     try {
-      this.voice.play(await media.getStream());
+      const TypeScriptPlease = await media.getPlayable();
+      this.voice.play(...TypeScriptPlease);
     } catch (err: any) {
       this.streamingError(err);
     }

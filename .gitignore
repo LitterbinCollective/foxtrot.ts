@@ -6,9 +6,11 @@ dist/
 build/
 
 # Files with credentials
-youtube.cookies
 configs/*.json
 !configs/*.example.json
+configs/*.pem
+configs/*.bin
+configs/*_cookies.txt
 .env
 
 # Performance tester
