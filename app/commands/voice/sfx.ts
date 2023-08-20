@@ -13,6 +13,6 @@ export default class SfxCommand extends BaseVoiceCommand {
   }
 
   public async run(ctx: VoiceContext, { sfx }: { sfx: string }) {
-    ctx.voice.playSoundeffect(sfx);
+    await ctx.voice.playSoundeffect(sfx);
   }
 }

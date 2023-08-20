@@ -44,7 +44,7 @@ export class BaseInteractionCommand<
       return true;
     }
 
-    ctx.editOrRespond('🔒');
+    await ctx.editOrRespond('🔒');
     return false;
   }
 

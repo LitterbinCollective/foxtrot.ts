@@ -195,10 +195,20 @@ export default class Voice extends EventEmitter {
 
   public async playSoundeffect(script: string | Buffer) {
     if (script instanceof Buffer) return this.pipeline.playBuffer(script);
-    const context = chatsounds.newBuffer(script);
-    const buffer = await context.audio();
-    if (context.mute) this.pipeline.clearReadableArray();
-    if (buffer) this.pipeline.playBuffer(buffer);
+
+    try {
+      const context = chatsounds.newBuffer(script);
+      const buffer = await context.audio();
+      if (context.mute) this.pipeline.clearReadableArray();
+      if (buffer) this.pipeline.playBuffer(buffer);
+    } catch (err: any) {
+      switch (true) {
+        case (err instanceof Error):
+          throw new UserError(err.name);
+        case (typeof err === 'string'):
+          throw new UserError(err);
+      }
+    }
   }
 
   public async kill(forceLeave: boolean = false) {
