@@ -16,7 +16,7 @@ export async function buildRuntimeErrorEmbed(
   const { name, message } = error;
   const embed = new Utils.Embed({
     title:
-      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'commands.runtime-error')),
+      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'runtime-error')),
     description: `**${name}**: ${message}`,
     color: Constants.EMBED_COLORS.ERROR,
   });

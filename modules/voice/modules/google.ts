@@ -72,7 +72,7 @@ export default class GoogleAssistantModule extends BaseModule {
   }
 
   private onError(err: Error) {
-    this.voice.destroyModule(new UserError('commands.runtime-error'));
+    this.voice.destroyModule(new UserError('runtime-error'));
     this.logger.error(err);
   }
 

@@ -85,10 +85,11 @@ export default {
       "paginator": "queue - {0}"
     },
 
-    "runtime-error": "runtime error!!",
     "argument-error": "argument error.",
     "missing-required-parameter": "missing required parameter."
   },
+
+  "runtime-error": "runtime error!!",
 
   "voice-check": {
     "bot-not-in-voice": "i'm not connected.",

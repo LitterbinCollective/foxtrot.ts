@@ -85,10 +85,11 @@ export default {
       "paginator": "kö - {0}"
     },
 
-    "runtime-error": "körtidsfel!!",
     "argument-error": "argumentfel.",
     "missing-required-parameter": "saknar nödvändig parameter."
   },
+
+  "runtime-error": "körtidsfel!!",
 
   "voice-check": {
     "bot-not-in-voice": "jag är inte kopplad.",

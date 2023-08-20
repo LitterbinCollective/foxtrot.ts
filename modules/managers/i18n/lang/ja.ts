@@ -85,10 +85,11 @@ export default {
       "paginator": "待ち行列 - {0}"
     },
 
-    "runtime-error": "ランタイムエラー",
     "argument-error": "引数エラー.",
     "missing-required-parameter": "行方不明引数."
   },
+
+  "runtime-error": "ランタイムエラー",
 
   "voice-check": {
     "bot-not-in-voice": "わたしわ接続していない.",

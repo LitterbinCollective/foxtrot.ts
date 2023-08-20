@@ -85,10 +85,11 @@ export default {
       "paginator": "черга - {0}"
     },
 
-    "runtime-error": "помилка середовища виконання!!",
     "argument-error": "аргументна помилка.",
     "missing-required-parameter": "пропущено необхідний параметр."
   },
+
+  "runtime-error": "помилка середовища виконання!!",
 
   "voice-check": {
     "bot-not-in-voice": "я не підключений.",

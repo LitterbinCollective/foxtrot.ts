@@ -201,13 +201,9 @@ export default class Voice extends EventEmitter {
       const buffer = await context.audio();
       if (context.mute) this.pipeline.clearReadableArray();
       if (buffer) this.pipeline.playBuffer(buffer);
-    } catch (err: any) {
-      switch (true) {
-        case (err instanceof Error):
-          throw new UserError(err.name);
-        case (typeof err === 'string'):
-          throw new UserError(err);
-      }
+    } catch (err) {
+      console.error(err);
+      throw new UserError('runtime-error')
     }
   }
 

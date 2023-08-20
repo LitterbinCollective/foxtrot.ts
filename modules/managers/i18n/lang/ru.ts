@@ -85,10 +85,11 @@ export default {
       "paginator": "очередь - {0}"
     },
 
-    "runtime-error": "ошибка среды выполнения!!",
     "argument-error": "аргументная ошибка.",
     "missing-required-parameter": "пропущен необходимый параметр."
   },
+
+  "runtime-error": "ошибка среды выполнения!!",
 
   "voice-check": {
     "bot-not-in-voice": "я не подключен.",
