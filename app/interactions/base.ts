@@ -22,7 +22,7 @@ export class BaseInteractionCommand<
     const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
     let options: { flags: DetritusConstants.MessageFlags } | undefined;
 
-    if (settings.ephemeral)
+    if (settings.ephemeral || this.ownerOnly)
       options = {
         flags: DetritusConstants.MessageFlags.EPHEMERAL,
       };
