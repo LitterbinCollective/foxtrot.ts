@@ -21,9 +21,10 @@ export default class VoiceQueueAnnouncer {
     this.channel = channel;
   }
 
-  public createMessage(message: RequestTypes.CreateMessage | string) {
+  public async createMessage(message: RequestTypes.CreateMessage | string) {
     try {
-      if (this.channel.canMessage) return this.channel.createMessage(message);
+      if (this.channel.canMessage)
+        return await this.channel.createMessage(message);
     } catch (err) {}
   }
 
