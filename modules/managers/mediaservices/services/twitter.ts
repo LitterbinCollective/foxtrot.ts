@@ -41,7 +41,8 @@ export default class TwitterService extends MediaService {
   public hosts: string[] = [
     'twitter.com',
     'vxtwitter.com',
-    'fxtwitter.com'
+    'fxtwitter.com',
+    'x.com'
   ];
   public patterns = [
     '/:user/status/:id/video/:v',
