@@ -1,7 +1,7 @@
 import { BaseEvent } from './baseevent';
 
 export default class HalloweenEvent extends BaseEvent {
-  public static timeRange = ['20/10', '31/10'];
+  public static timeRange = ['01/10', '31/10'];
 
   constructor() {
     super();
