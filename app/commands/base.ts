@@ -24,19 +24,26 @@ export class BaseCommand extends Command.Command {
   public readonly disableDm = true;
 
   public onBefore(ctx: Command.Context): boolean {
-    ctx.channel?.triggerTyping();
+    /*
+      discord is the most stable app to the point we can 100% rely on it
+      spoiler alert: { message: 'internal network error', code: 40333 }
+    */
+    try {
+      ctx.channel?.triggerTyping();
 
-    const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
-    const manageGuildCheck = this.manageGuildOnly
-      ? checkPermission(ctx, DetritusConstants.Permissions.ADMINISTRATOR) ||
-        checkPermission(ctx, DetritusConstants.Permissions.MANAGE_GUILD) ||
-        ctx.user.isClientOwner
-      : true;
-    if (ownerCheck && manageGuildCheck) {
-      return true;
-    }
+      const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
+      const manageGuildCheck = this.manageGuildOnly
+        ? checkPermission(ctx, DetritusConstants.Permissions.ADMINISTRATOR) ||
+          checkPermission(ctx, DetritusConstants.Permissions.MANAGE_GUILD) ||
+          ctx.user.isClientOwner
+        : true;
+      if (ownerCheck && manageGuildCheck) {
+        return true;
+      }
 
-    if (ctx.channel?.canAddReactions) ctx.message.react('🔒');
+      if (ctx.channel?.canAddReactions) ctx.message.react('🔒');
+    } catch (err) {}
+
     return false;
   }
 

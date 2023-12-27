@@ -125,11 +125,11 @@ export default {
   },
 
   "special": {
-    "to-disable": "disable special events",
+    "to-disable": "disable special events (may need to reconnect)",
 
     "nye": {
       "title": "happy new years eve!",
-      "description": "as this year is coming to an end, {0} is going to play westminster melody and fireworks every time a new year has just begun in other locations. see the current status of the bot for more information on which timezone is going to celebrate new year's eve next!"
+      "description": "{0} will play westminster melody and firework sounds in 1st jan at 12 am for every timezone. check the bot's status to see which timezone is next to celebrate New Years Eve."
     }
   }
 };

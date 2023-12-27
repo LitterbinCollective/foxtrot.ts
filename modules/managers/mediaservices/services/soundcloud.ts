@@ -178,11 +178,11 @@ export default class SoundCloudService extends MediaService {
       sorted[hydratable.hydratable] = hydratable.data;
 
     switch (true) {
-      case ('playlist' in sorted):
+      case !!sorted.playlist:
         return sorted.playlist.tracks.map((x: SoundCloudTrackInfo) =>
           this.formMediaServiceResponse(x)
         );
-      case ('sound' in sorted):
+      case !!sorted.sound:
         return this.formMediaServiceResponse(
           sorted.sound as SoundCloudTrackInfo
         );

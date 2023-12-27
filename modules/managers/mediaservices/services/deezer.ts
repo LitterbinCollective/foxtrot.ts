@@ -89,7 +89,7 @@ interface AuthTokens {
 
 export default class DeezerService extends MediaService {
   public hosts = ['deezer.com'];
-  public patterns = ['/us/album/:album', '/us/track/:track'];
+  public patterns = ['/:country/album/:album', '/:country/track/:track'];
   private authTokens?: AuthTokens;
   private authTokenFetching: boolean = false;
   private authTokenPromises: ((value?: any) => void)[][] = [];
@@ -161,11 +161,6 @@ export default class DeezerService extends MediaService {
   private async getLicenseToken() {
     await this.getAuthTokens();
     return this.authTokens?.licenseToken || '';
-  }
-
-  private async getCheckForm() {
-    await this.getAuthTokens();
-    return this.authTokens?.checkForm || '';
   }
 
   private async getAPIToken() {

@@ -4,12 +4,15 @@
 #define CHUNK_SIZE 512
 #define CORRUPT_EVERY_MAX 256
 
-#define CORRUPT_MODE_SHIFT_L 1
-#define CORRUPT_MODE_SHIFT_R 2
-#define CORRUPT_MODE_OR 3
-#define CORRUPT_MODE_AND 4
-#define CORRUPT_MODE_XOR 5
-#define CORRUPT_MODE_NOT 6
+enum CorruptMode: int {
+  c_add,
+  c_shift_l,
+  c_shift_r,
+  c_or,
+  c_and,
+  c_xor,
+  c_not
+};
 
 struct Readable {
   int16_t* data;
@@ -40,7 +43,7 @@ class Mixer : public Napi::ObjectWrap<Mixer> {
     int16_t _corrupt_rand_sample;
     int _corrupt_every;
     int _corrupt_pos;
-    int _corrupt_mode;
+    CorruptMode _corrupt_mode;
     bool _corrupt_enabled;
 
     float _volume;

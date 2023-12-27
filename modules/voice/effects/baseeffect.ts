@@ -7,10 +7,14 @@ export interface BaseEffectOptionsRange {
 }
 
 export class BaseEffect {
-  public name = '';
   public enabled = false;
+  public name = '';
   public options: BaseEffectOptions = {};
   public optionsRange: BaseEffectOptionsRange = {};
+
+  get speed(): number {
+    return 1;
+  }
 
   get args(): any[] | boolean {
     if (!this.enabled) return false;

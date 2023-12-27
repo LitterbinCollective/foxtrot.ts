@@ -91,7 +91,7 @@ Napi::Value Mixer::GetCorruptEnabled(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value Mixer::SetCorruptMode(const Napi::CallbackInfo& info) {
-  this->_corrupt_mode = info[0].As<Napi::Number>().Int64Value();
+  this->_corrupt_mode = static_cast<CorruptMode>(info[0].As<Napi::Number>().Int32Value());
   return this->GetCorruptMode(info);
 }
 
@@ -192,27 +192,27 @@ Napi::Value Mixer::Process(const Napi::CallbackInfo& info) {
         if (rand_sample == 0)
           rand_sample = rand() % std::numeric_limits<int16_t>::max();
         switch (this->_corrupt_mode) {
-          case CORRUPT_MODE_SHIFT_L:
+          case CorruptMode::c_shift_l:
             sample_l = sample_l << rand_sample;
             sample_r = sample_r << rand_sample;
             break;
-          case CORRUPT_MODE_SHIFT_R:
+          case CorruptMode::c_shift_r:
             sample_l = sample_l >> rand_sample;
             sample_r = sample_r >> rand_sample;
             break;
-          case CORRUPT_MODE_OR:
+          case CorruptMode::c_or:
             sample_l = sample_l | rand_sample;
             sample_r = sample_r | rand_sample;
             break;
-          case CORRUPT_MODE_AND:
+          case CorruptMode::c_and:
             sample_l = sample_l & rand_sample;
             sample_r = sample_r & rand_sample;
             break;
-          case CORRUPT_MODE_XOR:
+          case CorruptMode::c_xor:
             sample_l = sample_l ^ rand_sample;
             sample_r = sample_r ^ rand_sample;
             break;
-          case CORRUPT_MODE_NOT:
+          case CorruptMode::c_not:
             sample_l = ~sample_l;
             sample_r = ~sample_r;
             break;

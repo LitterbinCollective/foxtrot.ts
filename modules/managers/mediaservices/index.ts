@@ -182,6 +182,8 @@ export class MediaServiceManager extends BaseManager<MediaService> {
       return false;
     }
 
+    url.searchParams.delete('si');
+
     const domainParts = url.hostname.split('.');
 
     // this can break with .co.uk, etc. domains. too bad!
@@ -201,7 +203,7 @@ export class MediaServiceManager extends BaseManager<MediaService> {
         matches = service.patterns(url);
       else {
         for (const pattern of service.patterns) {
-          matches = new UrlPattern(pattern).match(url.pathname + url.search);
+          matches = new UrlPattern(pattern).match(url.pathname);
           if (matches) break;
         }
       }

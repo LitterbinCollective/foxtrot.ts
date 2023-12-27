@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { Constants, Interaction, Utils } from 'detritus-client';
 
 import { runJS } from '@/modules/utils/eval-helper';
@@ -39,7 +38,10 @@ export default class EvalCommand extends BaseSlashCommand {
     ctx: Interaction.InteractionContext,
     { code, async, url }: { code: string; async: boolean; url: string }
   ) {
-    if (url && url.length !== 0) code = (await axios(url)).data;
+    if (url && url.length !== 0) {
+      const response = await fetch(url);
+      code = await response.text();
+    }
 
     let message = await runJS(ctx, code, async);
 
