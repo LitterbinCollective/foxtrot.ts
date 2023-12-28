@@ -176,7 +176,7 @@ const UTC_OFFSETS = [
 ];
 
 export default class NewYearsEveEvent extends BaseEvent {
-  public static timeRange = ['29/12', '31/12'];
+  public static timeRange = ['30/12', '31/12'];
   private interval!: NodeJS.Timeout;
   private lastUpdated: number = 0;
   private next = -1;
