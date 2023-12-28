@@ -10,7 +10,7 @@ import { GuildSettingsStore, VoiceStore } from '@/modules/stores';
 import { Constants } from '@/modules/utils';
 import Voice from '@/modules/voice';
 
-import { BaseEvent } from './baseevent';
+import WinterEvent from './winter';
 
 dayjs.extend(utc);
 
@@ -175,7 +175,7 @@ const UTC_OFFSETS = [
   },
 ];
 
-export default class NewYearsEveEvent extends BaseEvent {
+export default class NewYearsEveEvent extends WinterEvent {
   public static timeRange = ['30/12', '31/12'];
   private interval!: NodeJS.Timeout;
   private lastUpdated: number = 0;
@@ -198,8 +198,6 @@ export default class NewYearsEveEvent extends BaseEvent {
       () => (this.interval = setInterval(this.activityRun, 1000)),
       new Date().getTime() % 1000
     );
-
-    this.editAvatar('avatar-winter.png');
   }
 
   private get nextLocation():
@@ -300,6 +298,7 @@ export default class NewYearsEveEvent extends BaseEvent {
   }
 
   public cleanUp() {
+    super.cleanUp();
     clearInterval(this.interval);
   }
 }
