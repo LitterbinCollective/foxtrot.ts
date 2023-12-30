@@ -179,7 +179,7 @@ export default class NewYearsEveEvent extends WinterEvent {
   public static timeRange = ['30/12', '31/12'];
   private interval!: NodeJS.Timeout;
   private lastUpdated: number = 0;
-  private next = -1;
+  private next = UTC_OFFSETS.length - 1;
 
   constructor() {
     super();
@@ -272,7 +272,6 @@ export default class NewYearsEveEvent extends WinterEvent {
 
   private async announce(voice: Voice) {
     // we want to make sure not to annoy anyone on 30th
-    
     if (this.next === UTC_OFFSETS.length - 1) {
       const date = dayjs().utcOffset(UTC_OFFSETS[this.next].offset * 60);
 
@@ -280,7 +279,9 @@ export default class NewYearsEveEvent extends WinterEvent {
         return;
     }
 
-    const guild = (voice.channel as any).guild;
+    const guild = voice.queue.announcer.channel.guild;
+    if (!guild) return;
+
     const embed = new Utils.Embed({
       title: await t(guild, 'special.nye.title'),
       color: Constants.EMBED_COLORS.DEFAULT,
