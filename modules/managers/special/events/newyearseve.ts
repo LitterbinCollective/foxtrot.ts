@@ -274,7 +274,7 @@ export default class NewYearsEveEvent extends WinterEvent {
     // we want to make sure not to annoy anyone on 30th
     
     if (this.next === UTC_OFFSETS.length - 1) {
-      const date = dayjs().utcOffset(UTC_OFFSETS[this.next]);
+      const date = dayjs().utcOffset(UTC_OFFSETS[this.next].offset * 60);
 
       if (date.hour() < 20 || date.date() !== 31)
         return;
