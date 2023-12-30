@@ -271,7 +271,15 @@ export default class NewYearsEveEvent extends WinterEvent {
   }
 
   private async announce(voice: Voice) {
-    const prefix = app.commandClient.prefixes.custom.first();
+    // we want to make sure not to annoy anyone on 30th
+    
+    if (this.next === UTC_OFFSETS.length - 1) {
+      const date = dayjs().utcOffset(UTC_OFFSETS[this.next]);
+
+      if (date.hour() < 20 || date.date() !== 31)
+        return;
+    }
+
     const guild = (voice.channel as any).guild;
     const embed = new Utils.Embed({
       title: await t(guild, 'special.nye.title'),
@@ -280,7 +288,7 @@ export default class NewYearsEveEvent extends WinterEvent {
       fields: [
         {
           name: await t(guild, 'special.to-disable'),
-          value: Utils.Markup.codestring(`${prefix}settings set special false`),
+          value: Utils.Markup.codestring(`settings set special false`),
         },
       ],
     });
