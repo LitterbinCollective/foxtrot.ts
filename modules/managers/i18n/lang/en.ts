@@ -129,7 +129,7 @@ export default {
 
     "nye": {
       "title": "happy new years eve!",
-      "description": "{0} will play westminster melody and firework sounds in 1st jan at 12 am for every timezone. check the bot's status to see which timezone is next to celebrate New Years Eve."
+      "description": "{0} will play westminster melody and firework sounds on jan 1st at 12 a.m. for every timezone. check the bot's status to see which timezone is next to celebrate New Year's Eve."
     }
   }
 };
