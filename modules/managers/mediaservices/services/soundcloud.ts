@@ -46,6 +46,7 @@ interface SoundCloudUserInfo {
 interface SoundCloudTrackInfo {
   artwork_url: string;
   downloadable: boolean;
+  has_downloads_left: boolean;
   id: number;
   media: { transcodings: SoundCloudTranscodingInfo[] };
   permalink_url: string;
@@ -111,7 +112,7 @@ export default class SoundCloudService extends MediaService {
           if (!clientId)
             throw new Error('failed to fetch soundcloud client id');
 
-          if (track.downloadable) {
+          if (track.downloadable && track.has_downloads_left) {
             const {
               data: { redirectUri },
             } = await Proxy.get(
