@@ -61,6 +61,7 @@ interface SoundCloudTrackInfo extends SoundCloudPartialTrackInfo {
 const HYDRATION_REGEX = /<script.*>window\.__sc_hydration\s*=\s*(.+?);*\s*<\/script>/g;
 const SC_VERSION_REGEX = /<script>window\.__sc_version="[0-9]{10}"<\/script>/;
 const CHUNK_SIZE = 15;
+const FULL_TRACK_AMOUNT = 5;
 
 export default class SoundCloudService extends MediaService {
   public hosts = ['soundcloud.com'];
@@ -109,8 +110,6 @@ export default class SoundCloudService extends MediaService {
     const clientId = await this.findClientID();
     if (!clientId)
       throw new Error('no client id available');
-
-    path = 'https://api-v2.soundcloud.com' + path;
 
     const url = new URL('https://api-v2.soundcloud.com/');
     url.href += path.startsWith('/') ? path.slice(1) : path;
@@ -207,33 +206,30 @@ export default class SoundCloudService extends MediaService {
     switch (true) {
       case !!sorted.playlist: // soundcloud gives partial tracklist in hydratable
         const tracks: (SoundCloudPartialTrackInfo | SoundCloudTrackInfo)[] = sorted.playlist.tracks;
-        let chunks = [];
+        let chunks: (SoundCloudTrackInfo[] | Promise<SoundCloudTrackInfo[]>)[] = [
+          tracks.slice(0, FULL_TRACK_AMOUNT) as SoundCloudTrackInfo[]
+        ];
 
-        for (let i = 0; i < tracks.length; i += CHUNK_SIZE) {
+        for (let i = FULL_TRACK_AMOUNT; i < tracks.length; i += CHUNK_SIZE) {
           const tracksChunk = tracks.slice(i, i + CHUNK_SIZE);
 
-          const fetchPartialChunks = async (tracksChunk: (SoundCloudTrackInfo | SoundCloudPartialTrackInfo)[]) => {
-            let isPartial = false;
+          const fetchPartialTracks = async (tracksChunk: (SoundCloudTrackInfo | SoundCloudPartialTrackInfo)[]) => {
+            const ids: (SoundCloudTrackInfo | number)[] = tracksChunk.map(x => x.id);
+            const fullTracks = await this.apiWrapper<SoundCloudTrackInfo[]>('get', `/tracks?ids=${ids.join(',')}`);
 
-            for (let i = 0; i < tracksChunk.length; i++) {
-              if (!(tracksChunk[i] as SoundCloudTrackInfo).title) {
-                isPartial = true;
-                break;
-              }
-            }
+            for (const track of fullTracks)
+              tracksChunk[ids.indexOf(track.id)] = track;
 
-            if (isPartial)
-              return this.apiWrapper<SoundCloudTrackInfo[]>('get', `/tracks?id=${tracksChunk.map(x => x.id).join(',')}`);
-            else
-              return tracksChunk as SoundCloudTrackInfo[];
+            return tracksChunk as SoundCloudTrackInfo[];
           };
 
-          chunks.push(fetchPartialChunks(tracksChunk));
+          chunks.push(fetchPartialTracks(tracksChunk));
         }
 
-        chunks = await Promise.all(chunks);
+        const thing = (await Promise.all(chunks)).flat();
+        console.log(thing);
 
-        return chunks.flat().map(x => this.formMediaServiceResponse(x));
+        return thing.map(x => this.formMediaServiceResponse(x));
       case !!sorted.sound:
         return this.formMediaServiceResponse(
           sorted.sound as SoundCloudTrackInfo
