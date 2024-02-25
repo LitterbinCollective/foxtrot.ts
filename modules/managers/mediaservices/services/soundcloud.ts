@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios';
+import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import m3u8stream from 'm3u8stream';
 
 import { Proxy, UserError } from '@/modules/utils';
@@ -43,11 +43,14 @@ interface SoundCloudUserInfo {
   username: string;
 }
 
-interface SoundCloudTrackInfo {
+interface SoundCloudPartialTrackInfo {
+  id: number;
+}
+
+interface SoundCloudTrackInfo extends SoundCloudPartialTrackInfo {
   artwork_url: string;
   downloadable: boolean;
   has_downloads_left: boolean;
-  id: number;
   media: { transcodings: SoundCloudTranscodingInfo[] };
   permalink_url: string;
   title: string;
@@ -57,6 +60,7 @@ interface SoundCloudTrackInfo {
 
 const HYDRATION_REGEX = /<script.*>window\.__sc_hydration\s*=\s*(.+?);*\s*<\/script>/g;
 const SC_VERSION_REGEX = /<script>window\.__sc_version="[0-9]{10}"<\/script>/;
+const CHUNK_SIZE = 15;
 
 export default class SoundCloudService extends MediaService {
   public hosts = ['soundcloud.com'];
@@ -101,6 +105,29 @@ export default class SoundCloudService extends MediaService {
     }
   }
 
+  private async apiWrapper<T = any>(method: 'post' | 'get', path: string, data?: any, bailout = false): Promise<T> {
+    const clientId = await this.findClientID();
+    if (!clientId)
+      throw new Error('no client id available');
+
+    path = 'https://api-v2.soundcloud.com' + path;
+
+    const url = new URL('https://api-v2.soundcloud.com/');
+    url.href += path.startsWith('/') ? path.slice(1) : path;
+    url.searchParams.set('client_id', clientId);
+
+    try {
+      const axiosResponse = await Proxy.request<T>({ url: url.href, method, data });
+
+      return axiosResponse.data;
+    } catch (err) {
+      if (bailout)
+        throw err;
+      else
+        return await this.apiWrapper<T>(method, path, data, true);
+    }
+  }
+
   private formMediaServiceResponse(
     track: SoundCloudTrackInfo
   ): MediaServiceResponse {
@@ -113,10 +140,9 @@ export default class SoundCloudService extends MediaService {
             throw new Error('failed to fetch soundcloud client id');
 
           if (track.downloadable && track.has_downloads_left) {
-            const {
-              data: { redirectUri },
-            } = await Proxy.get(
-              `https://api-v2.soundcloud.com/tracks/${track.id}/download?client_id=${clientId}`
+            const { redirectUri } = await this.apiWrapper<{ redirectUri: string }>(
+              'get',
+              `/tracks/${track.id}/download?`
             );
             const { data } = await Proxy.get(redirectUri, {
               responseType: 'stream',
@@ -179,10 +205,35 @@ export default class SoundCloudService extends MediaService {
       sorted[hydratable.hydratable] = hydratable.data;
 
     switch (true) {
-      case !!sorted.playlist:
-        return sorted.playlist.tracks.map((x: SoundCloudTrackInfo) =>
-          this.formMediaServiceResponse(x)
-        );
+      case !!sorted.playlist: // soundcloud gives partial tracklist in hydratable
+        const tracks: (SoundCloudPartialTrackInfo | SoundCloudTrackInfo)[] = sorted.playlist.tracks;
+        let chunks = [];
+
+        for (let i = 0; i < tracks.length; i += CHUNK_SIZE) {
+          const tracksChunk = tracks.slice(i, i + CHUNK_SIZE);
+
+          const fetchPartialChunks = async (tracksChunk: (SoundCloudTrackInfo | SoundCloudPartialTrackInfo)[]) => {
+            let isPartial = false;
+
+            for (let i = 0; i < tracksChunk.length; i++) {
+              if (!(tracksChunk[i] as SoundCloudTrackInfo).title) {
+                isPartial = true;
+                break;
+              }
+            }
+
+            if (isPartial)
+              return this.apiWrapper<SoundCloudTrackInfo[]>('get', `/tracks?id=${tracksChunk.map(x => x.id).join(',')}`);
+            else
+              return tracksChunk as SoundCloudTrackInfo[];
+          };
+
+          chunks.push(fetchPartialChunks(tracksChunk));
+        }
+
+        chunks = await Promise.all(chunks);
+
+        return chunks.flat().map(x => this.formMediaServiceResponse(x));
       case !!sorted.sound:
         return this.formMediaServiceResponse(
           sorted.sound as SoundCloudTrackInfo
