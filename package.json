@@ -31,7 +31,7 @@
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
     "url-pattern": "^1.0.3",
-    "youtubei.js": "^9.1.0"
+    "youtubei.js": "^9.2.0"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",
