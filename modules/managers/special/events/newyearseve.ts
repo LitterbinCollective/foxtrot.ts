@@ -311,3 +311,4 @@ export default class NewYearsEveEvent extends WinterEvent {
     clearInterval(this.interval);
   }
 }
+

@@ -256,3 +256,4 @@ export default class SoundCloudService extends MediaService {
     ) as MediaServiceResponse;
   }
 }
+

@@ -1,7 +1,7 @@
 import { ClusterManager, Utils } from 'detritus-client';
 
 import config from '@/configs/app.json';
-import { Logger, sendFeedback } from '@/modules/utils';
+import { Logger, sendFeedback } from '@clu/utils';
 
 const logger = new Logger('Runner');
 const manager = new ClusterManager('../', config.token, {
