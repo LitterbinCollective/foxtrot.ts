@@ -244,19 +244,19 @@ export default class NewYearsEveEvent extends WinterEvent {
   private async hit() {
     this.next--;
 
-    let buffers: any[] = [sh.newBuffer('westminster:realm(internal)')];
+    let buffers: any[] = [sh.new('westminster:realm(internal)')];
 
     const max = 3 + Math.floor(Math.random() * 4);
     for (let i = 0; i < max; i++)
       buffers.push(
-        sh.newBuffer(
+        sh.new(
           `fwlaunch:realm(internal)--${
             25 + Math.floor(Math.random() * 75)
           } fwex:realm(internal)`
         )
       );
 
-    buffers = await Promise.all(buffers.map(v => v.audio()));
+    buffers = await Promise.all(buffers.map(v => v.buffer()));
 
     for (let i = 0; i < buffers.length; i++) {
       const buffer = buffers[i];

@@ -197,8 +197,12 @@ export default class Voice extends EventEmitter {
     if (script instanceof Buffer) return this.pipeline.playBuffer(script);
 
     try {
-      const context = chatsounds.newBuffer(script);
-      const buffer = await context.audio();
+      const context = chatsounds.new(script);
+      const buffer = await context.buffer({
+        sampleRate: Constants.OPUS_SAMPLE_RATE,
+        audioChannels: Constants.OPUS_AUDIO_CHANNELS,
+        format: 's16le'
+      });
       if (context.mute) this.pipeline.clearReadableArray();
       if (buffer) this.pipeline.playBuffer(buffer);
     } catch (err) {
