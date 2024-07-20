@@ -7,9 +7,9 @@ export default interface ConfigApp {
     token: string
   },
   devId: string,
-  shardCount: number,
+  shardCount?: number,
   shardStart: number,
   shardEnd: number,
-  shardsPerCluster: number,
+  shardsPerCluster?: number,
   soundIcon?: string
 }

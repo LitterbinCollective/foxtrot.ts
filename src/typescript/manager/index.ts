@@ -9,8 +9,8 @@ import { Logger } from '@/utils';
 const logger = new Logger('Runner');
 const manager = new ClusterManager('../cluster/', config.app.token, {
   respawn: true,
-  shardCount: (config as any).shardCount || 1,
-  shardsPerCluster: (config as any).shardsPerCluster || 2,
+  shardCount: config.app.shardCount || 1,
+  shardsPerCluster: config.app.shardsPerCluster || 2,
   shards: [config.app.shardStart, config.app.shardEnd],
 });
 
