@@ -47,10 +47,11 @@ export default class BaseManager<T> {
       ? readdirSync(options.scanPath, { recursive: options.recursive })
       : Object.keys(rawImported);
     for (let fileName of array) {
-      fileName = fileName.toString('utf-8').replace('\\', '/');
-      if (fileName.startsWith('.')) continue;
+      fileName = fileName.toString('utf-8').replaceAll('\\', '/');
 
       let objectName = fileName.split('/').pop() as string;
+      if (objectName.startsWith('.')) continue;
+
       let any: any;
       if (freshScan) {
         const path = join(options.scanPath, fileName);
