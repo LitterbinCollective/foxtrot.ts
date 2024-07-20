@@ -29,6 +29,7 @@ export default class CookieFile extends Map<string, string> {
 
   public async save() {
     if (!this.needsSaving) return;
+    this.needsSaving = false;
     return await writeFile(join(ABSOLUTE_BASE_SCAN_PATH, this.fileName), this.toString());
   }
 
