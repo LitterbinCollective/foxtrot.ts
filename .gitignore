@@ -6,11 +6,11 @@ dist/
 build/
 
 # Files with credentials
-configs/*.json
-!configs/*.example.json
-configs/*.pem
-configs/*.bin
-configs/*_cookies.txt
+configs/json/*.json
+!configs/json/*.example.json
+configs/binary/*.pem
+configs/binary/*.bin
+cookies/*.txt
 .env
 
 # Performance tester

@@ -4,7 +4,7 @@
     "cflags!": [ "-fno-exceptions" ],
     "cflags_cc!": [ "-fno-exceptions" ],
     "sources": [
-      "modules/mixer/mixer.cc"
+      "src/cpp/mixer.cc"
     ],
     "include_dirs": [
       "<!@(node -p \"require('node-addon-api').include\")"

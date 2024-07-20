@@ -1,4 +1,5 @@
 {
+  "include": [ "./src/typescript" ],
   "compilerOptions": {
     "outDir": "dist/",
     "target": "es2021",
@@ -7,9 +8,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "strict": true,
-    "baseUrl": "./",
+    "baseUrl": "./src/typescript/",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@cluster/*": ["./cluster/*"],
+      "@manager/*": ["./manager/*"]
     },
   },
 }

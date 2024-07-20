@@ -1,0 +1,24 @@
+{
+  "development": {
+    "client": "sqlite3",
+    "connection": {
+      "filename": "./dev.sqlite3"
+    },
+    "useNullAsDefault": true
+  },
+
+  "production": {
+    "client": "postgresql",
+    "connection": {
+      "host": "localhost",
+      "port": 5432,
+      "user": "glowmem",
+      "password": "1",
+      "database": "glowmem"
+    },
+    "pool": {
+      "min": 2,
+      "max": 10
+    }
+  }
+}
