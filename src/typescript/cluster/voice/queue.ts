@@ -21,6 +21,15 @@ const FORMAT_FROMURL_TIMEOUT_MS = 30000;
 
 type GetPlayable = [ string | Readable, string | undefined ];
 
+class VoiceQueueMediaError extends Error {
+  public information?: MediaServiceResponseInformation;
+
+  constructor(message?: string, information?: MediaServiceResponseInformation) {
+    super(message);
+    this.information = information;
+  }
+}
+
 // exists solely so there will not be a racing condition
 class VoiceQueueMedia extends EventEmitter {
   private _children?: VoiceQueueMedia[];
@@ -74,9 +83,10 @@ class VoiceQueueMedia extends EventEmitter {
         'children getter called on an invalid VoiceQueueMedia object'
       );
 
-    if (!Array.isArray(this.formatData)) return [this];
-
-    if (this._children) return this._children;
+    if (!Array.isArray(this.formatData))
+      return [this];
+    if (this._children)
+      return this._children;
 
     return (this._children = this.formatData.map(x => new VoiceQueueMedia(x)));
   }
@@ -139,20 +149,31 @@ class VoiceQueueMedia extends EventEmitter {
     if (!media)
       media = this.formatData.media;
 
-    switch (media.type) {
-      case MediaServiceResponseMediaType.URL:
-        return [ media.url, media.decryptionKey ];
-      case MediaServiceResponseMediaType.FILE:
-        throw new Error('not implemented');
-      case MediaServiceResponseMediaType.FETCH:
-        const data = await media.fetch();
+    try {
+      switch (media.type) {
+        case MediaServiceResponseMediaType.URL:
+          return [ media.url, media.decryptionKey ];
+        case MediaServiceResponseMediaType.FILE:
+          throw new Error('not implemented');
+        case MediaServiceResponseMediaType.FETCH:
+          const data = await media.fetch();
 
-        if (data instanceof Readable)
-          return [ data, undefined ];
+          if (data instanceof Readable)
+            return [ data, undefined ];
 
-        return await this.getPlayable(data);
-      default:
-        throw new Error('unknown VoiceFormatResponseType');
+          return await this.getPlayable(data);
+        default:
+          throw new Error('unknown VoiceFormatResponseType');
+      }
+    } catch (err) {
+      const error = err as VoiceQueueMediaError;
+
+      if (!Array.isArray(this.formatData)) {
+        error.information = Object.assign({}, this.formatData.information);
+        delete error.information.metadata;
+      }
+
+      throw error;
     }
   }
 
