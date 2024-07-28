@@ -1,4 +1,5 @@
 import { Constants as DetritusConstants, Interaction } from 'detritus-client';
+import * as Sentry from '@sentry/node';
 
 import { checkPermission, UserError, buildRuntimeErrorEmbed } from '@cluster/utils';
 
@@ -75,6 +76,7 @@ export class BaseInteractionCommand<
     ctx.editOrRespond({ embed });
 
     app.logger.error(error);
+    Sentry.captureException(error);
   }
 }
 

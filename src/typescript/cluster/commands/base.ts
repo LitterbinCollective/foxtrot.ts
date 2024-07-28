@@ -3,6 +3,7 @@ import {
   Command,
   CommandClient,
 } from 'detritus-client';
+import * as Sentry from '@sentry/node';
 
 import { t } from '@cluster/managers/i18n';
 import {
@@ -62,19 +63,18 @@ export class BaseCommand extends Command.Command {
     _args: Command.ParsedArgs,
     error: Error
   ) {
-    if (!ctx.guild) return;
-    if (ctx.channel?.canMessage) {
-      if (error instanceof UserError)
-        return await ctx.reply(
-          await this.t(ctx, error.message, ...error.formatValues)
-        );
+    if (!ctx.guild || !ctx.channel?.canMessage) return
 
-      const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
-      ctx.reply({ embed });
-    } else if (ctx.channel?.canAddReactions)
-      ctx.message.react(Constants.EMOJIS.BOMB);
+    if (error instanceof UserError)
+      return await ctx.reply(
+        await this.t(ctx, error.message, ...error.formatValues)
+      );
+
+    const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
+    ctx.reply({ embed });
 
     app.logger.error(error);
+    Sentry.captureException(error);
   }
 
   public async onTypeError(
