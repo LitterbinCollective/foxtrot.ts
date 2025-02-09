@@ -96,10 +96,13 @@ export class URLMediaService extends MediaService {
               break;
             case 'codec_type':
               switch (value.trim()) {
+                case 'subtitles':
                 case 'video':
                   isVideo = true;
-                  break;
+
                 case 'audio':
+                case 'data':
+                case 'attachments':
                   break;
                 default:
                   return rej('not a playable format');
