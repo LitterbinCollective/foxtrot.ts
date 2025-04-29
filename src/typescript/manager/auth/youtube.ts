@@ -1,5 +1,7 @@
 import Innertube from 'youtubei.js';
 
+import cookies from '@cluster/managers/cookie';
+
 // taken from https://github.com/imputnet/cobalt/blob/a84d0ddc772218fd5f74ec62aee8d95783425428/src/util/generate-youtube-tokens.js
 async function act() {
   const tube = await Innertube.create();

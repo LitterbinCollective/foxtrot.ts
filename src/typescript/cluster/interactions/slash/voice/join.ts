@@ -1,4 +1,4 @@
-import { Interaction } from 'detritus-client';
+import { Interaction, Structures } from 'detritus-client';
 
 import { VoiceStore } from '@cluster/stores';
 import { UserError } from '@cluster/utils';
@@ -14,7 +14,7 @@ export default class JoinCommand extends BaseSlashCommand {
     if (!ctx.member.voiceChannel)
       throw new UserError('voice-check.member-not-in-voice');
 
-    await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+    await VoiceStore.create(ctx.member.voiceChannel, ctx.channel as Structures.ChannelTextType);
     return await ctx.editOrRespond(await this.t(ctx, 'commands.join-msg'));
   }
 }

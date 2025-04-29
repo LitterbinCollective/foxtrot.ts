@@ -15,16 +15,18 @@ class VoiceStore extends Store<string, NewVoice> {
       DetritusConstants.ClientEvents.VOICE_SERVER_UPDATE,
       (payload: GatewayClientEvents.VoiceServerUpdate) => {
         if (!payload.guildId) return;
-        if (this.has(payload.guildId))
-          this.get(payload.guildId)?.onVoiceServerUpdate(payload);
+        this.get(payload.guildId)?.onVoiceServerUpdate(payload);
       }
     );
 
     app.clusterClient.on(
       DetritusConstants.ClientEvents.VOICE_STATE_UPDATE,
       (payload: GatewayClientEvents.VoiceStateUpdate) => {
-        if (!payload.voiceState.guildId) return;
-        if (this.has(payload.voiceState.guildId))
+        if (!payload.voiceState.member || !payload.voiceState.guildId || !this.has(payload.voiceState.guildId))
+          return;
+
+        const voice = this.get(payload.voiceState.guildId) as NewVoice;
+        if ((payload.joinedChannel && payload.voiceState.channelId === voice.channel?.id) || (payload.leftChannel && payload.old?.channel?.id === voice.channel?.id))
           this.get(payload.voiceState.guildId)?.onVoiceStateUpdate(payload);
       }
     );
@@ -33,6 +35,21 @@ class VoiceStore extends Store<string, NewVoice> {
       DetritusConstants.ClientEvents.GUILD_DELETE,
       (payload: GatewayClientEvents.GuildDelete) => {
         if (this.has(payload.guildId)) this.delete(payload.guildId);
+      }
+    );
+
+    app.clusterClient.on(
+      DetritusConstants.ClientEvents.MESSAGE_CREATE,
+      (payload: GatewayClientEvents.MessageCreate) => {
+        if (!payload.message.member || !payload.message.guildId || !this.has(payload.message.guildId))
+          return;
+
+        const voice = this.get(payload.message.guildId) as NewVoice;
+        if (payload.message.author.bot || !voice.canExecuteVoiceCommands(payload.message.member))
+          return;
+
+        if (payload.message.channelId === voice.queue.announcer.channel.id || payload.message.channelId === voice.channel?.id)
+          voice.onMessageCreate(payload);
       }
     );
   }

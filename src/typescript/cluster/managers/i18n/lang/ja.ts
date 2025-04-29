@@ -89,7 +89,11 @@ export default {
     "missing-required-parameter": "行方不明引数."
   },
 
-  "runtime-error": "ランタイムエラー",
+  "runtime-error": {
+    "title": "おっと！！",
+    "description": "コマンドの実行中にエラーが発生しました。しばらくしてからもう一度お試しください。",
+    "min": "おっと！！ {0}"
+  },
 
   "voice-check": {
     "bot-not-in-voice": "わたしわ接続していない.",

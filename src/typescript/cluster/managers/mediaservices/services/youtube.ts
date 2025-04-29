@@ -5,6 +5,7 @@ import { UserError } from '@cluster/utils';
 import cookie from '@cluster/managers/cookie';
 import { MediaService } from './baseservice';
 import { MediaServiceResponse, MediaServiceResponseMediaType } from '../types';
+import Cookie from '@cluster/managers/cookie/cookie';
 
 export default class YouTubeService extends MediaService {
   public hosts = ['youtube.com', 'youtu.be'];
@@ -37,10 +38,7 @@ export default class YouTubeService extends MediaService {
     return url;
   }
 
-  private getOAuthData() {
-    const cookies = cookie.imported.youtube;
-    if (!cookies) return;
-
+  private getOAuthData(cookies: Cookie) {
     const REQUIRED_VALUES = [ 'access_token', 'refresh_token' ];
     if (REQUIRED_VALUES.some(x => !cookies.has(x)))
       return;
@@ -60,10 +58,10 @@ export default class YouTubeService extends MediaService {
     if (innertube.session.logged_in && !shouldRefreshToken)
       return innertube;
 
-    const cookies = cookie.imported.youtube;
+    const cookies = cookie.imported.youtube?.rotate();
     if (!cookies) return;
 
-    const oauth = this.getOAuthData();
+    const oauth = this.getOAuthData(cookies);
     if (oauth) {
       await innertube.session.oauth.init(oauth);
       innertube.session.logged_in = true;

@@ -11,15 +11,17 @@ import UserError from './user-error';
 
 export async function buildRuntimeErrorEmbed(
   guild: Structures.Guild,
-  error: Error
+  id?: string
 ) {
-  const { name, message } = error;
   const embed = new Utils.Embed({
     title:
-      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'runtime-error')),
-    description: `**${name}**: ${message}`,
+      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'runtime-error.title')),
+    description: await t(guild, 'runtime-error.description'),
     color: Constants.EMBED_COLORS.ERROR,
   });
+
+  if (id)
+    embed.setFooter(Constants.EMOJIS.PAPERCLIP + ' ' + id);
 
   return embed;
 }
@@ -65,7 +67,7 @@ export async function listOptions(
   for (const key in options) {
     const value = options[key];
     const range = ranges[key];
-    const suffix = range ? `(${range[0]} to ${range[1]})` : '';
+    const suffix = range ? `(${range[0]} - ${range[1]})` : '';
     const keyValue = key + ' = ' + value;
     keyValueMaximum = Math.max(keyValueMaximum, keyValue.length);
     suffixMaximum = Math.max(suffixMaximum, suffix.length);
@@ -153,8 +155,13 @@ export function convertToType(value: any, type: string) {
     case 'string':
       value = value.toString();
       break;
+    case 'integer':
     case 'number':
       value = +value;
+      if (type === 'integer') {
+        value = Math.floor(value);
+        type = 'number'; // let's also set this so sanity check would work
+      }
       if (isNaN(value)) throw new UserError('invalid-number');
       break;
     case 'boolean':

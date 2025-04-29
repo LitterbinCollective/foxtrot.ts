@@ -66,17 +66,18 @@ export class BaseInteractionCommand<
 
   public async onRunError(
     ctx: Interaction.InteractionContext,
-    _: ParsedArgsFinished,
+    _: Interaction.ParsedArgs,
     error: any
   ) {
     if (!ctx.guild) return;
     if (error instanceof UserError)
       return ctx.editOrRespond(await this.t(ctx, error.message, ...error.formatValues));
-    const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
+
+    const id = Sentry.captureException(error);
+    const embed = await buildRuntimeErrorEmbed(ctx.guild, id);
     ctx.editOrRespond({ embed });
 
     app.logger.error(error);
-    Sentry.captureException(error);
   }
 }
 

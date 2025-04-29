@@ -24,6 +24,15 @@ import BaseManager from '@/managers';
 const LOCAL_IPS = ['::1', '::ffff:127.0.0.1', '127.0.0.1']
 export const DEFAULT_SOUND_ICON = 'https://foxtrot.litterbin.dev/sound.png';
 
+interface ProbeResult {
+  duration: number;
+  isVideo: boolean;
+  metadata?: {
+    title: string;
+    author: string;
+  };
+}
+
 export class URLMediaService extends MediaService {
   public noSearch = true;
 
@@ -65,13 +74,13 @@ export class URLMediaService extends MediaService {
     });
   }
 
-  static probe(url: string): Promise<{ duration: number; isVideo: boolean }> {
+  static probe(url: string): Promise<ProbeResult> {
     return new Promise((res, rej) => {
       const args = [
         '-v',
         'error',
         '-show_entries',
-        'format=duration:stream=codec_type',
+        'format:stream=codec_type',
         '-of',
         'default=noprint_wrappers=1',
         url,
@@ -87,10 +96,11 @@ export class URLMediaService extends MediaService {
       child.stdout.on('end', () => {
         let duration: number = -1;
         let isVideo = false;
+        let metadata: ProbeResult['metadata'] | undefined;
 
         for (const line of buffer.toString().split('\n')) {
           const [key, value] = line.split('=');
-          switch (key) {
+          switch (key.toLowerCase().trim()) {
             case 'duration':
               duration = parseFloat(value);
               break;
@@ -105,10 +115,26 @@ export class URLMediaService extends MediaService {
                   return rej('not a playable format');
               }
               break;
+            case 'tag:title':
+              metadata = metadata || {
+                title: 'Untitled',
+                author: 'Unknown',
+              };
+
+              metadata.title = value.trim();
+              break;
+            case 'tag:artist':
+              metadata = metadata || {
+                title: 'Untitled',
+                author: 'Unknown',
+              };
+
+              metadata.author = value.trim();
+              break;
           }
         }
 
-        res({ duration, isVideo });
+        res({ duration, isVideo, metadata });
       });
 
       child.stderr.on('data', data => rej(data.toString()));
@@ -118,22 +144,27 @@ export class URLMediaService extends MediaService {
   public async download(url: string): Promise<any> {
     if (await this.isUrlLocal(url)) return false;
 
+    const { pathname, hostname } = new URL(url);
+    let metadata = {
+      title: pathname.split('/').pop() as string,
+      author: hostname,
+    };
+
     let duration: number;
     let cover: string | Buffer =
       config.app.soundIcon || DEFAULT_SOUND_ICON;
     try {
       const info = await URLMediaService.probe(url);
       duration = info.duration;
+      if (info.metadata) metadata = info.metadata;
       if (info.isVideo) cover = await this.createThumbnail(url);
     } catch (err) {
       return false;
     }
 
-    const { pathname, hostname } = new URL(url);
     return {
       information: {
-        title: pathname.split('/').pop(),
-        author: hostname,
+        ...metadata,
         url,
         duration,
         cover,

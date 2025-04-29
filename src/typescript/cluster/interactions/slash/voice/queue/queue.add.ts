@@ -46,7 +46,7 @@ export class QueueAddCommand extends BaseCommandOption {
 
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
-      voice = await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+      voice = await VoiceStore.create(ctx.member.voiceChannel, ctx.channel as Structures.ChannelTextType);
       await voice.queue.push(media, ctx.user);
       return await ctx.editOrRespond(await this.t(ctx, 'commands.join-msg'));
     }

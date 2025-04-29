@@ -12,7 +12,7 @@ import {
   MediaServiceResponseMedia,
   MediaServiceResponseMediaType,
 } from '@cluster/managers/mediaservices/types';
-import { Constants, sendFeedback, UserError } from '@cluster/utils';
+import { Constants, UserError } from '@cluster/utils';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
@@ -31,7 +31,7 @@ class VoiceQueueMediaError extends Error {
 }
 
 // exists solely so there will not be a racing condition
-class VoiceQueueMedia extends EventEmitter {
+class VoiceQueueMedia {
   private _children?: VoiceQueueMedia[];
   private formatData!: DownloadReturnedValue;
   private _submittee?: Structures.User;
@@ -42,15 +42,12 @@ class VoiceQueueMedia extends EventEmitter {
     url: string | MediaServiceResponse,
     message?: Structures.Message | Structures.User
   ) {
-    super();
-
     if (message instanceof Structures.User) this._submittee = message;
     else this.message = message;
 
-    if (typeof url === 'string') {
+    if (typeof url === 'string')
       this.url = url;
-      this.fetchFormatData();
-    } else {
+    else {
       this.url = url.information.url;
       this.formatData = url;
     }
@@ -91,55 +88,54 @@ class VoiceQueueMedia extends EventEmitter {
     return (this._children = this.formatData.map(x => new VoiceQueueMedia(x)));
   }
 
-  private async fetchFormatData() {
-    try {
-      let result;
+  public async unzip() {
+    if (this.formatData)
+      throw new Error('unzip called on an invalid VoiceQueueMedia object');
 
-      let timeoutHandle;
-      const timeoutPromise = new Promise<void>((_, rej) => {
-        timeoutHandle = setTimeout(
-          () =>
-            rej(
-              new Error(
-                'download timed out (' + FORMAT_FROMURL_TIMEOUT_MS + 'ms)'
-              )
-            ),
-            FORMAT_FROMURL_TIMEOUT_MS
-        );
-      });
+    let result;
 
-      result = await Promise.race([
-        timeoutPromise,
-        mediaservice.download(this.url),
-      ]);
-      clearTimeout(timeoutHandle);
+    let timeoutHandle;
+    const timeoutPromise = new Promise<void>((_, rej) => {
+      timeoutHandle = setTimeout(
+        () =>
+          rej(
+            new Error(
+              'download timed out (' + FORMAT_FROMURL_TIMEOUT_MS + 'ms)'
+            )
+          ),
+          FORMAT_FROMURL_TIMEOUT_MS
+      );
+    });
 
-      if (!result) throw new UserError('queue.url-unsupported');
+    result = await Promise.race([
+      timeoutPromise,
+      mediaservice.download(this.url),
+    ]);
+    clearTimeout(timeoutHandle);
 
-      if (this.submittee) {
-        const name = this.submittee.discriminator === '0' ? this.submittee.username : this.submittee.tag;
+    if (!result) throw new UserError('queue.url-unsupported');
 
-        if (Array.isArray(result)) {
-          for (let i = 0; i < result.length; i++)
-            result[i].information.metadata = {
-              name,
-              icon_url: this.submittee.avatarUrl,
-              url: this.message ? this.message.jumpLink : undefined,
-            };
-        } else
-          result.information.metadata = {
+    if (this.submittee) {
+      const name = this.submittee.discriminator === '0' ? this.submittee.username : this.submittee.tag;
+
+      if (Array.isArray(result)) {
+        for (let i = 0; i < result.length; i++)
+          result[i].information.metadata = {
             name,
             icon_url: this.submittee.avatarUrl,
             url: this.message ? this.message.jumpLink : undefined,
           };
-      }
-
-      this.formatData = result;
-    } catch (err) {
-      return this.emit('error', err);
+      } else
+        result.information.metadata = {
+          name,
+          icon_url: this.submittee.avatarUrl,
+          url: this.message ? this.message.jumpLink : undefined,
+        };
     }
 
-    this.emit('finish');
+    this.formatData = result;
+
+    return this.children;
   }
 
   public async getPlayable(media?: MediaServiceResponseMedia): Promise<GetPlayable> {
@@ -202,26 +198,25 @@ export default class VoiceQueue {
     message?: Structures.Message | Structures.User
   ) {
     const object = new VoiceQueueMedia(url, message);
+    const index = this.queue.length;
     this.queue.push(object);
 
-    return new Promise((res, rej) => {
-      object.once('finish', () => {
-        const index = this.queue.indexOf(object);
-        if (index === -1) return;
-        this.queue.splice(index, 1, ...object.children);
+    let children: VoiceQueueMedia[] = [];
+    let error: unknown;
+    try {
+      children = await object.unzip();
+    } catch (err) {
+      error = err;
+    }
 
-        if (!this.voice.isPlaying) this.next();
+    this.queue.splice(index, 1, ...children);
 
-        res(true);
-      });
+    if (children.length > 0 && !this.voice.isPlaying)
+      await this.next();
 
-      object.once('error', error => {
-        rej(error);
+    if (error) throw error;
 
-        const index = this.queue.indexOf(object);
-        if (index !== -1) this.queue.splice(index, 1);
-      });
-    });
+    return true;
   }
 
   public get info() {
@@ -238,11 +233,9 @@ export default class VoiceQueue {
   }
 
   public streamingError(err: any) {
-    const error = Utils.Markup.codestring(err.toString());
-    this.announcer.createMessage(Constants.EMOJIS.BOMB + ' ' + error);
+    const error = Utils.Markup.codestring(Sentry.captureException(err));
+    this.announcer.createMessage(Constants.EMOJIS.BOMB + Constants.EMOJIS.PAPERCLIP + ' ' + error);
     this.next();
-
-    Sentry.captureException(err);
   }
 
   public async next() {

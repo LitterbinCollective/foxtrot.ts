@@ -31,6 +31,7 @@ export enum EMOJIS {
   SATELLITE = '📡',
   SOON = '🔜',
   HOURGLASS = '⌛',
+  PAPERCLIP = '📎',
 
   PLAY = '▶️',
   FAST_REVERSE = '⏪',

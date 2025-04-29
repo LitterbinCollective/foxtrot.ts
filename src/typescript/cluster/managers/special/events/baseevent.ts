@@ -7,16 +7,18 @@ import Voice from '@cluster/voice';
 export class BaseEvent {
   public static timeRange: string[] = [];
 
-  public async editAvatar(file: string, retry = true) {
+  public async editAvatar(file: string, retry = true): Promise<any> {
     try {
       if (app.clusterClient.shardStart === 0)
-        await app.clusterClient.rest.editMe({
+        return await app.clusterClient.rest.editMe({
           avatar: readFileSync('assets/images/' + file)
         });
+
+      return null;
     } catch (err) {
       if (retry) {
         await Timers.sleep(5000);
-        await this.editAvatar(file, false);
+        return await this.editAvatar(file, false);
       }
     }
   }

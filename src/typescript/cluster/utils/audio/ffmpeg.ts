@@ -24,7 +24,7 @@ export default class FFMpeg extends Transform {
   }
 
   private setupFFMpeg(args = this.args, pre = this.pre) {
-    args.unshift('-i', this.url ? this.url : 'pipe:3');
+    args.unshift('-i', this.url ? this.url : 'pipe:3', '-stdin');
     args = pre.concat(args);
     args.push('pipe:1');
 
@@ -34,13 +34,9 @@ export default class FFMpeg extends Transform {
     }
 
     this.instance = spawn('ffmpeg', args, {
-      stdio: ['inherit', 'pipe', 'inherit', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'inherit', 'pipe', 'pipe'],
     });
 
-    (this.instance.stdio[1] as NodeJS.ReadableStream).on(
-      'data',
-      chunk => chunk && this.push(chunk)
-    );
     (this.instance.stdio[1] as NodeJS.ReadableStream).on(
       'end',
       this.ffmpegClose

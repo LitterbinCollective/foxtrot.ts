@@ -82,7 +82,6 @@ interface DeezerGetUrlResponse {
 
 interface AuthTokens {
   apiToken: string;
-  checkForm: string;
   licenseToken: string;
 }
 
@@ -126,8 +125,7 @@ export default class DeezerService extends MediaService {
       if (
         !userData.results ||
         !userData.results.USER ||
-        !userData.results.SESSION_ID ||
-        !userData.results.checkForm
+        !userData.results.SESSION_ID
       )
         throw new Error('invalid response from deezer.getUserData');
 
@@ -145,8 +143,7 @@ export default class DeezerService extends MediaService {
 
       this.authTokens = {
         apiToken: apiToken.data.attributes.token,
-        licenseToken: license_token,
-        checkForm: userData.results.checkForm,
+        licenseToken: license_token
       };
 
       this.authTokenFetching = false;
@@ -188,21 +185,25 @@ export default class DeezerService extends MediaService {
   private async fetchAPI<T = any>(
     method: 'get' | 'post',
     path: string,
-    body: string | Object = {},
-    noauth = false
+    body?: string | Object,
+    ignoreAuth = false
   ) {
     const headers: Record<string, string> = {
-      'content-type': 'application/json'
+      'content-type': 'application/' + (typeof body === 'object' ? 'json' : 'x-www-form-urlencoded')
     };
 
-    if (!noauth)
+    if (!ignoreAuth)
       headers.authorization = 'Bearer ' + (await this.getAPIToken());
 
-    const res = await fetch('https://api.deezer.com' + path, {
+    const requestInit: RequestInit = {
       method,
-      body: typeof body === 'object' ? JSON.stringify(body) : body,
       headers
-    });
+    };
+
+    if (body)
+      requestInit.body = typeof body === 'object' ? JSON.stringify(body) : body;
+
+    const res = await fetch('https://api.deezer.com' + path, requestInit);
     return res.json() as T;
   }
 
@@ -211,6 +212,7 @@ export default class DeezerService extends MediaService {
       'get',
       '/platform/generic/album/' + albumId
     );
+    console.log(albumData);
 
     if (!albumData.data) throw new Error('invalid response from deezer api');
 
@@ -340,7 +342,7 @@ export default class DeezerService extends MediaService {
       'get',
       '/search/track?q=' + encodeURIComponent(query)
     );
-    if (data.data.length === 0) throw new UserError('query-not-found');
+    if (data.length === 0) throw new UserError('query-not-found');
 
     const track = data.data[0].id;
     const responses = await this.download(

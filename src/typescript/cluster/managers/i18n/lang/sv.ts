@@ -89,7 +89,11 @@ export default {
     "missing-required-parameter": "saknar nödvändig parameter."
   },
 
-  "runtime-error": "körtidsfel!!",
+  "runtime-error": {
+    "title": "hoppsan!!",
+    "description": "någonting gick fel vid kommandot. försök igen senare.",
+    "min": "hoppsan!! {0}"
+  },
 
   "voice-check": {
     "bot-not-in-voice": "jag är inte kopplad.",

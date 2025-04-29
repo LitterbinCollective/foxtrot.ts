@@ -27,6 +27,8 @@ export default class SpotifyService extends MediaService {
   constructor() {
     super();
 
+    this.rotate = this.rotate.bind(this);
+
     try {
       if (
         !cookie.imported.spotify
@@ -36,12 +38,20 @@ export default class SpotifyService extends MediaService {
         throw new Error();
 
       this.spotifyDl = new SpotifyDL({
-        cookies: cookie.imported.spotify.toString(),
-        cookiesType: 'header',
+        cookies: {
+          rotation: this.rotate,
+          type: 'header'
+        },
         clientId: config.imported.widevineClientId,
         privateKey: config.imported.widevinePrivateKey
       });
     } catch (err) {}
+  }
+
+  private rotate() {
+    if (!cookie.imported.spotify)
+      throw new Error();
+    return cookie.imported.spotify.rotate().toString();
   }
 
   private get spotifyDl() {
@@ -102,13 +112,14 @@ export default class SpotifyService extends MediaService {
     switch (true) {
       case ('track' in matches): {
         const object = await this.spotifyDl.getTrack(matches.track as string);
+        console.log(object);
         return this.formResponse(object);
       };
-      case ('album' in matches):{
+      case ('album' in matches): {
         const object = await this.spotifyDl.getAlbum(matches.album as string);
         return object.tracks.items.map(x => this.formResponse(x, object.images[0]));
       };
-      case ('playlist' in matches):{
+      case ('playlist' in matches): {
         const object = await this.spotifyDl.getPlaylist(matches.playlist as string);
         return object.tracks.items
           .filter(x => x.track.type === 'track')

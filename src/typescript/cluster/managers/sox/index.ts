@@ -102,6 +102,10 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
     return this.stack[index].options[option];
   }
 
+  public get speed() {
+    return this.stack.reduce((acc, x) => acc * x.speed, 1);
+  }
+
   private get args() {
     let result: string[] = [];
     for (const effect of this.stack)
@@ -161,6 +165,10 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
 
     this.sox.stdout.on('data', chunk => this.push(chunk));
     this.sox.stderr.on('data', data => console.log(data.toString()));
+    this.sox.stdin.on('error', e => {
+      this.logger.error('sox.stdin spew an error:', e);
+      this.logger.error('arguments used:', this.args);
+    });
     this.sox.stdout.on('error', e => {
       this.logger.error('sox.stdout spew an error:', e);
       this.logger.error('arguments used:', this.args);

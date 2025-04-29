@@ -11,6 +11,7 @@ export interface BaseManagerOptions {
   scanPath: string;
   file?: boolean;
   recursive?: boolean;
+  folders?: boolean;
   map?: (any: any, objectName: string, fileName: string) => any;
   watch?: boolean;
 }
@@ -48,6 +49,7 @@ export default class BaseManager<T> {
       : Object.keys(rawImported);
     for (let fileName of array) {
       fileName = fileName.toString('utf-8').replaceAll('\\', '/');
+      if (fileName.endsWith('.map')) continue;
 
       let objectName = fileName.split('/').pop() as string;
       if (objectName.startsWith('.')) continue;
@@ -56,19 +58,22 @@ export default class BaseManager<T> {
       if (freshScan) {
         const path = join(options.scanPath, fileName);
         const stat = statSync(path);
-        if (stat.isDirectory())
+        if (options.folders ? stat.isFile() : stat.isDirectory())
           continue;
 
-        objectName = objectName.replace(Constants.FILENAME_REGEX, '')
-          .replace(SNAKE_CASE_REGEX, (_, l) => l.toUpperCase());
-        this.logger.debug(`scanning: ${objectName} (${fileName})`);
+        if (!options.folders) {
+          objectName = objectName.replace(Constants.FILENAME_REGEX, '')
+            .replace(SNAKE_CASE_REGEX, (_, l) => l.toUpperCase());
+          this.logger.debug(`scanning: ${objectName} (${fileName})`);
 
-        if (options.file)
-          any = readFileSync(path)
-        else
-          any = require(path).default;
+          if (options.file)
+            any = readFileSync(path)
+          else
+            any = require(path).default;
 
-        if (!any) continue;
+          if (!any) continue;
+        } else
+          any = true;
 
         rawImported[objectName] = any;
       } else {
@@ -76,7 +81,7 @@ export default class BaseManager<T> {
         any = rawImported[objectName];
       }
 
-      if (options.create && !options.file)
+      if (options.create && !options.file && !options.folders)
         this.imported[objectName] = new any(...(options.constructorArgs || []));
       else
         this.imported[objectName] = map(any, objectName, fileName);

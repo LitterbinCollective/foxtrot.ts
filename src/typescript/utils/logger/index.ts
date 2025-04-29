@@ -16,7 +16,7 @@ export default class Logger {
   constructor(moduleName: string, loggingLevel?: number) {
     this.moduleName = moduleName;
 
-    const { LOG_LEVEL, LOG_INDENTATION } = process.env;
+    const { LOG_LEVEL, LOG_INDENTATION, NODE_ENV } = process.env;
     if (LOG_INDENTATION) {
       const int = parseInt(LOG_INDENTATION);
       if (int) this.indentation = int;
@@ -27,7 +27,8 @@ export default class Logger {
       if (int in LOG_LEVELS) this.loggingLevel = int;
       else if (LOG_LEVEL in LOG_LEVELS)
         this.loggingLevel = LOG_LEVELS[LOG_LEVEL as keyof typeof LOG_LEVELS];
-    }
+    } else if (NODE_ENV === 'development')
+      this.loggingLevel = LOG_LEVELS.DEBUG;
 
     if (loggingLevel) this.loggingLevel = loggingLevel;
   }

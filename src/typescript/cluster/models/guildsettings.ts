@@ -6,6 +6,10 @@ export default class GuildSettings extends Model {
   public prefix?: string;
   public special!: boolean;
   public lang?: string;
+  public defaultVolume!: number;
+  public tts?: string;
+  public ttsTellMessageAuthor!: boolean;
+  public ttsTellJoinLeave!: boolean;
 
   static tableName = 'guildSettings';
 
@@ -18,7 +22,11 @@ export default class GuildSettings extends Model {
       special: { type: 'boolean', default: false },
       allowCorrupt: { type: 'boolean', default: false },
       lang: { type: ['string', 'null'] },
-      ephemeral: { type: 'boolean', default: true }
+      ephemeral: { type: 'boolean', default: true },
+      defaultVolume: { type: 'integer', default: 100 },
+      tts: { type: ['string', 'null'] },
+      ttsTellMessageAuthor: { type: 'boolean', default: false },
+      ttsTellJoinLeave: { type: 'boolean', default: false },
     },
   };
 

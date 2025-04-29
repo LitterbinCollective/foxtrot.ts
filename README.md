@@ -6,20 +6,39 @@ bitrate control and more.
 Before hosting, please read ["self-hosting"](https://foxtrot.litterbin.dev/docs/self-hosting).
 
 ## Locale
-See [`modules/managers/i18n/README.md`](https://github.com/LitterbinCollective/foxtrot.ts/blob/master/modules/managers/i18n/README.md)
+See [`src/typescript/cluster/managers/i18n/README.md`](https://github.com/LitterbinCollective/foxtrot.ts/blob/master/src/typescript/cluster/managers/i18n/README.md)
 for credits and tips.
 
 ## Contributions
 Contributions (i.e. pull requests) to the project are welcome. Major
 changes, however, need to be discussed beforehand.
 
-## Spotify support
-1. Extract client ID and private key with https://github.com/wvdumper/dumper.
-2. Extract cookies (in Netscape format) from open.spotify.com while being logged in.
-3. Put these files into `configs/` folder and name them accordingly:
-  * Widevine client ID: `widevine_client_id.bin`
-  * Widevine device private key: `widevine_private_key.pem`
-  * Cookies: `spotify_cookies.txt`
+## Formats
+Certain formats require authentication to perform successfully.
+
+This app requires and uses cookies for certain formats, like Spotify and YouTube.
+It may also change them when required (e.g. updating authentication tokens),
+therefore if you run foxtrot in a read-only environment, the application may
+become unstable.
+
+Below is a list of formats that require authorization and the according
+instructions on how to set them up properly.
+
+### Spotify
+You will need an Android device with root access.
+1. Extract client ID and private key with https://github.com/hyugogirubato/KeyDive.
+2. Extract cookies (in header format) from open.spotify.com while being logged in.
+3. Put these files into the following paths:
+  * Widevine client ID: `configs/binary/widevine_client_id.bin`
+  * Widevine device private key: `configs/binary/widevine_private_key.pem`
+  * Cookies: `cookies/spotify.txt`
+
+### YouTube
+Trying to download content from YouTube has became recently hard to do so due to
+Google's efforts, hence you may need to maintain it constantly and possibly set
+up multiple accounts for foxtrot, as some can be terminated.
+
+To authorize one or multiple accounts, just run `npm run auth:youtube`.
 
 ## License
 foxtrot.ts is licensed under [AGPL-3.0](https://github.com/LitterbinCollective/foxtrot.ts/blob/master/COPYING).

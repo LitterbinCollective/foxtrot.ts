@@ -8,7 +8,8 @@
     "build:cpp": "node-gyp clean configure build",
     "build": "npm run build:cpp && npm run build:ts",
     "start": "node --openssl-legacy-provider dist/manager/",
-    "prettier": "prettier --config ./.prettierrc --write **/*.ts"
+    "prettier": "prettier --config ./.prettierrc --write **/*.ts",
+    "auth:youtube": "node dist/manager/generate-youtube.js"
   },
   "author": "Litterbin Collective",
   "license": "AGPL-3.0-or-later",
@@ -18,8 +19,8 @@
     "@sentry/profiling-node": "^8.19.0",
     "better-ytdl-core": "github:be195/better-ytdl-core#patch-1",
     "dayjs": "^1.11.7",
-    "detritus-client": "github:be195/client#0.16.4",
-    "detritus-client-socket": "github:be195/client-socket",
+    "detritus-client": "github:detritusjs/client#0.16.4",
+    "detritus-client-socket": "github:detritusjs/client-socket#0.8.4",
     "google-assistant": "github:LitterbinCollective/google-assistant",
     "knex": "^2.4.0",
     "m3u8stream": "^0.8.6",
@@ -32,7 +33,7 @@
     "tweetnacl": "^1.0.3",
     "type-fest": "^2.1.0",
     "url-pattern": "^1.0.3",
-    "youtubei.js": "^10.1.0"
+    "youtubei.js": "^10.5.0"
   },
   "devDependencies": {
     "@types/cli-table": "^0.3.0",

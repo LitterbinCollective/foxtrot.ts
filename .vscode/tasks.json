@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "kill-old-instance",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "${workspaceFolder}\\.vscode\\scripts\\kill-pid.ps1"
+        ]
+      },
+      "linux": {
+        "command": "${workspaceFolder}/.vscode/scripts/kill-pid.sh"
+      },
+      "osx": {
+        "command": "${workspaceFolder}/.vscode/scripts/kill-pid.sh"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: build:ts",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "build:ts"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$tsc"
+      ],
+    },
+    {
+      "label": "npm: build",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "build"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$tsc"
+      ],
+      "dependsOn": [
+        "kill-old-instance",
+      ]
+    }
+  ]
+}

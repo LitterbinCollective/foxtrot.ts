@@ -1,36 +1,26 @@
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
 import setCookieParser from 'set-cookie-parser';
 
-import { ABSOLUTE_BASE_SCAN_PATH } from '.';
+import CookieJar from './jar';
 
-export default class CookieFile extends Map<string, string> {
-  private fileName: string;
-  private needsSaving = false;
+export default class Cookie extends Map<string, string> {
+  private jar: CookieJar;
 
-  constructor(fileName: string, cookies: string | Buffer) {
+  constructor(jar: CookieJar, values: string | Buffer) {
     super();
+    this.jar = jar;
 
-    this.fileName = fileName;
+    if (values instanceof Buffer)
+      values = values.toString('utf-8');
 
-    if (cookies instanceof Buffer)
-      cookies = cookies.toString('utf-8');
-
-    for (const cookie of cookies.split(';')) {
+    for (const cookie of values.split(';')) {
       const [ key, value ] = cookie.split('=').map(x => x.trim());
       this.set(key, value);
     }
   }
 
   public set(key: string, value: string) {
-    this.needsSaving = true;
+    this.jar.clean = false;
     return super.set(key, value);
-  }
-
-  public async save() {
-    if (!this.needsSaving) return;
-    this.needsSaving = false;
-    return await writeFile(join(ABSOLUTE_BASE_SCAN_PATH, this.fileName), this.toString());
   }
 
   public handleSetCookie(header: string | Headers) {
@@ -53,7 +43,7 @@ export default class CookieFile extends Map<string, string> {
 
   public toString() {
     return [...this.entries()].reduce(
-      (prev, curr) => prev += ';' + curr.join('='),
+      (prev, curr) => prev += (curr[0].length ? `${curr.join('=')};` : ''),
       ''
     );
   }

@@ -2,11 +2,31 @@ import '@/pre';
 
 import { ClusterManager, } from 'detritus-client';
 import * as Sentry from '@sentry/node';
+import { rmSync, writeFileSync } from 'fs';
 
 import config from '@/managers/config'
 import { Logger } from '@/utils';
 
 const logger = new Logger('Runner');
+
+if (process.env.NODE_ENV === 'development') {
+  logger.debug('you seem to be running in development mode, creating a PID file...');
+
+  const PID_FILE = '.pid';
+  writeFileSync(PID_FILE, process.pid.toString());
+
+  function cleanup() {
+    try {
+      rmSync(PID_FILE);
+      logger.debug('deleted PID file');
+    } catch (err) {}
+  }
+
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+  process.on('exit', cleanup);
+}
+
 const manager = new ClusterManager('../cluster/', config.app.token, {
   respawn: true,
   shardCount: config.app.shardCount || 1,

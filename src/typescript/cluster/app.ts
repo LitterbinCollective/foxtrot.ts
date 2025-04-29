@@ -25,7 +25,10 @@ export default class Application {
     const { token, prefix } = config.app;
 
     this.clusterClient = new ClusterClient(token, {
-      cache: { messages: { expire: 60 * 60 * 1000 } },
+      cache: {
+        applicationCommandPermissions: { enabled: true },
+        messages: { expire: 60 * 60 * 1000 }
+      },
       gateway: {
         presence: {
           activity: {
@@ -33,6 +36,7 @@ export default class Application {
             name: `media | run ${prefix}help`,
           },
         },
+        intents: 'ALL'
       },
     });
 

@@ -29,7 +29,8 @@ export default class GoogleAssistantModule extends BaseModule {
   constructor(voice: Voice) {
     super(voice);
 
-    const configBase = join(__dirname, '../../../configs/');
+    // TODO: config manager
+    const configBase = join(__dirname, '../../../../configs/json/');
     this.assistant = new GoogleAssistant({
       keyFilePath: join(configBase, 'google-assistant-client-secret.json'),
       savedTokensPath: join(configBase, 'google-assistant-saved.json'),
@@ -186,6 +187,8 @@ export default class GoogleAssistantModule extends BaseModule {
       '-'
     ]);
 
+    ffmpeg.stdout.on('error', (err: any) => err.code !== 'EPIPE' && this.logger.error(err));
+
     let sound = Buffer.alloc(0);
     ffmpeg.stdout.on('data', (data: Buffer) =>
       sound = Buffer.concat([ sound, data ])
@@ -193,7 +196,7 @@ export default class GoogleAssistantModule extends BaseModule {
 
     ffmpeg.stdout.on('end', async () => {
       this.voice.playSoundeffect(sound);
-      this.logger.debug('playing sound...');
+      this.logger.debug('playing sound...', sound);
       setTimeout(
         () => this.emit('continue'),
         Math.floor(sound.length / (Constants.OPUS_SAMPLE_RATE * Constants.OPUS_AUDIO_CHANNELS * 2) * 1000)
@@ -205,7 +208,7 @@ export default class GoogleAssistantModule extends BaseModule {
 
     conv
       .on('audio-data', (data: Buffer) => {
-        ffmpeg.stdin.write(Buffer.from(data));
+        ffmpeg.stdin.write(data);
         if (timeout)
           clearTimeout(timeout);
         timeout = setTimeout(timeoutFunc, 100);
@@ -214,18 +217,19 @@ export default class GoogleAssistantModule extends BaseModule {
       .on('transcription', this.onTranscription)
       .on('response', this.onResponse)
       .once('ended', this.conversationEnded)
-      .once('ended', (text?: string) => !text && ffmpeg.kill('SIGKILL'))
+      // .once('ended', (text?: string) => !text && ffmpeg.kill('SIGKILL'))
       .on('error', this.onError)
       .on('data', (data) => this.logger.debug(data));
 
     this.conversation = conv;
   }
 
-  public action(): void {
+  public action(line?: string): void {
     if (this.active) return;
     this.logger.debug('action()');
     this.active = true;
-    this.useVoiceReceiver();
+    if (!line)
+      this.useVoiceReceiver();
 
     this.response = undefined;
     this.transcription = undefined;
@@ -238,7 +242,8 @@ export default class GoogleAssistantModule extends BaseModule {
         sampleRateIn: SAMPLE_RATE,
         encodingOut: 'LINEAR16',
         sampleRateOut: SAMPLE_RATE
-      }
+      },
+      textQuery: line,
     });
   }
 

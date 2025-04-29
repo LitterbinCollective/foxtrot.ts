@@ -32,6 +32,9 @@ export class I18NManager extends BaseManager<any> {
 
       if (settings.lang && settings.lang in this.imported)
         lang = settings.lang;
+
+      if (!(lang in this.imported))
+        lang = DEFAULT_LANG;
     }
 
     const hierarchy = id.split('.');

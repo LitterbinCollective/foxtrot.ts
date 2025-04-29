@@ -89,7 +89,11 @@ export default {
     "missing-required-parameter": "missing required parameter."
   },
 
-  "runtime-error": "runtime error!!",
+  "runtime-error": {
+    "title": "ooops!!",
+    "description": "an error has occurred while executing the command. please try again later.",
+    "min": "ooops!! {0}"
+  },
 
   "voice-check": {
     "bot-not-in-voice": "i'm not connected.",
@@ -131,5 +135,21 @@ export default {
       "title": "happy new years eve!",
       "description": "{0} will play westminster melody and firework sounds on jan 1st at 12 a.m. for every timezone. check the bot's status to see which timezone is next to celebrate New Year's Eve."
     }
-  }
+  },
+
+  "tts": {
+    "content": {
+      "attachments": "this message contains attachments.",
+      "embeds": "this message contains embeds.",
+      "urls": "this message contains links.",
+      "attachments-embeds": "this message contains attachments and embeds.",
+      "attachments-urls": "this message contains attachments and links.",
+      "attachments-embeds-urls": "this message contains attachments, embeds, and links.",
+      "embeds-urls": "this message contains embeds and links."
+    },
+
+    "join": "{0} joined the voice channel.",
+    "leave": "{0} left the voice channel.",
+    "say": "{0} said: {1}"
+  },
 };

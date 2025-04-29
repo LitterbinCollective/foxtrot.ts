@@ -70,11 +70,11 @@ export class BaseCommand extends Command.Command {
         await this.t(ctx, error.message, ...error.formatValues)
       );
 
-    const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
+    const id = Sentry.captureException(error);
+    const embed = await buildRuntimeErrorEmbed(ctx.guild, id);
     ctx.reply({ embed });
 
     app.logger.error(error);
-    Sentry.captureException(error);
   }
 
   public async onTypeError(
