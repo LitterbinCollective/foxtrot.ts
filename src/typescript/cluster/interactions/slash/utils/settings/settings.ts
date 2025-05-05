@@ -1,13 +1,15 @@
 import { Interaction } from 'detritus-client';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 
-import { GuildSettings } from '@cluster/models';
-import { GuildSettingsStore } from '@cluster/stores';
+import { Queries } from '@/db';
+import { guildSettings } from '@/db/schema';
+import { GuildSettings } from '@/db/types';
 
 import { BaseCommandOption, BaseSlashCommand } from '../../../base';
 
-export const SettingChoices = Object.keys(GuildSettings.jsonSchema.properties)
-  .filter(x => x !== GuildSettings.idColumn)
-  .map(x => ({ name: x, value: x }));
+export const SettingChoices = getTableConfig(guildSettings).columns
+  .filter(x => !x.primary)
+  .map(x => ({ name: x.name, value: x.name }));
 
 export class SettingsInteractionContext extends Interaction.InteractionContext {
   public settings!: GuildSettings;
@@ -19,7 +21,7 @@ export class BaseSettingsCommandOption extends BaseCommandOption {
   public async onBeforeRun(ctx: Interaction.InteractionContext): Promise<boolean> {
     if (!ctx.guild) return false;
 
-    (ctx as SettingsInteractionContext).settings = await GuildSettingsStore.getOrCreate(
+    (ctx as SettingsInteractionContext).settings = await Queries.getOrCreateSettings(
       ctx.guild.id
     );
 

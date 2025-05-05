@@ -1,5 +1,6 @@
 import sox from '@cluster/managers/sox';
-import { Constants, listEffects } from '@cluster/utils';
+import { listEffects } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -34,7 +35,7 @@ export class EffectAddCommand extends BaseVoiceCommandOption {
     );
 
     embed.setTitle(
-      Constants.EMOJIS.PLUS +
+      app.emoji('PLUS') +
         ' ' +
         (await this.t(ctx, 'commands.effect.add', effect))
     );

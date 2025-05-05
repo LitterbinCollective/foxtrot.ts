@@ -109,7 +109,9 @@ class VoiceStore extends Store<string, NewVoice> {
 
     const voice = new NewVoice(voiceChannel, textChannel);
     this.set(voiceChannel.guildId, voice);
-    this.emit('voiceCreate', voiceChannel.guildId, voice);
+    voice.once('initialized', () =>
+      this.emit('voiceCreate', voiceChannel.guildId, voice)
+    );
     return voice;
   }
 

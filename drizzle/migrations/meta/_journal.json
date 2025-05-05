@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1746039490044,
+      "tag": "0000_glossy_red_shift",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1746039513148,
+      "tag": "0001_clumsy_omega_flight",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746047269636,
+      "tag": "0002_melted_korath",
+      "breakpoints": true
+    }
+  ]
+}

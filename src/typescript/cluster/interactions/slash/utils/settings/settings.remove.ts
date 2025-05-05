@@ -1,5 +1,10 @@
-import { GuildSettings } from '@cluster/models';
-import { Constants, UserError, listSettings } from '@cluster/utils';
+import { eq } from 'drizzle-orm';
+import { getTableConfig } from 'drizzle-orm/pg-core';
+
+import { UserError, listSettings } from '@cluster/utils';
+import { db } from '@/db';
+import { guildSettings } from '@/db/schema';
+import app from '@cluster/index';
 
 import {
   BaseSettingsCommandOption,
@@ -26,23 +31,25 @@ export class SettingsRemoveCommand extends BaseSettingsCommandOption {
 
   public async run(ctx: SettingsInteractionContext, { key }: { key: string }) {
     if (!ctx.guild) return;
-    const { properties } = GuildSettings.jsonSchema;
-    let prop;
+    const { columns } = getTableConfig(guildSettings);
 
-    if (
-      !(prop = properties[key as keyof typeof properties]) ||
-      key === GuildSettings.idColumn
-    )
+    const attribute = columns.find(x => x.name === key);
+    if (!attribute || attribute.primary)
       throw new UserError('commands.settings.unknown');
 
-    if (prop.type[prop.type.length - 1] !== 'null')
+    if (attribute.notNull)
       throw new UserError('commands.settings.not-null');
 
-    await ctx.settings.$query().patch({ [key]: null });
+    await db
+      .update(guildSettings)
+      .set({ [key]: null })
+      .where(eq(guildSettings.guildId, ctx.guild.id));
+
+    (ctx.settings as any)[key] = null; // when push comes to shove
 
     const embed = await listSettings(ctx.guild, ctx.settings);
     embed.setTitle(
-      Constants.EMOJIS.CHECK +
+      app.emoji('CHECK') +
         ' ' +
         (await this.t(
           ctx,

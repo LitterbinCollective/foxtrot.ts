@@ -3,8 +3,10 @@ import { RequestTypes } from 'detritus-client-rest';
 
 import { MediaServiceResponseInformation } from '@cluster/managers/mediaservices/types';
 import { Constants, durationInString } from '@cluster/utils';
+import app from '@cluster/index';
 
 import NewVoice from '.';
+import config from '@/managers/config';
 
 const ELLIPSIS = '...';
 const PROGRESS_BAR_LENGTH = 16;
@@ -28,7 +30,7 @@ export default class VoiceQueueAnnouncer {
   }
 
   public async createLoadingMessage() {
-    this.loadingMessage = await this.createMessage(Constants.EMOJIS.HOURGLASS);
+    this.loadingMessage = await this.createMessage(app.emoji('HOURGLASS'));
   }
 
   private playProgress(duration?: number) {
@@ -61,7 +63,7 @@ export default class VoiceQueueAnnouncer {
     this.current = streamInfo;
 
     const fromURL = typeof streamInfo.cover === 'string';
-    const title = Constants.EMOJIS.PLAY +
+    const title = app.emoji('PLAY') +
       ' ' +
       streamInfo.author +
       ' - ' +

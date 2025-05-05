@@ -3,7 +3,8 @@ import {
   Constants as DetritusConstants,
 } from 'detritus-client';
 
-import { Constants, listEffects } from '@cluster/utils';
+import { listEffects } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 
@@ -30,7 +31,7 @@ export default class EffectRemoveCommand extends BaseVoiceCommand {
       ctx.voice.effects.list
     );
     embed.setTitle(
-      Constants.EMOJIS.MINUS +
+      app.emoji('MINUS') +
         ' ' +
         (await this.t(ctx, 'commands.effect.remove', effect))
     );

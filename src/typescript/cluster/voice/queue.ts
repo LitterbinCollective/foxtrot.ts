@@ -12,7 +12,8 @@ import {
   MediaServiceResponseMedia,
   MediaServiceResponseMediaType,
 } from '@cluster/managers/mediaservices/types';
-import { Constants, UserError } from '@cluster/utils';
+import { UserError } from '@cluster/utils';
+import app from '@cluster/index';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
@@ -234,7 +235,7 @@ export default class VoiceQueue {
 
   public streamingError(err: any) {
     const error = Utils.Markup.codestring(Sentry.captureException(err));
-    this.announcer.createMessage(Constants.EMOJIS.BOMB + Constants.EMOJIS.PAPERCLIP + ' ' + error);
+    this.announcer.createMessage(app.emoji('BOMB') + app.emoji('PAPERCLIP') + ' ' + error);
     this.next();
   }
 

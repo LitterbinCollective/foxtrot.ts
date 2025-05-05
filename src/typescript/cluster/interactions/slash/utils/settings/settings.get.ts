@@ -1,6 +1,6 @@
 import { Utils } from 'detritus-client';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 
-import { GuildSettings } from '@cluster/models';
 import { UserError } from '@cluster/utils';
 
 import {
@@ -8,6 +8,7 @@ import {
   SettingChoices,
   SettingsInteractionContext
 } from './settings';
+import { guildSettings } from '@/db/schema';
 
 export class SettingsGetCommand extends BaseSettingsCommandOption {
   public name = 'get';
@@ -28,12 +29,10 @@ export class SettingsGetCommand extends BaseSettingsCommandOption {
 
   public async run(ctx: SettingsInteractionContext, { key }: { key: string }) {
     if (!ctx.guild) return;
-    const { properties } = GuildSettings.jsonSchema;
+    const { columns } = getTableConfig(guildSettings);
 
-    if (
-      !properties[key as keyof typeof properties] ||
-      key === GuildSettings.idColumn
-    )
+    const attribute = columns.find(x => x.name === key);
+    if (!attribute || attribute.primary)
       throw new UserError('commands.settings.unknown');
 
     let value = ctx.settings[key as keyof typeof ctx.settings];

@@ -4,7 +4,8 @@ import {
   Utils,
 } from 'detritus-client';
 
-import { Constants, listEffects } from '@cluster/utils';
+import { listEffects } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 import { COMMAND_NAME as COMMAND_NAME_GET } from './effect.get';
@@ -35,7 +36,7 @@ export default class EffectAddCommand extends BaseVoiceCommand {
     );
 
     embed.setTitle(
-      Constants.EMOJIS.PLUS +
+      app.emoji('PLUS') +
         ' ' +
         (await this.t(ctx, 'commands.effect.add', effect))
     );

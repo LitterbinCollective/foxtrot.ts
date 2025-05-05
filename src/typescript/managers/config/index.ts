@@ -2,6 +2,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { PackageJson, ValueOf } from 'type-fest';
 
+import { EMOJIS } from '@/utils/constants';
+
 import BaseManager from '..';
 import Config from './types';
 
@@ -55,10 +57,6 @@ export class ConfigManager extends BaseManager<ValueOf<Config>> {
 
   public get googleAssistantSettings() {
     return this.imported.googleAssistantSettings;
-  }
-
-  public get knex() {
-    return this.imported.knex;
   }
 
   public get shat() {

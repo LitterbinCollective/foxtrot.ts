@@ -1,6 +1,7 @@
-import { Constants as DetritusConstants, Utils } from 'detritus-client';
+import { Constants as DetritusConstants } from 'detritus-client';
 
-import { Constants, listOptions } from '@cluster/utils';
+import { listOptions } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -44,7 +45,7 @@ export class EffectSetCommand extends BaseVoiceCommandOption {
       ctx.voice.effects.getEffectInfo(effect);
     const embed = await listOptions(ctx.guild, name, options, optionsRange);
     embed.setTitle(
-      Constants.EMOJIS.CHECK +
+      app.emoji('CHECK') +
         ' ' +
         (await this.t(ctx, 'commands.effect.set', key, value))
     );

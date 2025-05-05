@@ -344,7 +344,7 @@ export default class DeezerService extends MediaService {
     );
     if (data.length === 0) throw new UserError('query-not-found');
 
-    const track = data.data[0].id;
+    const track = data[0].id;
     const responses = await this.download(
       'https://deezer.com/us/track/' + track,
       { track }

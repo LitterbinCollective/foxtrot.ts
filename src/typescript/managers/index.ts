@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync, watch } from 'fs';
 import { Transform } from 'stream';
 import { isAbsolute, join } from 'path';
 
-import { Constants, Logger } from '@/utils';
+import { Constants, convertToType, Logger } from '@/utils';
 
 export interface BaseManagerOptions {
   create?: boolean;
@@ -90,7 +90,7 @@ export default class BaseManager<T> {
     this.rawImported = rawImported;
 
     this.watch = this.watch.bind(this);
-    if (options.watch)
+    if (options.watch && !convertToType(process.env.MANAGER_WATCH_DISABLE, 'boolean'))
       watch(options.scanPath, this.watch);
   }
 

@@ -1,7 +1,7 @@
 import { Structures } from 'detritus-client';
 import { join } from 'path';
 
-import { GuildSettingsStore } from '@cluster/stores';
+import { Queries } from '@/db';
 import BaseManager from '@/managers';
 
 const DEFAULT_LANG = 'en';
@@ -27,7 +27,7 @@ export class I18NManager extends BaseManager<any> {
     if (typeof guild === 'string')
       lang = guild;
     else {
-      const settings = await GuildSettingsStore.getOrCreate(guild.id);
+      const settings = await Queries.getOrCreateSettings(guild.id);
       lang = guild.preferredLocale.split('-')[0];
 
       if (settings.lang && settings.lang in this.imported)

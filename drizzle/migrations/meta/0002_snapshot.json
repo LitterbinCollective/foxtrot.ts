@@ -1,0 +1,121 @@
+{
+  "id": "e7f43d30-538e-45bb-86e2-87b78591f118",
+  "prevId": "273ad367-8e29-46aa-994f-6d010a460f4c",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.guildSettings": {
+      "name": "guildSettings",
+      "schema": "",
+      "columns": {
+        "guildId": {
+          "name": "guildId",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "prefix": {
+          "name": "prefix",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "special": {
+          "name": "special",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "allowCorrupt": {
+          "name": "allowCorrupt",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "lang": {
+          "name": "lang",
+          "type": "langSetting",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'en'"
+        },
+        "ephemeral": {
+          "name": "ephemeral",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "defaultVolume": {
+          "name": "defaultVolume",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 100
+        },
+        "tts": {
+          "name": "tts",
+          "type": "ttsSetting",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ttsTellMessageAuthor": {
+          "name": "ttsTellMessageAuthor",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "ttsTellJoinLeave": {
+          "name": "ttsTellJoinLeave",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.langSetting": {
+      "name": "langSetting",
+      "schema": "public",
+      "values": [
+        "en",
+        "ja",
+        "ru",
+        "sv",
+        "ua"
+      ]
+    },
+    "public.ttsSetting": {
+      "name": "ttsSetting",
+      "schema": "public",
+      "values": [
+        "chatsounds",
+        "yandex"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -12,8 +12,8 @@ export default class Cookie extends Map<string, string> {
     if (values instanceof Buffer)
       values = values.toString('utf-8');
 
-    for (const cookie of values.split(';')) {
-      const [ key, value ] = cookie.split('=').map(x => x.trim());
+    for (const cookie of values.toString().split(';')) {
+      const [ key, value ] = cookie.split('=').map((x: string) => x.trim());
       this.set(key, value);
     }
   }

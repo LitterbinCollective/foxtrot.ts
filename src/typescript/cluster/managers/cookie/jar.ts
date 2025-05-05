@@ -13,10 +13,7 @@ export default class CookieJar {
   constructor(file: string, data: string | Buffer) {
     this.filename = file;
 
-    if (data instanceof Buffer)
-      data = data.toString('utf-8');
-
-    for (const cookie of data.split('\n'))
+    for (const cookie of data.toString('utf-8').split('\n'))
       this.cookies.push(new Cookie(this, cookie));
   }
 

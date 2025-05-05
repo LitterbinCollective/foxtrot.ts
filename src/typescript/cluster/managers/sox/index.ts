@@ -1,7 +1,8 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { join } from 'path';
 
-import { Constants, convertToType, UserError } from '@cluster/utils';
+import { Constants, UserError } from '@cluster/utils';
+import { convertToType } from '@/utils';
 
 import {
   BaseEffect,

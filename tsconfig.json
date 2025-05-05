@@ -9,11 +9,13 @@
     "resolveJsonModule": true,
     "strict": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "baseUrl": "./src/typescript/",
     "paths": {
       "@/*": ["./*"],
       "@cluster/*": ["./cluster/*"],
-      "@manager/*": ["./manager/*"]
+      "@manager/*": ["./manager/*"],
+      "@db/*": ["./db/*"]
     },
   },
 }

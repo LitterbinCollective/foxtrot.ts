@@ -1,6 +1,7 @@
 import { Interaction, Utils } from 'detritus-client';
 
 import { Constants } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseSlashCommand } from '../../base';
 
@@ -15,12 +16,12 @@ export default class PingCommand extends BaseSlashCommand {
     const embed = new Utils.Embed({
       title: await this.t(ctx, 'commands.ping.pong'),
       description:
-        Constants.EMOJIS.LINK +
+        app.emoji('LINK') +
         ' ' +
         rest +
         unit +
         '\n' +
-        Constants.EMOJIS.SATELLITE +
+        app.emoji('SATELLITE') +
         ' ' +
         gateway +
         unit,

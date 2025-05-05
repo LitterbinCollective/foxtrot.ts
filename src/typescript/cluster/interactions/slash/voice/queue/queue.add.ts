@@ -1,9 +1,10 @@
 import { Interaction, Constants as DetritusConstants, Structures } from 'detritus-client';
 
 import { VoiceStore } from '@cluster/stores';
+import { UserError } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseCommandOption } from '../../../base';
-import { Constants, UserError } from '@cluster/utils';
 
 export const QUEUE_ADD_DESCRIPTION = 'add media to the queue';
 export const QUEUE_ADD_OPTIONS = [
@@ -57,6 +58,6 @@ export class QueueAddCommand extends BaseCommandOption {
     if (!voice.initialized) throw new UserError('voice-check.not-initialized');
 
     await voice.queue.push(media, ctx.user);
-    await ctx.editOrRespond(Constants.EMOJIS.CHECK);
+    await ctx.editOrRespond(app.emoji('CHECK'));
   }
 }

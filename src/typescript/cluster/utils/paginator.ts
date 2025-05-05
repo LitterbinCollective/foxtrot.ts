@@ -8,8 +8,8 @@ import {
 import { RequestTypes } from 'detritus-client-rest';
 
 import { t } from '@cluster/managers/i18n';
-
 import { Constants } from '@/utils';
+import app from '@cluster/index';
 
 export interface PaginatorOptions {
   maximumPages?: number;
@@ -29,31 +29,15 @@ enum PageButtonIDs {
   STOP = 'stop',
 }
 
-const PageButtons = {
-  [PageButtonIDs.FIRST]: {
-    emoji: Constants.EMOJIS.FAST_REVERSE,
-    style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
-  },
-  [PageButtonIDs.PREVIOUS]: {
-    emoji: Constants.EMOJIS.PREVIOUS,
-    style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
-  },
-  [PageButtonIDs.NEXT]: {
-    emoji: Constants.EMOJIS.NEXT,
-    style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
-  },
-  [PageButtonIDs.LAST]: {
-    emoji: Constants.EMOJIS.FAST_FORWARD,
-    style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
-  },
-  [PageButtonIDs.STOP]: {
-    emoji: Constants.EMOJIS.STOP,
-    style: DetritusConstants.MessageComponentButtonStyles.DANGER,
-  },
-};
+interface PageButton {
+  emoji: string;
+  style: DetritusConstants.MessageComponentButtonStyles;
+}
 
 const EXPIRATION = 60 * 1000;
 const RATE_LIMIT = 300;
+
+let _pageButtons: Record<string, PageButton>;
 
 export class Paginator {
   public currentPage: number = 0;
@@ -61,7 +45,7 @@ export class Paginator {
   private maximumPages = Infinity;
   private message!: Structures.Message;
   private lastRan: number = 0;
-  private onEmbed: (page: any, embed: Utils.Embed) => void;
+  private onEmbed: (page: any, embed: Utils.Embed) => Promise<void> | void;
   private onKill: () => void;
   private pages: any[];
   private readonly context: Command.Context | Interaction.InteractionContext;
@@ -71,6 +55,9 @@ export class Paginator {
     ctx: Command.Context | Interaction.InteractionContext,
     options: PaginatorOptions
   ) {
+    this.run = this.run.bind(this);
+    this.kill = this.kill.bind(this);
+
     this.context = ctx;
 
     this.pages = options.pages;
@@ -87,6 +74,31 @@ export class Paginator {
     else this.target = [ctx.userId];
 
     if (options.message) this.message = options.message;
+  }
+
+  private get pageButtons() {
+    return _pageButtons || (_pageButtons = {
+      [PageButtonIDs.FIRST]: {
+        emoji: app.emoji('FAST_REWIND'),
+        style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
+      },
+      [PageButtonIDs.PREVIOUS]: {
+        emoji: app.emoji('PREVIOUS'),
+        style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
+      },
+      [PageButtonIDs.NEXT]: {
+        emoji: app.emoji('NEXT'),
+        style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
+      },
+      [PageButtonIDs.LAST]: {
+        emoji: app.emoji('FAST_FORWARD'),
+        style: DetritusConstants.MessageComponentButtonStyles.SECONDARY,
+      },
+      [PageButtonIDs.STOP]: {
+        emoji: app.emoji('STOP'),
+        style: DetritusConstants.MessageComponentButtonStyles.DANGER,
+      },
+    });
   }
 
   private get channelId() {
@@ -107,37 +119,37 @@ export class Paginator {
   private get components() {
     const components = new Utils.Components({
       timeout: EXPIRATION,
-      onTimeout: this.kill.bind(this),
-      run: this.run.bind(this),
+      onTimeout: this.kill,
+      run: this.run,
     });
 
     components.addButton({
       customId: PageButtonIDs.FIRST,
       disabled: this.currentPage === 0,
-      ...PageButtons[PageButtonIDs.FIRST],
+      ...this.pageButtons[PageButtonIDs.FIRST],
     });
 
     components.addButton({
       customId: PageButtonIDs.PREVIOUS,
       disabled: this.currentPage - 1 === -1,
-      ...PageButtons[PageButtonIDs.PREVIOUS],
+      ...this.pageButtons[PageButtonIDs.PREVIOUS],
     });
 
     components.addButton({
       customId: PageButtonIDs.NEXT,
       disabled: this.currentPage + 1 === this.pages.length,
-      ...PageButtons[PageButtonIDs.NEXT],
+      ...this.pageButtons[PageButtonIDs.NEXT],
     });
 
     components.addButton({
       customId: PageButtonIDs.LAST,
       disabled: this.currentPage === this.pages.length - 1,
-      ...PageButtons[PageButtonIDs.LAST],
+      ...this.pageButtons[PageButtonIDs.LAST],
     });
 
     components.addButton({
       customId: PageButtonIDs.STOP,
-      ...PageButtons[PageButtonIDs.STOP],
+      ...this.pageButtons[PageButtonIDs.STOP],
     });
 
     return components;
@@ -200,7 +212,8 @@ export class Paginator {
       color: Constants.EMBED_COLORS.DEFAULT,
     });
 
-    if (this.onEmbed) this.onEmbed(this.pages[this.currentPage], embed);
+    if (this.onEmbed)
+      await this.onEmbed(this.pages[this.currentPage], embed);
 
     return embed;
   }

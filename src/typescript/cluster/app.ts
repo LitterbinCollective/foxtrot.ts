@@ -4,15 +4,18 @@ import {
   CommandClient,
   InteractionCommandClient,
 } from 'detritus-client';
-import Knex from 'knex';
-import { Model } from 'objection';
 
-import { Logger } from '@cluster/utils';
-import { GuildSettingsStore, applicationCreated } from '@cluster/stores';
+import { Constants, Logger } from '@cluster/utils';
+import { applicationCreated } from '@cluster/stores';
 import mediaservice from '@cluster/managers/mediaservices';
 
 import '@cluster/managers/special';
 import config from '@/managers/config';
+import { Queries } from '@/db';
+
+type Emojis = {
+  [K in Extract<keyof typeof Constants.EMOJIS, string>]?: string;
+}
 
 export default class Application {
   public startAt: number;
@@ -20,6 +23,7 @@ export default class Application {
   public readonly clusterClient: ClusterClient;
   public readonly interactionCommandClient: InteractionCommandClient;
   public readonly logger: Logger;
+  private emojis: Emojis = {};
 
   constructor() {
     const { token, prefix } = config.app;
@@ -57,7 +61,7 @@ export default class Application {
         activateOnEdits: true,
         onPrefixCheck: async (ctx) => {
           if (ctx.guildId) {
-            const settings = await GuildSettingsStore.getOrCreate(ctx.guildId);
+            const settings = await Queries.getOrCreateSettings(ctx.guildId);
             if (settings.prefix)
               return [settings.prefix];
           }
@@ -70,7 +74,6 @@ export default class Application {
         })
         .catch(err => {
           this.logger.error(err);
-          process.exit(1);
         });
 
       mediaservice.addPrefixedCommands(this.commandClient);
@@ -86,18 +89,10 @@ export default class Application {
         })
         .catch(err => {
           this.logger.error(err);
-          process.exit(1);
         });
 
       mediaservice.addSlashCommands(this.interactionCommandClient);
     }
-
-    const knexConfig = config.knex[process.env.NODE_ENV || 'development']
-    if (!knexConfig)
-      throw new Error('no knex config for specified NODE_ENV or "development"');
-
-    const knex = Knex(knexConfig);
-    Model.knex(knex);
 
     this.startAt = Date.now();
 
@@ -105,8 +100,28 @@ export default class Application {
     this.initialize();
   }
 
+  public emoji(emoji: keyof typeof this.emojis) {
+    return this.emojis[emoji] || Constants.EMOJIS[emoji];
+  }
+
+  private async getEmojis() {
+    const shard = this.clusterClient.shards.first();
+    if (!shard) return;
+
+    const { applicationEmojis } = shard;
+    await applicationEmojis.fill();
+
+    for (const key in Constants.EMOJIS) {
+      const emoji = applicationEmojis.find(x => x.name === key.toLowerCase());
+      if (!emoji) continue;
+
+      this.emojis[key as keyof typeof this.emojis] = emoji.format;
+    }
+  }
+
   private async initialize() {
     await this.clusterClient.run();
+    await this.getEmojis();
     await this.commandClient.run();
     await this.interactionCommandClient.run();
 

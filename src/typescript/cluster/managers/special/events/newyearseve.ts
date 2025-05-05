@@ -6,7 +6,7 @@ import { Timers } from 'detritus-utils';
 import app from '@cluster/index';
 import sh from '@cluster/chatsounds';
 import { t } from '@cluster/managers/i18n';
-import { GuildSettingsStore, VoiceStore } from '@cluster/stores';
+import { VoiceStore } from '@cluster/stores';
 import { Constants } from '@/utils';
 import Voice from '@cluster/voice';
 
@@ -298,9 +298,7 @@ export default class NewYearsEveEvent extends WinterEvent {
   }
 
   public async onVoiceCreated(guildId: string, voice: Voice) {
-    const settings = await GuildSettingsStore.getOrCreate(guildId);
-
-    if (settings.special) {
+    if (voice.special) {
       if (voice.initialized) this.announce(voice);
       else voice.once('initialized', () => this.announce(voice));
     }

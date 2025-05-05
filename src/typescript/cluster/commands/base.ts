@@ -87,6 +87,6 @@ export class BaseCommand extends Command.Command {
       const embed = await buildArgumentErrorEmbed(ctx.guild, errors);
       ctx.reply({ embed });
     } else if (ctx.channel?.canAddReactions)
-      ctx.message.react(Constants.EMOJIS.QUESTION_MARK);
+      ctx.message.react(app.emoji('QUESTION_MARK'));
   }
 }

@@ -1,12 +1,17 @@
-import { Constants as DetritusConstants, Utils } from 'detritus-client';
+import { Constants as DetritusConstants } from 'detritus-client';
+import { eq } from 'drizzle-orm';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 
 import {
   BaseSettingsCommandOption,
   SettingChoices,
   SettingsInteractionContext
 } from './settings';
-import { GuildSettings } from '@cluster/models';
-import { Constants, UserError, convertToType, listSettings } from '@cluster/utils';
+import { UserError, listSettings } from '@cluster/utils';
+import { convertToType } from '@/utils';
+import { guildSettings } from '@/db/schema';
+import { db } from '@/db';
+import app from '@cluster/index';
 
 export class SettingsSetCommand extends BaseSettingsCommandOption {
   public name = 'set';
@@ -36,23 +41,28 @@ export class SettingsSetCommand extends BaseSettingsCommandOption {
     { key, value }: { key: string; value: any }
   ) {
     if (!ctx.guild) return;
-    const { properties } = GuildSettings.jsonSchema;
+    const { columns } = getTableConfig(guildSettings);
 
-    const attribute = properties[key as keyof typeof properties];
-    if (!attribute || key === GuildSettings.idColumn)
+    const attribute = columns.find(x => x.name === key);
+    if (!attribute || attribute.primary)
       throw new UserError('commands.settings.unknown');
 
-    let type = attribute.type;
+    if (attribute.enumValues) {
+      if (!attribute.enumValues.includes(value))
+        throw new UserError('commands.argument-error');
+    } else
+      value = convertToType(value, attribute.columnType);
 
-    if (Array.isArray(type)) type = type[0];
-    else type = type.split(',')[0];
-    value = convertToType(value, type);
+    await db
+      .update(guildSettings)
+      .set({ [key]: value })
+      .where(eq(guildSettings.guildId, ctx.guild.id));
 
-    await ctx.settings.$query().patch({ [key]: value });
+    (ctx.settings as any)[key] = value; // when push comes to shove
 
     const embed = await listSettings(ctx.guild, ctx.settings);
     embed.setTitle(
-      Constants.EMOJIS.CHECK +
+      app.emoji('CHECK') +
         ' ' +
         (await this.t(ctx, 'commands.settings.set', key, value))
     );

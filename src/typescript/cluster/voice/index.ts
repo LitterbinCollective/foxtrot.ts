@@ -4,11 +4,10 @@ import * as Sentry from '@sentry/node';
 
 import chatsounds from '@cluster/chatsounds';
 import { t } from '@cluster/managers/i18n';
-import { GuildSettingsStore, VoiceStore } from '@cluster/stores';
+import { VoiceStore } from '@cluster/stores';
 import { Constants, UserError } from '@cluster/utils';
 import sox, { SoxManager } from '@cluster/managers/sox';
 import tts, { TTSManager } from '@cluster/managers/tts';
-import FFMpeg from '@cluster/utils/audio/ffmpeg';
 
 import VoicePipeline from './pipeline';
 import VoiceQueue from './queue';
@@ -16,6 +15,7 @@ import modules from './modules';
 import BaseModule from './modules/basemodule';
 import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import { Queries } from '@/db';
 
 export * as Announcer from './announcer';
 export * as Modules from './modules';
@@ -82,14 +82,14 @@ export default class Voice extends EventEmitter {
     this.effects.createAudioEffectManager();
     this.queue = new VoiceQueue(this, logChannel);
 
-    const settings = await GuildSettingsStore.getOrCreate(channel.guildId);
+    const settings = await Queries.getOrCreateSettings(channel.guildId);
     this.special = settings.special;
     this.allowCorrupt = settings.allowCorrupt;
     this.pipeline.volume = settings.defaultVolume;
 
     this.tts = tts.clone();
     this.tts.voice = this;
-    this.tts.pick = settings.tts;
+    this.tts.pick = settings.tts || undefined;
     this.tts.tellJoinLeave = settings.ttsTellJoinLeave;
     this.tts.tellMessageAuthor = settings.ttsTellMessageAuthor;
 
@@ -224,7 +224,7 @@ export default class Voice extends EventEmitter {
 
     try {
       // TODO: worker
-      const context = chatsounds.new(script);
+      const context = chatsounds.new(script.toString());
       const buffer = await context.buffer({
         sampleRate: Constants.OPUS_SAMPLE_RATE,
         audioChannels: Constants.OPUS_AUDIO_CHANNELS,

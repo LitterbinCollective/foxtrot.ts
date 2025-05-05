@@ -2,10 +2,9 @@ import { Constants as DetritusConstants, Interaction } from 'detritus-client';
 import * as Sentry from '@sentry/node';
 
 import { checkPermission, UserError, buildRuntimeErrorEmbed } from '@cluster/utils';
-
 import app from '@cluster/index';
 import { t } from '@cluster/managers/i18n';
-import { GuildSettingsStore } from '@cluster/stores';
+import { Queries } from '@/db';
 
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
@@ -19,7 +18,7 @@ export class BaseInteractionCommand<
   ): Promise<boolean> {
     if (!ctx.guild) return false;
 
-    const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
+    const settings = await Queries.getOrCreateSettings(ctx.guild.id);
     let options: { flags: DetritusConstants.MessageFlags } | undefined;
 
     if (settings.ephemeral || this.ownerOnly)

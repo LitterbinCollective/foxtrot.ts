@@ -13,15 +13,14 @@ export const OPUS_REQUIRED_SAMPLES =
 export const VOICE_EFFECTS_STACK_LIMIT = 8;
 
 export enum EMBED_COLORS {
-  DEFAULT = 0xf9d158,
-  ERROR = 0xe00d61,
+  DEFAULT = 0xffee3e,
+  ERROR = 0x511cff,
   WARNING = 0xe0af0d,
 }
 
 export enum EMOJIS {
   OK = '👌',
   RADIO = '🔘',
-  STOPWATCH = '⏱️',
   PLUS = '➕',
   MINUS = '➖',
   CHECK = '✅',
@@ -34,11 +33,12 @@ export enum EMOJIS {
   PAPERCLIP = '📎',
 
   PLAY = '▶️',
-  FAST_REVERSE = '⏪',
+  FAST_REWIND = '⏪',
   FAST_FORWARD = '⏩',
   PREVIOUS = '⏮',
   NEXT = '⏭',
   STOP = '⏹',
+  PAUSE = '⏸️'
 }
 
 export const YOUTUBE_APPLICATION_ID = '880218394199220334';

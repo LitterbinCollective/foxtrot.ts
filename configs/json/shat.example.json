@@ -17,12 +17,12 @@
       ],
       "useMsgPack": true
     },
-  
+
     "Metastruct/garrysmod-chatsounds#master": {
       "bases": ["sound/chatsounds/autoadd"],
       "useMsgPack": false
     },
-  
+
     "PAC3-Server/chatsounds#master": {
       "bases": ["sounds/chatsounds"],
       "useMsgPack": false

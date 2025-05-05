@@ -4,6 +4,7 @@ import EventEmitter from 'events';
 import GoogleAssistant from 'google-assistant';
 import { join } from 'path';
 
+import app from '@cluster/index';
 import config from '@/managers/config';
 import { Constants, UserError } from '@cluster/utils';
 
@@ -79,7 +80,7 @@ export default class GoogleAssistantModule extends BaseModule {
   }
 
   private formTitle(trans: string) {
-    return Constants.EMOJIS.PLAY + ' ' + Utils.Markup.codestring(trans);
+    return app.emoji('PLAY') + ' ' + Utils.Markup.codestring(trans);
   }
 
   private async onTranscription(data: { transcription: string, done: boolean }) {

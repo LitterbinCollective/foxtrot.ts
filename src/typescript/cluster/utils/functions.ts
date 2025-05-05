@@ -1,13 +1,14 @@
 import { Command, Interaction, Structures, Utils } from 'detritus-client';
 import { RestClient } from 'detritus-client/lib/rest';
 import { Client } from 'detritus-client-rest';
+import { getTableConfig } from 'drizzle-orm/pg-core';
 
-import { GuildSettings } from '@cluster/models';
 import { t } from '@cluster/managers/i18n';
 import config from '@/managers/config';
 import { Constants } from '@cluster/utils';
-
-import UserError from './user-error';
+import { guildSettings } from '@/db/schema';
+import { GuildSettings } from '@/db/types';
+import app from '@cluster/index';
 
 export async function buildRuntimeErrorEmbed(
   guild: Structures.Guild,
@@ -15,7 +16,7 @@ export async function buildRuntimeErrorEmbed(
 ) {
   const embed = new Utils.Embed({
     title:
-      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'runtime-error.title')),
+      app.emoji('BOMB') + ' ' + (await t(guild, 'runtime-error.title')),
     description: await t(guild, 'runtime-error.description'),
     color: Constants.EMBED_COLORS.ERROR,
   });
@@ -32,7 +33,7 @@ export async function buildArgumentErrorEmbed(
 ) {
   const embed = new Utils.Embed({
     title:
-      Constants.EMOJIS.QUESTION_MARK +
+      app.emoji('QUESTION_MARK') +
       ' ' +
       (await t(guild, 'commands.argument-error')),
     color: Constants.EMBED_COLORS.ERROR,
@@ -109,16 +110,16 @@ export async function listSettings(
   guild: Structures.Guild,
   settings: GuildSettings
 ) {
-  const { properties } = GuildSettings.jsonSchema;
   const description = [];
-  for (const key in properties)
-    if (key !== GuildSettings.idColumn)
+  for (const column of getTableConfig(guildSettings).columns) {
+    if (!column.primary)
       description.push(
-        key +
+        column.name +
           ' = ' +
-          (settings[key as keyof typeof settings]?.toString() ||
+          (settings[column.name as keyof typeof settings]?.toString() ||
             (await t(guild, 'commands.settings.no-value')))
       );
+  }
   return new Utils.Embed({
     title: await t(guild, 'commands.settings.current'),
     color: Constants.EMBED_COLORS.DEFAULT,
@@ -148,50 +149,6 @@ export function sendFeedback(
   });
 
   return true;
-}
-
-export function convertToType(value: any, type: string) {
-  switch (type) {
-    case 'string':
-      value = value.toString();
-      break;
-    case 'integer':
-    case 'number':
-      value = +value;
-      if (type === 'integer') {
-        value = Math.floor(value);
-        type = 'number'; // let's also set this so sanity check would work
-      }
-      if (isNaN(value)) throw new UserError('invalid-number');
-      break;
-    case 'boolean':
-      value = !(
-        value === undefined ||
-        value === false ||
-        value === 0 ||
-        value === '0' ||
-        value === 'false' ||
-        value === 'off'
-      );
-      break;
-    case 'undefined':
-      value = undefined;
-      break;
-    default:
-      throw new Error('could not convert given value to needed type! ' + type);
-  }
-
-  // safety check
-  const type2 = typeof value;
-  if (type !== type2)
-    throw new Error(
-      'the type of value is not equal to the type of a specified type: ' +
-        type2 +
-        ' !== ' +
-        type
-    );
-
-  return value;
 }
 
 // https://gitlab.com/Cynosphere/HiddenPhox/-/blob/ffa8ceec9203cb5667708538d4e520136929dbf6/src/lib/utils.js#L340
