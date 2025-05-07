@@ -212,7 +212,6 @@ export default class DeezerService extends MediaService {
       'get',
       '/platform/generic/album/' + albumId
     );
-    console.log(albumData);
 
     if (!albumData.data) throw new Error('invalid response from deezer api');
 

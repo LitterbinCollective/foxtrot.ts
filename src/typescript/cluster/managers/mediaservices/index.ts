@@ -184,8 +184,8 @@ export class MediaServiceManager extends BaseManager<MediaService> {
   constructor() {
     super({
       create: true,
-      loggerTag: 'MediaServiceManager',
-      scanPath: join(__dirname, 'services/'),
+      logger: 'Media',
+      path: join(__dirname, 'services/'),
     });
 
     this.formLookup();

@@ -2,7 +2,7 @@ import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { join } from 'path';
 
 import { Constants, UserError } from '@cluster/utils';
-import { convertToType } from '@/utils';
+import { convertToType, Logger } from '@/utils';
 
 import {
   BaseEffect,
@@ -18,8 +18,8 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
   constructor(_?: BaseManagerOptions, rawImported?: Record<string, any>) {
     super(
       {
-        loggerTag: 'SoX Manager',
-        scanPath: join(__dirname, 'effects/'),
+        logger: 'SoX',
+        path: join(__dirname, 'effects/'),
       },
       rawImported
     );
@@ -165,7 +165,7 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
     ]);
 
     this.sox.stdout.on('data', chunk => this.push(chunk));
-    this.sox.stderr.on('data', data => console.log(data.toString()));
+    this.sox.stderr.on('data', data => Logger.log(data.toString()));
     this.sox.stdin.on('error', e => {
       this.logger.error('sox.stdin spew an error:', e);
       this.logger.error('arguments used:', this.args);

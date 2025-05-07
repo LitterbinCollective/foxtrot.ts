@@ -10,6 +10,99 @@ import { guildSettings } from '@/db/schema';
 import { GuildSettings } from '@/db/types';
 import app from '@cluster/index';
 
+import * as Sentry from '@sentry/node';
+
+interface ContextLike {
+  user: {
+    id: string;
+    username: string;
+    discriminator: string;
+  };
+  message?: {
+    id: string;
+    content: string;
+    timestamp: Date;
+    editedTimestamp: Date | null;
+  };
+  channel: {
+    id: string;
+    name?: string;
+    isDm: boolean;
+  } | null;
+  guild: {
+    id: string;
+    name: string;
+    region?: string;
+    memberCount?: number;
+  } | null;
+  shardId?: number;
+}
+
+export function defineDefaultSentryContext(ctx: ContextLike, scope: Sentry.Scope, settings?: GuildSettings) {
+  scope.setUser({
+    id: ctx.user.id,
+    username: ctx.user.username,
+    discriminator: ctx.user.discriminator,
+  });
+
+  if (ctx.guild)
+    scope.setContext('guild', {
+      id: ctx.guild.id,
+      name: ctx.guild.name,
+      region: ctx.guild.region,
+      memberCount: ctx.guild.memberCount,
+      settings
+    });
+
+  if (ctx.channel)
+    scope.setContext('channel', {
+      id: ctx.channel.id,
+      name: ctx.channel.name,
+      isDm: ctx.channel.isDm,
+    });
+
+  if (ctx.message)
+    scope.setContext('message', {
+      id: ctx.message.id,
+      timestamp: ctx.message.timestamp,
+      editedTimestamp: ctx.message.editedTimestamp,
+      content: ctx.message.content,
+    });
+
+  scope.setContext('client', {
+    shardId: ctx.shardId ?? 'unknown',
+  });
+}
+
+export function logCommandErrorToSentry(
+  ctx: ContextLike,
+  settings: GuildSettings,
+  error: Error,
+  commandName: string,
+  args: any
+): string {
+  let eventId = '';
+
+  Sentry.withScope((scope) => {
+    defineDefaultSentryContext(ctx, scope, settings);
+
+    scope.setContext('command', {
+      name: commandName,
+      args
+    });
+
+    eventId = Sentry.captureException(error, {
+      mechanism: {
+        type: 'cmd_handler_' + ctx.constructor.name.toLowerCase(),
+        handled: true
+      }
+    });
+  });
+
+  return eventId;
+}
+
+
 export async function buildRuntimeErrorEmbed(
   guild: Structures.Guild,
   id?: string

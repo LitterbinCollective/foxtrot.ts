@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/node';
 import chatsounds from '@cluster/chatsounds';
 import { t } from '@cluster/managers/i18n';
 import { VoiceStore } from '@cluster/stores';
-import { Constants, UserError } from '@cluster/utils';
+import { Constants, defineDefaultSentryContext, UserError } from '@cluster/utils';
 import sox, { SoxManager } from '@cluster/managers/sox';
 import tts, { TTSManager } from '@cluster/managers/tts';
 
@@ -219,7 +219,7 @@ export default class Voice extends EventEmitter {
     );
   }
 
-  public async playSoundeffect(script: string | Buffer) {
+  public async playChatsoundScript(script: string | Buffer) {
     if (script instanceof Buffer) return this.pipeline.playBuffer(script);
 
     try {
@@ -233,7 +233,21 @@ export default class Voice extends EventEmitter {
       if (context.mute) this.pipeline.clearReadableArray();
       if (buffer) this.pipeline.playBuffer(buffer);
     } catch (err) {
-      const id = Sentry.captureException(err);
+      let id = '';
+
+      Sentry.withScope(scope => {
+        scope.setContext('chatsound_info', {
+          script
+        });
+
+        id = Sentry.captureException(err, {
+          mechanism: {
+            type: 'voice_play_soundeffect',
+            handled: true
+          }
+        });
+      });
+
       throw new UserError('runtime-error.min', Utils.Markup.codestring(id));
     }
   }

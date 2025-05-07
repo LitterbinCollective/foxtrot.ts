@@ -8,13 +8,15 @@ import * as Sentry from '@sentry/node';
 import { t } from '@cluster/managers/i18n';
 import {
   checkPermission,
-  Constants,
   UserError,
   buildArgumentErrorEmbed,
-  buildRuntimeErrorEmbed
+  buildRuntimeErrorEmbed,
+  Logger,
+  logCommandErrorToSentry
 } from '@cluster/utils';
 
 import app from '..';
+import { getOrCreateSettings } from '@/db/queries';
 
 export class BaseCommand extends Command.Command {
   public manageGuildOnly = false;
@@ -40,7 +42,7 @@ export class BaseCommand extends Command.Command {
         return true;
       }
 
-      if (ctx.channel?.canAddReactions) ctx.message.react('🔒');
+      if (ctx.channel?.canAddReactions) ctx.message.react(app.emoji('LOCK'));
     } catch (err) {}
 
     return false;
@@ -60,7 +62,7 @@ export class BaseCommand extends Command.Command {
 
   public async onRunError(
     ctx: Command.Context,
-    _args: Command.ParsedArgs,
+    args: Command.ParsedArgs,
     error: Error
   ) {
     if (!ctx.guild || !ctx.channel?.canMessage) return
@@ -70,11 +72,17 @@ export class BaseCommand extends Command.Command {
         await this.t(ctx, error.message, ...error.formatValues)
       );
 
-    const id = Sentry.captureException(error);
+    const id = logCommandErrorToSentry(
+      ctx,
+      await getOrCreateSettings(ctx.guild.id),
+      error,
+      this.name,
+      args
+    );
     const embed = await buildRuntimeErrorEmbed(ctx.guild, id);
     ctx.reply({ embed });
 
-    app.logger.error(error);
+    Logger.error(error);
   }
 
   public async onTypeError(

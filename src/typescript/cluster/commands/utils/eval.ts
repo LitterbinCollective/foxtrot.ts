@@ -15,7 +15,7 @@ export default class EvalCommand extends BaseCommand {
           Constants.DiscordRegexNames.TEXT_CODEBLOCK,
           value
         );
-        if (matches.length > 0) return matches[0].text;
+        if (matches.length > 0) return matches[0].matched;
         return value;
       },
       label: 'code',
@@ -35,7 +35,7 @@ export default class EvalCommand extends BaseCommand {
       code = await response.text();
     }
 
-    let message = await runJS(ctx, code, async);
+    const message = await runJS(ctx, code, async);
 
     await ctx.user.createMessage(
       Utils.Markup.codeblock(String(message), { language: 'js' })

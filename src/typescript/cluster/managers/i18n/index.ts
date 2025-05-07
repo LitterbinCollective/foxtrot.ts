@@ -11,8 +11,8 @@ export class I18NManager extends BaseManager<any> {
   constructor() {
     super({
       create: false,
-      loggerTag: 'I18NManager',
-      scanPath: join(__dirname, 'lang/'),
+      logger: 'i18n',
+      path: join(__dirname, 'lang/'),
     });
 
     this.translate = this.translate.bind(this);

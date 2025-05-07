@@ -112,7 +112,6 @@ export default class SpotifyService extends MediaService {
     switch (true) {
       case ('track' in matches): {
         const object = await this.spotifyDl.getTrack(matches.track as string);
-        console.log(object);
         return this.formResponse(object);
       };
       case ('album' in matches): {

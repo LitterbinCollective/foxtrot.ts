@@ -22,8 +22,8 @@ export class TTSManager extends BaseManager<BaseTTSService> {
     super(
       {
         create: true,
-        loggerTag: 'TTS',
-        scanPath: join(__dirname, 'services/'),
+        logger: 'TTS',
+        path: join(__dirname, 'services/'),
       },
       rawImported
     );

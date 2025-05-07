@@ -25,3 +25,5 @@ dev.sqlite3
 crash.*.log
 .pid
 ag.txt
+# Sentry Config File
+.sentryclirc

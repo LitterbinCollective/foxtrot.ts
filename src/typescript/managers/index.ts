@@ -6,9 +6,9 @@ import { Constants, convertToType, Logger } from '@/utils';
 
 export interface BaseManagerOptions {
   create?: boolean;
-  constructorArgs?: any[];
-  loggerTag?: string;
-  scanPath: string;
+  args?: any[];
+  logger?: string;
+  path: string;
   file?: boolean;
   recursive?: boolean;
   folders?: boolean;
@@ -18,7 +18,7 @@ export interface BaseManagerOptions {
 
 const SNAKE_CASE_REGEX = /[-_]([0-z])/g;
 export default class BaseManager<T> {
-  public logger!: Logger;
+  public logger!: typeof Logger;
   public imported!: Record<string, T>;
   private rawImported!: Record<string, any>;
   private options!: BaseManagerOptions;
@@ -28,13 +28,13 @@ export default class BaseManager<T> {
   }
 
   public init(options: BaseManagerOptions, rawImported?: Record<string, any>) {
-    if (!isAbsolute(options.scanPath))
-      options.scanPath = join(process.cwd(), options.scanPath as string);
+    if (!isAbsolute(options.path))
+      options.path = join(process.cwd(), options.path as string);
 
     this.options = options;
 
-    if (options.loggerTag)
-      this.logger = new Logger(options.loggerTag);
+    if (options.logger)
+      this.logger = Logger.clone(options.logger);
 
     this.imported = {};
 
@@ -45,7 +45,7 @@ export default class BaseManager<T> {
     const map = options.map || ((any: any) => any);
 
     const array = freshScan
-      ? readdirSync(options.scanPath, { recursive: options.recursive })
+      ? readdirSync(options.path, { recursive: options.recursive })
       : Object.keys(rawImported);
     for (let fileName of array) {
       fileName = fileName.toString('utf-8').replaceAll('\\', '/');
@@ -56,7 +56,7 @@ export default class BaseManager<T> {
 
       let any: any;
       if (freshScan) {
-        const path = join(options.scanPath, fileName);
+        const path = join(options.path, fileName);
         const stat = statSync(path);
         if (options.folders ? stat.isFile() : stat.isDirectory())
           continue;
@@ -82,7 +82,7 @@ export default class BaseManager<T> {
       }
 
       if (options.create && !options.file && !options.folders)
-        this.imported[objectName] = new any(...(options.constructorArgs || []));
+        this.imported[objectName] = new any(...(options.args || []));
       else
         this.imported[objectName] = map(any, objectName, fileName);
     }
@@ -91,7 +91,7 @@ export default class BaseManager<T> {
 
     this.watch = this.watch.bind(this);
     if (options.watch && !convertToType(process.env.MANAGER_WATCH_DISABLE, 'boolean'))
-      watch(options.scanPath, this.watch);
+      watch(options.path, this.watch);
   }
 
   public watch(): any | Promise<any> {}
@@ -103,7 +103,7 @@ export default class BaseManager<T> {
 }
 
 export class BaseTransformManager<T> extends Transform {
-  public logger!: Logger;
+  public logger!: typeof Logger;
   public imported!: Record<string, T>;
   private rawImported!: Record<keyof typeof this.imported, any>;
   private options!: BaseManagerOptions;

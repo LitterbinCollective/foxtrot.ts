@@ -262,7 +262,7 @@ export default class NewYearsEveEvent extends WinterEvent {
       const buffer = buffers[i];
       if (!buffer) continue;
       VoiceStore.forEach(
-        async voice => voice.special && voice.playSoundeffect(buffer)
+        async voice => voice.special && voice.playChatsoundScript(buffer)
       );
 
       const time = (i === 0 ? 3 : 0) + Math.random() * 3;

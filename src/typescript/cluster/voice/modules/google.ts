@@ -196,7 +196,7 @@ export default class GoogleAssistantModule extends BaseModule {
     );
 
     ffmpeg.stdout.on('end', async () => {
-      this.voice.playSoundeffect(sound);
+      this.voice.playChatsoundScript(sound);
       this.logger.debug('playing sound...', sound);
       setTimeout(
         () => this.emit('continue'),

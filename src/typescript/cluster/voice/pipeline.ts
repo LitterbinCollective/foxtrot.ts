@@ -14,11 +14,11 @@ const LEAVE_TIMEOUT_LENGTH = 30000; // 30 seconds
 class VoiceSafeConnection extends EventEmitter {
   public voiceConnection!: VoiceConnection;
   private timeout: NodeJS.Timeout | null = null;
-  private readonly logger: Logger;
+  private readonly logger;
 
   constructor(voiceChannel: Structures.ChannelGuildVoice) {
     super();
-    this.logger = new Logger(`Voice safe connection [${voiceChannel.guildId}]`);
+    this.logger = Logger.clone(`VoiceSafeConnection [${voiceChannel.guildId}]`);
     this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
     this.onVoiceServerUpdate = this.onVoiceServerUpdate.bind(this);
     this.destroy = this.destroy.bind(this);
@@ -141,7 +141,7 @@ export default class VoicePipeline extends Transform {
   private opusPacketsSent = 0;
   private opusPacketCheck = 0;
   private readonly connection: VoiceSafeConnection;
-  private readonly logger: Logger;
+  private readonly logger;
   private readonly voice: NewVoice;
 
   public onVoiceServerUpdate: (
@@ -155,7 +155,7 @@ export default class VoicePipeline extends Transform {
     super({ readableObjectMode: true });
 
     this.voice = voice;
-    this.logger = new Logger(`VoicePipeline [${voiceChannel.guildId}]`);
+    this.logger = Logger.clone(`VoicePipeline [${voiceChannel.guildId}]`);
     this.connection = new VoiceSafeConnection(voiceChannel);
     this.mixer = new Mixer();
     this.opus = new OpusEncoder(Constants.OPUS_SAMPLE_RATE, Constants.OPUS_AUDIO_CHANNELS);

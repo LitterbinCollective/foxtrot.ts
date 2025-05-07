@@ -7,10 +7,8 @@ import { rmSync, writeFileSync } from 'fs';
 import config from '@/managers/config'
 import { Logger } from '@/utils';
 
-const logger = new Logger('Runner');
-
 if (process.env.NODE_ENV === 'development') {
-  logger.debug('you seem to be running in development mode, creating a PID file...');
+  Logger.debug('you seem to be running in development mode, creating a PID file...');
 
   const PID_FILE = '.pid';
   writeFileSync(PID_FILE, process.pid.toString());
@@ -18,7 +16,7 @@ if (process.env.NODE_ENV === 'development') {
   function cleanup() {
     try {
       rmSync(PID_FILE);
-      logger.debug('deleted PID file');
+      Logger.debug('deleted PID file');
     } catch (err) {}
   }
 
@@ -38,7 +36,7 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
   const prefix = `Cluster [${clusterProcess.clusterId}]:`;
 
   clusterProcess.on('warn', ({ error }) =>
-    logger.error(prefix, 'error:', error)
+    Logger.error(prefix, 'error:', error)
   );
 
   clusterProcess.on('close', ({ code, signal }) => {
@@ -47,17 +45,18 @@ manager.on('clusterProcess', ({ clusterProcess }) => {
       message += '/' + signal;
 
     if (code !== 0) {
-      Sentry.captureMessage(prefix + ' ' + message);
-      logger.error(prefix, message);
+      Sentry.captureMessage(prefix + ' ' + message, { level: 'fatal' });
+      Logger.error(prefix, message);
     } else
-      logger.info(prefix, message);
+      Logger.info(prefix, message);
   });
 });
 
 (async () => {
-  logger.log('starting...');
+  Logger.log('starting...');
   await manager.run();
-  logger.info(
+
+  Logger.info(
     `loaded ${manager.shardStart} - ${manager.shardEnd} shards out of ${manager.shardCount} total`
   );
 })();

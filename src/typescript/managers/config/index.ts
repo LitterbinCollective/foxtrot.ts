@@ -12,8 +12,8 @@ export class ConfigManager extends BaseManager<ValueOf<Config>> {
 
   constructor() {
     super({
-      loggerTag: 'Config',
-      scanPath: 'configs/',
+      logger: 'Config',
+      path: 'configs/',
       file: true,
       watch: true,
       recursive: true,

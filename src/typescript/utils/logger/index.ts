@@ -1,91 +1,49 @@
-import {
-  ANSI_ESCAPE,
-  COLORS,
-  COLOR_REGEX,
-  LOG_LEVELS,
-  LOG_LEVEL_COLOR_MAPPINGS,
-} from './constants';
+import { LOG_LEVELS } from './constants';
+import BaseSink from './sinks/basesink';
 
-const LEVEL_IDENTATION = 5;
+import ConsoleSink from './sinks/console';
+import SentrySink from './sinks/sentry';
 
-export default class Logger {
-  public loggingLevel: number = LOG_LEVELS.LOG;
-  private indentation: number = 20;
-  private readonly moduleName: string;
+export class Logger {
+  public level: number = LOG_LEVELS.LOG;
+  public sinks: BaseSink[] = [];
+  private readonly module: string;
 
-  constructor(moduleName: string, loggingLevel?: number) {
-    this.moduleName = moduleName;
+  constructor(module: string, level?: number) {
+    this.module = module;
 
-    const { LOG_LEVEL, LOG_INDENTATION, NODE_ENV } = process.env;
-    if (LOG_INDENTATION) {
-      const int = parseInt(LOG_INDENTATION);
-      if (int) this.indentation = int;
-    }
+    const { LOG_LEVEL, NODE_ENV } = process.env;
 
     if (LOG_LEVEL) {
       const int = parseInt(LOG_LEVEL);
-      if (int in LOG_LEVELS) this.loggingLevel = int;
-      else if (LOG_LEVEL in LOG_LEVELS)
-        this.loggingLevel = LOG_LEVELS[LOG_LEVEL as keyof typeof LOG_LEVELS];
-    } else if (NODE_ENV === 'development')
-      this.loggingLevel = LOG_LEVELS.DEBUG;
 
-    if (loggingLevel) this.loggingLevel = loggingLevel;
+      if (int in LOG_LEVELS)
+        this.level = int
+      else if (LOG_LEVEL in LOG_LEVELS)
+        this.level = LOG_LEVELS[LOG_LEVEL as keyof typeof LOG_LEVELS];
+    } else if (NODE_ENV === 'development')
+      this.level = LOG_LEVELS.DEBUG;
+
+    if (level)
+      this.level = level;
   }
 
   private print(level: keyof typeof LOG_LEVELS, ...data: any[]) {
-    let func: any;
-    let key = level.toLowerCase() as keyof typeof console;
-    if (level in console && typeof console[key] === 'function')
-      func = console[key];
-    else func = console.log;
+    const date = new Date;
 
-    if (LOG_LEVELS[level] > this.loggingLevel) return;
-
-    let tag = this.formTagWithLevel(level);
-    tag += ' '.repeat(
-      Math.max(0, this.indentation - tag.replaceAll(COLOR_REGEX, '').length)
-    );
-
-    func.call(
-      console,
-      this.colorize('DIM', '[' + new Date().toUTCString() + ']'),
-      tag,
-      ...data
-    );
+    const above = LOG_LEVELS[level] > this.level;
+    for (const sink of this.sinks) {
+      if (!sink.all && above)
+        continue;
+      sink.print(this.module, date, level, ...data);
+    }
   }
 
-  private formTagWithLevel(
-    level: keyof typeof LOG_LEVEL_COLOR_MAPPINGS | keyof typeof LOG_LEVELS
-  ) {
-    const color =
-      LOG_LEVEL_COLOR_MAPPINGS[
-        level as keyof typeof LOG_LEVEL_COLOR_MAPPINGS
-      ] || 'GRAY';
+  public clone(module: string, level?: number) {
+    const logger = new Logger(module, level || this.level);
+    logger.sinks = [ ...this.sinks ];
 
-    const indentation = LEVEL_IDENTATION - level.length + 2;
-    const levelTag = this.colorize(
-      color,
-      ' '.repeat(Math.floor(indentation / 2)) +
-      level.toLowerCase() +
-      ' '.repeat(Math.ceil(indentation / 2))
-    );
-
-    return `${levelTag} ${this.colorize('BRIGHT', this.moduleName)}`;
-  }
-
-  private getColor(color: keyof typeof COLORS) {
-    return ANSI_ESCAPE + COLORS[color];
-  }
-
-  private colorize(
-    color: keyof typeof COLORS,
-    string: string,
-    reset: boolean = true
-  ) {
-    let toReturn = this.getColor(color) + string;
-    if (reset) toReturn += this.getColor('RESET');
-    return toReturn;
+    return logger;
   }
 
   public debug(...data: any[]) {
@@ -108,3 +66,11 @@ export default class Logger {
     this.print.call(this, 'ERROR', ...data);
   }
 }
+
+const logger = new Logger('Global');
+logger.sinks.push(
+  new ConsoleSink,
+  new SentrySink
+);
+
+export default logger;

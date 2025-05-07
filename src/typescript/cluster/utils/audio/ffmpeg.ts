@@ -1,6 +1,8 @@
 import { ChildProcess, spawn } from 'child_process';
 import { Transform, Writable } from 'stream';
 
+import { Logger } from '@/utils';
+
 export default class FFMpeg extends Transform {
   public instance!: ChildProcess;
   public offsetTime: number = 0;
@@ -43,7 +45,7 @@ export default class FFMpeg extends Transform {
     );
     (this.instance.stdio[3] as NodeJS.WritableStream).on(
       'error',
-      error => !this.instance.killed && console.error(error)
+      error => !this.instance.killed && Logger.error(error)
     );
     this.instance.on('close', this.ffmpegClose);
   }

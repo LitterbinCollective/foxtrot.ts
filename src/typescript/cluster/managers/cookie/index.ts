@@ -20,10 +20,10 @@ export class CookieManager extends BaseManager<ValueOf<CookieJars>> {
 
   constructor() {
     super({
-      loggerTag: 'CookieManager',
+      logger: 'Cookie',
       file: true,
       map: (x, _, file) => new CookieJar(file, x),
-      scanPath: BASE_SCAN_PATH,
+      path: BASE_SCAN_PATH,
     });
 
     this.save = this.save.bind(this);

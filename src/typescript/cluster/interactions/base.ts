@@ -1,10 +1,11 @@
 import { Constants as DetritusConstants, Interaction } from 'detritus-client';
 import * as Sentry from '@sentry/node';
 
-import { checkPermission, UserError, buildRuntimeErrorEmbed } from '@cluster/utils';
-import app from '@cluster/index';
+import { checkPermission, UserError, buildRuntimeErrorEmbed, Logger, logCommandErrorToSentry } from '@cluster/utils';
 import { t } from '@cluster/managers/i18n';
 import { Queries } from '@/db';
+import app from '@cluster/index';
+import { getOrCreateSettings } from '@/db/queries';
 
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
@@ -43,7 +44,7 @@ export class BaseInteractionCommand<
       return true;
     }
 
-    await ctx.editOrRespond('🔒');
+    await ctx.editOrRespond(app.emoji('LOCK'));
     return false;
   }
 
@@ -65,18 +66,24 @@ export class BaseInteractionCommand<
 
   public async onRunError(
     ctx: Interaction.InteractionContext,
-    _: Interaction.ParsedArgs,
+    args: Interaction.ParsedArgs,
     error: any
   ) {
     if (!ctx.guild) return;
     if (error instanceof UserError)
       return ctx.editOrRespond(await this.t(ctx, error.message, ...error.formatValues));
 
-    const id = Sentry.captureException(error);
+    const id = logCommandErrorToSentry(
+      ctx,
+      await getOrCreateSettings(ctx.guild.id),
+      error,
+      this.name,
+      args
+    );
     const embed = await buildRuntimeErrorEmbed(ctx.guild, id);
     ctx.editOrRespond({ embed });
 
-    app.logger.error(error);
+    Logger.error(error);
   }
 }
 

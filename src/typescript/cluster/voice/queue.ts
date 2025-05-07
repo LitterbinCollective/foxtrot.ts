@@ -12,7 +12,7 @@ import {
   MediaServiceResponseMedia,
   MediaServiceResponseMediaType,
 } from '@cluster/managers/mediaservices/types';
-import { UserError } from '@cluster/utils';
+import { defineDefaultSentryContext, UserError } from '@cluster/utils';
 import app from '@cluster/index';
 
 import VoiceQueueAnnouncer from './announcer';
@@ -54,9 +54,13 @@ class VoiceQueueMedia {
     }
   }
 
-  private get submittee(): Structures.User | undefined {
+  public get submittee(): Structures.User {
     if (this._submittee) return this._submittee;
-    return this.message ? this.message.author : undefined;
+
+    if (this.message)
+      return this._submittee = this.message.author;
+
+    throw new Error('could not get submittee of this VoiceQueueMedia');
   }
 
   public get info(): MediaServiceResponseInformation {
@@ -86,7 +90,7 @@ class VoiceQueueMedia {
     if (this._children)
       return this._children;
 
-    return (this._children = this.formatData.map(x => new VoiceQueueMedia(x)));
+    return (this._children = this.formatData.map(x => new VoiceQueueMedia(x, this.message)));
   }
 
   public async unzip() {
@@ -181,6 +185,43 @@ class VoiceQueueMedia {
     if (this.formatData.media.type === MediaServiceResponseMediaType.FILE)
       unlinkSync(this.formatData.media.path);
   }
+
+  public fillInSentryContext(scope: Sentry.Scope) {
+    if (Array.isArray(this.formatData)) {
+      scope.setContext('media_info', {
+        hasChildren: true,
+        information: this.formatData.map(x => x.information)
+      });
+
+      return;
+    }
+
+    const { media } = this.formatData;
+    scope.setContext('media_info', {
+      hasChildren: false,
+      information: this.formatData.information,
+      type: media.type
+    });
+
+    switch (media.type) {
+      case MediaServiceResponseMediaType.URL:
+        scope.setContext('media_url', {
+          url: media.url,
+          decryptionKey: media.decryptionKey
+        });
+
+        return;
+      case MediaServiceResponseMediaType.FILE:
+        scope.setContext('media_file', {
+          path: media.path
+        });
+
+        return;
+      case MediaServiceResponseMediaType.FETCH:
+      default:
+        return;
+    }
+  }
 }
 
 export default class VoiceQueue {
@@ -234,7 +275,30 @@ export default class VoiceQueue {
   }
 
   public streamingError(err: any) {
-    const error = Utils.Markup.codestring(Sentry.captureException(err));
+    const { currentlyPlaying } = this;
+    if (!currentlyPlaying) return;
+
+    let id = '';
+    Sentry.withScope(scope => {
+      const context = {
+        channel: this.voice.channel || null,
+        guild: this.voice.channel?.guild || null,
+        shardId: this.voice.channel?.shardId,
+        user: currentlyPlaying.submittee,
+      };
+
+      defineDefaultSentryContext(context, scope);
+      currentlyPlaying.fillInSentryContext(scope);
+
+      id = Sentry.captureException(err, {
+        mechanism: {
+          type: 'voice_queue_streaming_error',
+          handled: true
+        }
+      });
+    });
+
+    const error = Utils.Markup.codestring(id);
     this.announcer.createMessage(app.emoji('BOMB') + app.emoji('PAPERCLIP') + ' ' + error);
     this.next();
   }

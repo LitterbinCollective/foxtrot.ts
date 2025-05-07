@@ -22,7 +22,6 @@ export default class Application {
   public readonly commandClient: CommandClient;
   public readonly clusterClient: ClusterClient;
   public readonly interactionCommandClient: InteractionCommandClient;
-  public readonly logger: Logger;
   private emojis: Emojis = {};
 
   constructor() {
@@ -53,7 +52,6 @@ export default class Application {
     }
 
     process.title = processTitle;
-    this.logger = new Logger(tag);
 
     {
       this.commandClient = new CommandClient(this.clusterClient, {
@@ -72,9 +70,9 @@ export default class Application {
         .addMultipleIn('commands/', {
           subdirectories: true,
         })
-        .catch(err => {
-          this.logger.error(err);
-        });
+        .catch(err =>
+          Logger.error(err)
+        );
 
       mediaservice.addPrefixedCommands(this.commandClient);
     }
@@ -87,9 +85,9 @@ export default class Application {
         .addMultipleIn('interactions/', {
           subdirectories: true,
         })
-        .catch(err => {
-          this.logger.error(err);
-        });
+        .catch(err =>
+          Logger.error(err)
+        );
 
       mediaservice.addSlashCommands(this.interactionCommandClient);
     }
@@ -125,8 +123,8 @@ export default class Application {
     await this.commandClient.run();
     await this.interactionCommandClient.run();
 
-    this.logger.log('bot online!');
-    this.logger.info(
+    Logger.log('bot online!');
+    Logger.info(
       `loaded shards #(${this.clusterClient.shards
         .map(shard => shard.shardId)
         .join(', ')})`
