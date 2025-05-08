@@ -9,3 +9,6 @@ export { default as UserError } from './user-error';
 
 export const branch = readFileSync('./.git/HEAD', 'utf8')
   .trim().split('/').pop();
+
+export const gitCommit = readFileSync(`./.git/refs/heads/${branch}`, 'utf8')
+  .trim();

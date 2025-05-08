@@ -236,7 +236,7 @@ export default class Voice extends EventEmitter {
       let id = '';
 
       Sentry.withScope(scope => {
-        scope.setContext('chatsound_info', {
+        scope.setContext('chatsoundInfo', {
           script
         });
 

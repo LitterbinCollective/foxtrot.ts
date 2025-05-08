@@ -5,7 +5,7 @@ import { getTableConfig } from 'drizzle-orm/pg-core';
 
 import { t } from '@cluster/managers/i18n';
 import config from '@/managers/config';
-import { Constants } from '@cluster/utils';
+import { branch, Constants, gitCommit } from '@cluster/utils';
 import { guildSettings } from '@/db/schema';
 import { GuildSettings } from '@/db/types';
 import app from '@cluster/index';
@@ -71,6 +71,8 @@ export function defineDefaultSentryContext(ctx: ContextLike, scope: Sentry.Scope
 
   scope.setContext('client', {
     shardId: ctx.shardId ?? 'unknown',
+    branch,
+    gitCommit,
   });
 }
 

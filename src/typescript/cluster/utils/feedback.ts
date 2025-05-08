@@ -1,7 +1,7 @@
 import { Constants as DetritusConstants, Structures, Utils } from 'detritus-client';
 import * as Sentry from '@sentry/node';
 
-import { branch, Constants } from '@/utils';
+import { branch, Constants, gitCommit } from '@/utils';
 import app from '@cluster/index';
 import { t } from '@cluster/managers/i18n';
 
@@ -152,7 +152,9 @@ export default class Feedback {
       url: 'https://discord.com/users/' + user.id,
       tags: {
         rating,
-        session_guild: this.guild.id,
+        sessionGuild: this.guild.id,
+        sessionBranch: branch,
+        sessionGitCommit: gitCommit,
       }
     });
   }
