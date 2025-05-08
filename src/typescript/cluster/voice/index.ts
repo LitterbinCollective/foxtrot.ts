@@ -1,21 +1,21 @@
 import { GatewayClientEvents, Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import * as Sentry from '@sentry/node';
 
 import chatsounds from '@cluster/chatsounds';
 import { t } from '@cluster/managers/i18n';
-import { VoiceStore } from '@cluster/stores';
-import { Constants, defineDefaultSentryContext, UserError } from '@cluster/utils';
+import { FeedbackStore, VoiceStore } from '@cluster/stores';
+import { Constants, UserError } from '@cluster/utils';
 import sox, { SoxManager } from '@cluster/managers/sox';
 import tts, { TTSManager } from '@cluster/managers/tts';
+import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
+import { Queries } from '@/db';
 
 import VoicePipeline from './pipeline';
 import VoiceQueue from './queue';
 import modules from './modules';
 import BaseModule from './modules/basemodule';
-import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { Queries } from '@/db';
 
 export * as Announcer from './announcer';
 export * as Modules from './modules';
@@ -259,6 +259,9 @@ export default class Voice extends EventEmitter {
     } catch (err) {}
 
     this.pipeline.destroy();
-    if (this.channel) VoiceStore.delete(this.channel.guildId as string);
+    if (this.channel)
+      VoiceStore.delete(this.channel.guildId as string);
+
+    FeedbackStore.create(this.queue.announcer.channel);
   }
 }

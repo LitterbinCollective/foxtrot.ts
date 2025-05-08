@@ -6,6 +6,7 @@ import { Constants, UserError } from '@cluster/utils';
 
 import Store from './store';
 
+// TODO: base class for cycle stores?
 class VoiceStore extends Store<string, NewVoice> {
   private cycleTimeout: NodeJS.Timeout | null = null;
   private nextCycle: number = 0;
@@ -54,26 +55,26 @@ class VoiceStore extends Store<string, NewVoice> {
     );
   }
 
-  private cycleOverVoices(iterator: IterableIterator<NewVoice>) {
+  private cycle(iterator: IterableIterator<NewVoice>) {
     const next = iterator.next().value;
 
     if (!next) {
       if (this.nextCycle !== -1) {
         this.cycleTimeout = setTimeout(() => {
           this.nextCycle += Constants.OPUS_FRAME_LENGTH;
-          this.cycleOverVoices(this.values());
+          this.cycle(this.values());
         }, this.nextCycle - Date.now());
       }
       return;
     }
 
     next.update();
-    setImmediate(() => this.cycleOverVoices(iterator));
+    setImmediate(() => this.cycle(iterator));
   }
 
   private initializeCycle() {
     this.nextCycle = Date.now();
-    setImmediate(() => this.cycleOverVoices(this.values()));
+    setImmediate(() => this.cycle(this.values()));
   }
 
   private killCycle() {

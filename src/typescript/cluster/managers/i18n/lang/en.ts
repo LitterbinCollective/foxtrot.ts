@@ -152,4 +152,27 @@ export default {
     "leave": "{0} left the voice channel.",
     "say": "{0} said: {1}"
   },
+
+  "feedback": {
+    "title": "how was your experience?",
+    "description": "you were using `{0}` branch of {1}. it would mean a lot to us if you let us know what you think!",
+    "pre-button": "how satisfied are you using this branch of {0}?",
+    "response": "thanks for your feedback! if you want to provide more details about your experience, please click the button below.",
+    "button": "send additional feedback",
+    "thanks": "thanks for your feedback!",
+
+    "grade": {
+      "1": "1 (very unsatisfied)",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5 (very satisfied)"
+    },
+
+    "modal": {
+      "title": "supplement feedback",
+      "input": "details",
+      "placeholder": "i like the bot, but...",
+    }
+  }
 };
