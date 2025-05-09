@@ -1,4 +1,6 @@
 export default {
+  "_extends": "en",
+
   "commands": {
     "settings": {
       "unknown": "不詳-設定.",

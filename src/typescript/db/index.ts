@@ -11,6 +11,5 @@ const pool = new Pool({
 
 export const db = drizzle(pool, { schema });
 
-export * as Queries from './queries';
 export * as Schema from './schema';
 export * as Types from './types';

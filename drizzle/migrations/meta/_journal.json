@@ -22,6 +22,13 @@
       "when": 1746047269636,
       "tag": "0002_melted_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1746746755043,
+      "tag": "0003_chemical_the_anarchist",
+      "breakpoints": true
     }
   ]
 }

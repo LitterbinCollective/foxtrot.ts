@@ -26,6 +26,11 @@
     "PAC3-Server/chatsounds#master": {
       "bases": ["sounds/chatsounds"],
       "useMsgPack": false
+    },
+
+    "LitterbinCollective/foxtrot-chatsounds#main": {
+      "bases": ["sounds"],
+      "useMsgPack": false
     }
   }
 }

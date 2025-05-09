@@ -40,6 +40,85 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
     return start;
   }
 
+  public newAddEffect(str: string, start = this.stack.length): [ number, boolean ] {
+    const parts: string[] = [];
+    let buf = '', depth = 0;
+    for (const ch of str) {
+      if (ch === '(')      { depth++; buf += ch; }
+      else if (ch === ')') { depth--; buf += ch; }
+      else if (ch === ',' && depth === 0) {
+        parts.push(buf.trim());
+        buf = '';
+      } else
+        buf += ch;
+    }
+
+    if (buf.trim())
+      parts.push(buf.trim());
+
+    const stack: BaseEffect[] = [];
+    let index = start;
+    let hypotheticalLength = this.stack.length;
+    for (const part of parts) {
+      const match = part.match(/^([a-zA-Z0-9_]+)(?:\((.*)\))?$/);
+      if (!match)
+        throw new UserError('effects-mgr.spec.syntax', part);
+
+      const [, name, inner] = match;
+
+      if (!this.imported[name])
+        throw new UserError('effects-mgr.not-found');
+
+      const effect = new this.imported[name]();
+      effect.enabled = true;
+
+      if (inner) {
+        const pairRegex = /([a-zA-Z0-9_]+)\s*=\s*([^\s,)\(]+)/g;
+        let match;
+        while ((match = pairRegex.exec(inner)) !== null) {
+          const [, k, v] = match;
+          if (v === undefined)
+            throw new UserError('effects-mgr.spec.expected-kv', part);
+
+          const num = +v;
+          if (isNaN(num))
+            throw new UserError('effects-mgr.spec.expected-number', part);
+
+          if (!effect.options[k])
+            throw new UserError('effects-mgr.spec.option-not-found', k, part);
+
+          if (k in effect.optionsRange && effect.optionsRange[k][0] > num || num > effect.optionsRange[k][1])
+            throw new UserError('effects-mgr.spec.value-out-of-range', num, k, part);
+
+          effect.options[k] = num;
+        }
+      }
+
+      if (hypotheticalLength === Constants.VOICE_EFFECTS_STACK_LIMIT)
+        throw new UserError('effects-mgr.stack-overflow');
+
+      stack.push(effect);
+      index++;
+      hypotheticalLength++;
+    }
+
+    this.stack.splice(start, 0, ...stack);
+
+    if (this.sox) this.createAudioEffectManager();
+    return [ start, parts.length === 1 ];
+  }
+
+  public generateEffectSpecString() {
+    const stack: string[] = [];
+    for (const effect of this.stack) {
+      const options = Object.entries(effect.options)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(', ');
+      stack.push(`${effect.name}(${options})`);
+    }
+    return stack.join(', ');
+  }
+
   public removeEffect(index: number) {
     if (!this.stack[index])
       throw new UserError('effects-mgr.not-found');

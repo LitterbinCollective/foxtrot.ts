@@ -20,17 +20,20 @@ are very much appreciated!
 ## Credits
 If you have contributed to the translations, feel free to credit yourself.
 
-### Russian (`ru.json`)
+### Russian (`ru.ts`)
 - [@Golub'](https://discord.com/users/274911782768738304) **(orig.)**
-- github.com/be195 (slight corrections)
+- https://github.com/be195 (slight corrections)
 
-### Japanese (`ja.json`)
+### Krivoy Russian ('kr_ru.ts')
+- https://github.com/chelka0 **(orig.)**
+
+### Japanese (`ja.ts`)
 - [@purp](https://discord.com/users/152893129719021568) **(orig.)**
-- github.com/be195 (slight corrections)
+- https://github.com/be195 (slight corrections)
 
-### Swedish (`se.json`)
+### Swedish (`sv.ts`)
 - [@northh](https://discord.com/users/166594779096809472) **(orig.)**
-- github.com/be195 (slight corrections)
+- https://github.com/be195 (slight corrections)
 
-### Ukrainian (`ua.json`)
-- github.com/be195 **(orig.)**
+### Ukrainian (`ua.ts`)
+- https://github.com/be195 **(orig.)**

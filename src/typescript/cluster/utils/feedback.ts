@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/node';
 import { branch, Constants, gitCommit } from '@/utils';
 import app from '@cluster/index';
 import { t } from '@cluster/managers/i18n';
+import { defineDefaultSentryContext } from './functions';
 
 const TIMEOUT_GLOBAL = 60000;
 
@@ -100,7 +101,7 @@ export default class Feedback {
     container.createMediaGallery({
       items: [
         {
-          media: { url: 'https://wicopee.drm.gdn/rh70biqMtP.jpg' }
+          media: { url: 'https://wicopee.drm.gdn/xr1RM24ltS.png' }
         }
       ]
     });
@@ -146,16 +147,25 @@ export default class Feedback {
   }
 
   private sendSentry(user: Structures.User, rating: string, message: string) {
-    Sentry.captureFeedback({
-      message: 'rated ' + rating + '\n\n' + message,
-      name: user.username,
-      url: 'https://discord.com/users/' + user.id,
-      tags: {
-        rating,
-        sessionGuild: this.guild.id,
-        sessionBranch: branch,
-        sessionGitCommit: gitCommit,
-      }
+    Sentry.withScope(scope => {
+      defineDefaultSentryContext({
+        user,
+        guild: this.guild,
+        channel: this.channel,
+        shardId: this.channel.shardId,
+      }, scope);
+
+      Sentry.captureFeedback({
+        message: 'rated ' + rating + '\n\n' + message,
+        name: user.username,
+        url: 'https://discord.com/users/' + user.id,
+        tags: {
+          rating,
+          gitCommit: gitCommit,
+          branch: branch,
+          guildId: this.guild.id,
+        }
+      });
     });
   }
 

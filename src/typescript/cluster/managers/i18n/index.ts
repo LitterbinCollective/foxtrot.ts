@@ -1,13 +1,23 @@
 import { Structures } from 'detritus-client';
 import { join } from 'path';
 
-import { Queries } from '@/db';
 import BaseManager from '@/managers';
+import { getOrCreateSettings } from '@/db/queries';
 
 const DEFAULT_LANG = 'en';
 const TEMPLATE_REGEX = /{(\d+)}/g;
 
-export class I18NManager extends BaseManager<any> {
+interface i18nLanguage {
+  [key: string]: string | i18nLanguage | undefined;
+}
+
+interface i18nRoot extends i18nLanguage {
+  _extends?: string;
+}
+
+export class I18NManager extends BaseManager<i18nRoot> {
+  private resolved: Record<string, i18nRoot> = {};
+
   constructor() {
     super({
       create: false,
@@ -16,6 +26,40 @@ export class I18NManager extends BaseManager<any> {
     });
 
     this.translate = this.translate.bind(this);
+
+    if (this.imported[DEFAULT_LANG]._extends)
+      throw new Error(`default language (${DEFAULT_LANG}) cannot extend another language`);
+
+    Object.keys(this.imported).forEach((lang) => this.resolve(lang));
+  }
+
+  private resolve(locale: string, seen = new Set<string>()): any {
+    if (this.resolved[locale])
+      return this.resolved[locale];
+
+    if (!this.imported[locale]) {
+      this.logger.warn(`locale ${locale} not found, falling back to default (${DEFAULT_LANG})`);
+      return this.imported[DEFAULT_LANG];
+    }
+
+    const current = { ...this.imported[locale] };
+
+    seen.add(locale);
+    this.logger.debug('walking, resolving', [...seen.values()].join(' -> '));
+
+    const baseLocale = current._extends;
+    delete current._extends;
+
+    if (baseLocale) {
+      if (seen.has(baseLocale))
+        throw new Error(`circular dependency detected for locale ${locale}`);
+
+      const base = this.resolve(baseLocale, seen);
+      this.resolved[locale] = { ...base, ...current };
+    } else
+      this.resolved[locale] = current;
+
+    return this.resolved[locale];
   }
 
   public async translate(
@@ -27,20 +71,20 @@ export class I18NManager extends BaseManager<any> {
     if (typeof guild === 'string')
       lang = guild;
     else {
-      const settings = await Queries.getOrCreateSettings(guild.id);
+      const settings = await getOrCreateSettings(guild.id);
       lang = guild.preferredLocale.split('-')[0];
 
-      if (settings.lang && settings.lang in this.imported)
+      if (settings.lang && settings.lang in this.resolved)
         lang = settings.lang;
 
-      if (!(lang in this.imported))
+      if (!(lang in this.resolved))
         lang = DEFAULT_LANG;
     }
 
     const hierarchy = id.split('.');
     let template = id;
 
-    let parent: any = this.imported[lang as keyof typeof this.imported];
+    let parent: any = this.resolved[lang as keyof typeof this.resolved];
     for (let i = 0; i < hierarchy.length; i++) {
       const child = hierarchy[i];
       if (!(child in parent)) break;

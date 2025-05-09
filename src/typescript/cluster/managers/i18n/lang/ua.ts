@@ -1,4 +1,6 @@
 export default {
+  "_extends": "ru",
+
   "commands": {
     "settings": {
       "unknown": "невідома налаштування.",

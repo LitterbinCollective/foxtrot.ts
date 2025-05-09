@@ -1,7 +1,7 @@
 import { Interaction } from 'detritus-client';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 
-import { Queries } from '@/db';
+import { getOrCreateSettings } from '@/db/queries';
 import { guildSettings } from '@/db/schema';
 import { GuildSettings } from '@/db/types';
 
@@ -21,7 +21,7 @@ export class BaseSettingsCommandOption extends BaseCommandOption {
   public async onBeforeRun(ctx: Interaction.InteractionContext): Promise<boolean> {
     if (!ctx.guild) return false;
 
-    (ctx as SettingsInteractionContext).settings = await Queries.getOrCreateSettings(
+    (ctx as SettingsInteractionContext).settings = await getOrCreateSettings(
       ctx.guild.id
     );
 

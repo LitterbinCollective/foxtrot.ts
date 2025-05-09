@@ -1,4 +1,6 @@
 export default {
+  "_extends": "en",
+
   "commands": {
     "settings": {
       "unknown": "okänd inställning.",

@@ -53,7 +53,10 @@ export default {
     },
 
     "effect": {
-      "add": "added effect `{0}`!",
+      "add": {
+        "single": "added effect `{0}`!",
+        "multiple": "added effects!",
+      },
       "clear": "effects cleared!",
       "remove": "removed effect `{0}`!",
       "set": "set `{0}` to `{1}`!",
@@ -111,7 +114,15 @@ export default {
     "stack-underflow": "too few effects!",
     "option-not-found": "specified effect option not found.",
     "value-undefined": "value has to be provided",
-    "out-of-range": "given value out of range `[{0}; {1}]`"
+    "out-of-range": "given value out of range `[{0}; {1}]`",
+
+    "spec": {
+      "syntax": "syntax error in `{0}`",
+      "expected-kv": "expected key=value in `{0}`",
+      "expected-number": "expected a number in `{0}`",
+      "option-not-found": "option `{0}` not found in `{1}`",
+      "value-out-of-range": "value `{0}` out of range for `{1}` in `{2}`",
+    }
   },
 
   "queue": {

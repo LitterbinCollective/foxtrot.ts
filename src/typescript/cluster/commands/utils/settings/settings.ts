@@ -1,7 +1,7 @@
 import { Command, CommandClient } from 'detritus-client';
 
 import { listSettings } from '@cluster/utils';
-import { Queries } from '@/db';
+import { getOrCreateSettings } from '@/db/queries';
 import { GuildSettings } from '@/db/types';
 
 import { BaseCommand } from '../../base';
@@ -16,7 +16,7 @@ export class BaseSettingsCommand extends BaseCommand {
   public async onBeforeRun(ctx: Command.Context): Promise<boolean> {
     if (!ctx.guild) return false;
 
-    (ctx as SettingsContext).settings = await Queries.getOrCreateSettings(
+    (ctx as SettingsContext).settings = await getOrCreateSettings(
       ctx.guild.id
     );
 

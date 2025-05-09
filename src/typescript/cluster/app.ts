@@ -11,7 +11,7 @@ import mediaservice from '@cluster/managers/mediaservices';
 
 import '@cluster/managers/special';
 import config from '@/managers/config';
-import { Queries } from '@/db';
+import { getOrCreateSettings } from '@/db/queries';
 
 type Emojis = {
   [K in Extract<keyof typeof Constants.EMOJIS, string>]?: string;
@@ -59,7 +59,7 @@ export default class Application {
         activateOnEdits: true,
         onPrefixCheck: async (ctx) => {
           if (ctx.guildId) {
-            const settings = await Queries.getOrCreateSettings(ctx.guildId);
+            const settings = await getOrCreateSettings(ctx.guildId);
             if (settings.prefix)
               return [settings.prefix];
           }

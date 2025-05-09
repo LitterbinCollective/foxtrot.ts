@@ -10,7 +10,7 @@ import { Constants, UserError } from '@cluster/utils';
 import sox, { SoxManager } from '@cluster/managers/sox';
 import tts, { TTSManager } from '@cluster/managers/tts';
 import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
-import { Queries } from '@/db';
+import { getOrCreateSettings } from '@/db/queries';
 
 import VoicePipeline from './pipeline';
 import VoiceQueue from './queue';
@@ -82,7 +82,7 @@ export default class Voice extends EventEmitter {
     this.effects.createAudioEffectManager();
     this.queue = new VoiceQueue(this, logChannel);
 
-    const settings = await Queries.getOrCreateSettings(channel.guildId);
+    const settings = await getOrCreateSettings(channel.guildId);
     this.special = settings.special;
     this.allowCorrupt = settings.allowCorrupt;
     this.pipeline.volume = settings.defaultVolume;
@@ -95,6 +95,8 @@ export default class Voice extends EventEmitter {
 
     this.emit('initialized');
     this.initialized = true;
+
+    this.playChatsoundScript('null=1 (100500 zdorovo):realm(internal)');
   }
 
   public update() {

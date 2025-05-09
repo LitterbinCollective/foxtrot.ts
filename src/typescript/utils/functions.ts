@@ -9,7 +9,7 @@ export function convertToType(value: any, type: string) {
     case 'integer':
     case 'number':
       value = +value;
-      if (type === 'integer') {
+      if (type === 'integer' || type === 'PgInteger') {
         value = Math.floor(value);
         type = 'number'; // let's also set this so sanity check would work
       }
@@ -25,6 +25,7 @@ export function convertToType(value: any, type: string) {
         value === 'false' ||
         value === 'off'
       );
+      type = 'boolean'; // let's also set this so sanity check would work
       break;
     case 'undefined':
       value = undefined;

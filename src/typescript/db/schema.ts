@@ -1,6 +1,6 @@
 import { pgTable, varchar, boolean, integer, pgEnum } from 'drizzle-orm/pg-core';
 
-export const guildSettingsLangEnum = pgEnum('langSetting', [ 'en', 'ja', 'ru', 'sv', 'ua' ]);
+export const guildSettingsLangEnum = pgEnum('langSetting', [ 'en', 'ja', 'krRu', 'ru', 'sv', 'ua' ]);
 export const guildSettingsTTSEnum = pgEnum('ttsSetting', [ 'chatsounds', 'yandex' ]);
 
 export const guildSettings = pgTable('guildSettings', {

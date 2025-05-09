@@ -1,0 +1,1 @@
+ALTER TYPE "public"."langSetting" ADD VALUE 'krRu' BEFORE 'ru';
