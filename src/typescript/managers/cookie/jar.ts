@@ -52,6 +52,7 @@ export default class CookieJar {
       data = await readFile(this.path);
 
     for (const cookie of data.toString('utf-8').split('\n'))
-      this.cookies.push(new Cookie(this, cookie));
+      if (cookie.trim().length)
+        this.cookies.push(new Cookie(this, cookie));
   }
 }
