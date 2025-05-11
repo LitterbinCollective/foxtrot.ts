@@ -179,6 +179,7 @@ export default class Voice extends EventEmitter {
 
     if (!fromURL) {
       stream.pipe(this.ffmpeg.stdin);
+      this.ffmpeg.stdin.on('error', _ => {});
       stream.on('error', err => {
         this.cleanUp();
         this.queue.streamingError(err);
