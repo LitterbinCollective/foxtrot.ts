@@ -166,6 +166,13 @@ export default class Voice extends EventEmitter {
     if (decryptionKey)
       pre.push('-decryption_key', decryptionKey);
 
+    if (fromURL)
+      pre.push(
+        '-reconnect', '1',
+        '-reconnect_streamed', '1',
+        '-reconnect_delay_max', '5',
+      );
+
     this.ffmpeg = spawn('ffmpeg', [
       ...pre,
       '-i', fromURL ? stream : 'pipe:0',
