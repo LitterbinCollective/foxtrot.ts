@@ -6,7 +6,6 @@ import { Constants, durationInString } from '@cluster/utils';
 import app from '@cluster/index';
 
 import NewVoice from '.';
-import config from '@/managers/config';
 
 const ELLIPSIS = '...';
 const PROGRESS_BAR_LENGTH = 16;
@@ -59,14 +58,14 @@ export default class VoiceQueueAnnouncer {
     streamInfo: MediaServiceResponseInformation | undefined = this.current,
     returnCreateMessage = false
   ): RequestTypes.CreateMessage | undefined {
-    if (!streamInfo) throw new Error('No stream info provided');
+    if (!streamInfo) throw new Error('no stream info provided');
     this.current = streamInfo;
 
     const fromURL = typeof streamInfo.cover === 'string';
     const title = app.emoji('PLAY') +
       ' ' +
       streamInfo.author +
-      ' - ' +
+      ' — ' +
       streamInfo.title;
     const truncatedTitle = title.length > DetritusConstants.MAX_LENGTH_EMBED_TITLE ?
       title.substring(DetritusConstants.MAX_LENGTH_EMBED_TITLE - ELLIPSIS.length - 1) + ELLIPSIS :

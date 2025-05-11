@@ -30,7 +30,7 @@ export default class GoogleAssistantModule extends BaseModule {
   constructor(voice: Voice) {
     super(voice);
 
-    // TODO: config manager
+    // TODO: make compatible with config manager? otherwise deprecate since it's not frequently used anyway
     const configBase = join(__dirname, '../../../../configs/json/');
     this.assistant = new GoogleAssistant({
       keyFilePath: join(configBase, 'google-assistant-client-secret.json'),

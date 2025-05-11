@@ -27,7 +27,7 @@ export default class BaseManager<T> {
     this.init(options, rawImported);
   }
 
-  public init(options: BaseManagerOptions, rawImported?: Record<string, any>) {
+  public init(options: BaseManagerOptions = this.options, rawImported?: Record<string, any>) {
     if (!isAbsolute(options.path))
       options.path = join(process.cwd(), options.path as string);
 

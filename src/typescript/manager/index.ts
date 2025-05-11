@@ -6,6 +6,8 @@ import { rmSync, writeFileSync } from 'fs';
 
 import config from '@/managers/config'
 import { Logger } from '@/utils';
+import com, { ManagerClientCommunicationWrapper } from '@/com';
+import '@manager/managers/activities';
 
 if (process.env.NODE_ENV === 'development') {
   Logger.debug('you seem to be running in development mode, creating a PID file...');
@@ -31,6 +33,9 @@ const manager = new ClusterManager('../cluster/', config.app.token, {
   shardsPerCluster: config.app.shardsPerCluster || 2,
   shards: [config.app.shardStart, config.app.shardEnd],
 });
+
+const client = new ManagerClientCommunicationWrapper(manager);
+com.addClient(client);
 
 manager.on('clusterProcess', ({ clusterProcess }) => {
   const prefix = `Cluster [${clusterProcess.clusterId}]:`;

@@ -9,9 +9,12 @@ import { Constants, Logger } from '@cluster/utils';
 import { applicationCreated } from '@cluster/stores';
 import mediaservice from '@cluster/managers/mediaservices';
 
-import '@cluster/managers/special';
 import config from '@/managers/config';
 import { getOrCreateSettings } from '@/db/queries';
+import com, { ClusterServerCommunicationWrapper } from '@/com';
+
+import '@cluster/managers/special';
+import '@cluster/managers/activities';
 
 type Emojis = {
   [K in Extract<keyof typeof Constants.EMOJIS, string>]?: string;
@@ -43,12 +46,13 @@ export default class Application {
       },
     });
 
+    const server = new ClusterServerCommunicationWrapper(this.clusterClient);
+    com.addServer(server);
+
     let processTitle = `Shard ${this.clusterClient.shardStart} - ${this.clusterClient.shardEnd}`;
-    let tag = 'Shard';
     if (this.clusterClient.manager) {
       processTitle =
         `Cluster [${this.clusterClient.clusterId}] - ` + processTitle;
-      tag = `Cluster [${this.clusterClient.clusterId}]`;
     }
 
     process.title = processTitle;
@@ -120,8 +124,11 @@ export default class Application {
   private async initialize() {
     await this.clusterClient.run();
     await this.getEmojis();
-    await this.commandClient.run();
-    await this.interactionCommandClient.run();
+
+    await Promise.all([
+      this.commandClient.run(),
+      this.interactionCommandClient.run(),
+    ]);
 
     Logger.log('bot online!');
     Logger.info(

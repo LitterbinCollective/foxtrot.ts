@@ -1,21 +1,21 @@
 import { Readable } from 'stream';
-import { Innertube, OAuth2Tokens } from 'youtubei.js';
+import { Innertube, Session } from 'youtubei.js';
+import { fetch } from 'undici';
 
-import { UserError } from '@cluster/utils';
-import cookie from '@cluster/managers/cookie';
+import cookies from '@/managers/cookie';
+import Cookie from '@/managers/cookie/cookie';
 import { MediaService } from './baseservice';
 import { MediaServiceResponse, MediaServiceResponseMediaType } from '../types';
-import Cookie from '@cluster/managers/cookie/cookie';
+import com from '@/com';
 
 export default class YouTubeService extends MediaService {
   public hosts = ['youtube.com', 'youtu.be'];
-  private yt!: Promise<Innertube>;
+  private innertube!: Innertube;
 
   constructor() {
     super();
 
     this.patterns = this.match;
-    this.yt = Innertube.create();
   }
 
   public match(url: URL): Record<string, string> {
@@ -38,71 +38,43 @@ export default class YouTubeService extends MediaService {
     return url;
   }
 
-  private getOAuthData(cookies: Cookie) {
-    const REQUIRED_VALUES = [ 'access_token', 'refresh_token' ];
-    if (REQUIRED_VALUES.some(x => !cookies.has(x)))
-      return;
-
-    if (cookies.has('expires')) {
-      cookies.set('expiry_date', cookies.get('expires') as string);
-    } else if (!cookies.has('expiry_date'))
-      return;
-
-    return Object.fromEntries(cookies.entries()) as unknown as OAuth2Tokens;
+  private fetch(cookie?: Cookie) {
+    return async (url: any, options?: any): Promise<any> => {
+      const result = await fetch(url, options);
+      cookie?.handleSetCookie(result.headers as Headers);
+      return result;
+    };
   }
 
   private async getInnertube() {
-    const innertube = await this.yt;
+    const rawCookie = cookies.imported.youtube?.rotate();
+    const cookie = rawCookie?.toString();
+    const retrievePlayer = Boolean(rawCookie);
 
-    const shouldRefreshToken = innertube.session.oauth.shouldRefreshToken();
-    if (innertube.session.logged_in && !shouldRefreshToken)
-      return innertube;
-
-    const cookies = cookie.imported.youtube?.rotate();
-    if (!cookies) return;
-
-    const oauth = this.getOAuthData(cookies);
-    if (oauth) {
-      await innertube.session.oauth.init(oauth);
-      innertube.session.logged_in = true;
+    if (!this.innertube || com.data._youtubeDirty) {
+      this.innertube = await Innertube.create({
+        retrieve_player: retrievePlayer,
+        cookie,
+        po_token: com.data._youtube?.poToken,
+        visitor_data: com.data._youtube?.visitorData
+      });
+      com.data._youtubeDirty = false;
     }
 
-    if (shouldRefreshToken)
-      await innertube.session.oauth.refreshAccessToken();
+    const session = new Session(
+      this.innertube.session.context,
+      this.innertube.session.api_key,
+      this.innertube.session.api_version,
+      this.innertube.session.account_index,
+      this.innertube.session.config_data,
+      this.innertube.session.player,
+      cookie,
+      this.fetch(rawCookie),
+      this.innertube.session.cache,
+      com.data._youtube?.poToken
+    );
 
-    const oldExpiryString = cookies.get('expiry_date');
-    const newExpiryString = innertube.session.oauth.oauth2_tokens?.expiry_date;
-
-    if (oldExpiryString && newExpiryString) {
-      // just trust me
-      const oldExpiry = new Date(oldExpiryString);
-      const newExpiry = new Date(newExpiryString);
-
-      if (oldExpiry !== newExpiry) {
-        for (const key in innertube.session.oauth.client_id) {
-          type Value = keyof typeof innertube.session.oauth.client_id;
-          cookies.set(
-            key,
-            innertube.session.oauth.client_id[key as Value]
-          );
-        }
-
-        for (const key in innertube.session.oauth.oauth2_tokens) {
-          // bare with me here
-          type Value = keyof typeof innertube.session.oauth.oauth2_tokens;
-          const value = innertube.session.oauth.oauth2_tokens[key as Value];
-          if (value === undefined) continue;
-
-          cookies.set(
-            key,
-            String(value)
-          );
-        }
-
-        cookies.set('expiry_date', newExpiry.toISOString());
-      }
-    }
-
+    const innertube = new Innertube(session);
     return innertube;
   }
 
@@ -110,52 +82,47 @@ export default class YouTubeService extends MediaService {
     url: string,
     matches: Record<string, string>
   ): Promise<MediaServiceResponse> {
-    const innertube = await this.getInnertube();
-    if (!innertube) throw new Error('no innertube available');
+    const videoId = matches.id;
+    const client = 'WEB_EMBEDDED';
 
-    const info = await innertube.getBasicInfo(matches.id, 'ANDROID');
-    if (!info.streaming_data) throw new Error('no streaming_data');
+    const yt = await this.getInnertube();
+    const info = await yt.getBasicInfo(videoId, client);
 
-    const { expires } = info.streaming_data;
+    const playability = info.playability_status;
+    const basicInfo = info.basic_info;
+
+    // TODO: descriptive errors for users?
+    if (playability && playability.status !== 'OK')
+      throw new Error(`playability status: ${playability.status}`);
+
+    if (basicInfo.is_live)
+      throw new Error('live streams are not supported');
+
     return {
       media: {
         type: MediaServiceResponseMediaType.FETCH,
         fetch: async () => {
-          let stream: ReadableStream;
-
-          const options = {
-            type: 'audio' as 'audio',
+          const yt = await this.getInnertube();
+          const stream = await yt.download(videoId, {
             quality: 'best',
-            format: 'mp4',
-          };
+            type: 'audio',
+            client
+          });
 
-          if (expires.getDate() - Date.now() <= 0)
-            stream = await innertube.download(matches.id, options);
-          else stream = await info.download(options);
-
-          return Readable.from(stream as any);
+          return Readable.from(stream);
         },
       },
       information: {
-        title: info.basic_info.title || '',
-        author: info.basic_info.author || '',
-        duration: info.basic_info.duration || -1,
-        cover: (info.basic_info.thumbnail || [])[0].url,
+        title: basicInfo.title || 'unknown',
+        author: basicInfo.author || 'author',
+        duration: basicInfo.duration || 0,
         url,
+        cover: basicInfo.thumbnail?.sort((a, b) => a.width - b.width).pop()?.url,
       },
     };
   }
 
   public async findOne(query: string): Promise<MediaServiceResponse> {
-    const innertube = await this.getInnertube();
-    if (!innertube) throw new Error('no innertube available');
-
-    const results = await innertube.search(query, { type: 'video' });
-
-    if (!results.videos || results.videos.length === 0)
-      throw new UserError('query-not-found');
-
-    const id = (results.videos[0] as any).id;
-    return await this.download('https://youtu.be/' + id, { id });
+    throw new Error('no innertube available')
   }
 }

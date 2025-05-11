@@ -7,6 +7,7 @@ import { t } from '@cluster/managers/i18n';
 import { defineDefaultSentryContext } from './functions';
 
 const TIMEOUT_GLOBAL = 60000;
+const IMAGE_URL = 'https://foxtrot.litterbin.dev/me.png'; // TODO: config?
 
 /**
 const TIMEOUT_USER = 120000;
@@ -101,7 +102,7 @@ export default class Feedback {
     container.createMediaGallery({
       items: [
         {
-          media: { url: 'https://wicopee.drm.gdn/xr1RM24ltS.png' }
+          media: { url: IMAGE_URL }
         }
       ]
     });

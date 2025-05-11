@@ -6,10 +6,10 @@ export default class HalloweenEvent extends BaseEvent {
   constructor() {
     super();
 
-    this.editAvatar('avatar-halloween.png');
+    this.editAvatar('halloween.png');
   }
 
   public cleanUp(): void {
-    this.editAvatar('avatar.png');
+    this.editAvatar('default.png');
   }
 }

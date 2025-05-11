@@ -3,10 +3,25 @@ import FFMpeg from '@cluster/utils/audio/ffmpeg';
 import { BaseTTSService } from './basettsservice';
 import { spawn } from 'child_process';
 
+const VOICES = ['zahar', 'ermil', 'alyss', 'jane', 'oksana', 'omazh'];
+const map: Record<string, string> = {
+  '!': 'evil',
+  ')': 'good'
+};
+
 export default class YandexTTSService extends BaseTTSService {
-  public generate(content: string) {
+  public generate(content: string, additional: string, userId: string) {
+    let emotion = 'neutral';
+
+    const start = content.length - additional.length - 1;
+    const last = content.substring(start, start + 1);
+    if (last in map)
+      emotion = map[last];
+
+    const voice = VOICES[Math.abs(parseInt(userId.slice(-2)) % VOICES.length)];
+
     return new Promise<Buffer>(resolve => {
-      const url = `https://tts.voicetech.yandex.net/tts?text=${encodeURIComponent(content)}&format=mp3&quality=hi&lang=ru_RU&speaker=alyss&speed=1&emotion=neutral&platform=web&application=translate&chunked=0&mock-ranges=1`;
+      const url = `https://tts.voicetech.yandex.net/tts?text=${encodeURIComponent(content)}&format=mp3&quality=hi&lang=ru_RU&speaker=${voice}&speed=1&emotion=${emotion}&platform=web&application=translate&chunked=0&mock-ranges=1`;
 
       const ffmpeg = spawn('ffmpeg', [
         '-i', url,

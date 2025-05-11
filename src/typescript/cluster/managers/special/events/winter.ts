@@ -6,10 +6,10 @@ export default class WinterEvent extends BaseEvent {
   constructor() {
     super();
 
-    this.editAvatar('avatar-winter.png');
+    this.editAvatar('winter.png');
   }
 
   public cleanUp(): void {
-    this.editAvatar('avatar.png');
+    this.editAvatar('default.png');
   }
 }

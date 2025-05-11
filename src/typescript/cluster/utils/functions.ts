@@ -1,16 +1,12 @@
 import { Command, Interaction, Structures, Utils } from 'detritus-client';
-import { RestClient } from 'detritus-client/lib/rest';
-import { Client } from 'detritus-client-rest';
 import { getTableConfig } from 'drizzle-orm/pg-core';
+import * as Sentry from '@sentry/node';
 
 import { t } from '@cluster/managers/i18n';
-import config from '@/managers/config';
 import { branch, Constants, gitCommit } from '@cluster/utils';
 import { guildSettings } from '@/db/schema';
 import { GuildSettings } from '@/db/types';
 import app from '@cluster/index';
-
-import * as Sentry from '@sentry/node';
 
 interface ContextLike {
   user: {
@@ -222,31 +218,7 @@ export async function listSettings(
   });
 }
 
-export function sendFeedback(
-  rest: RestClient | Client,
-  content: string,
-  user?: Structures.User | string
-) {
-  let webhook: IConfigFeedbackWebhook = config.app.feedbackWebhook;
-  if (!webhook || webhook.id.length === 0 || webhook.token.length === 0)
-    return false;
-
-  rest.executeWebhook(webhook.id, webhook.token, {
-    content,
-    username:
-      typeof user === 'object'
-        ? `${user.tag} (${user.id})`
-        : user || 'Anonymous',
-    avatarUrl: typeof user === 'object' ? user.avatarUrl : undefined,
-    allowedMentions: {
-      parse: ['users'],
-    },
-  });
-
-  return true;
-}
-
-// https://gitlab.com/Cynosphere/HiddenPhox/-/blob/ffa8ceec9203cb5667708538d4e520136929dbf6/src/lib/utils.js#L340
+// https://stackoverflow.com/a/39243641
 const HTML_ENTITIES = {
   nbsp: ' ',
   cent: '¢',
@@ -287,9 +259,12 @@ export function checkPermission(
 
 export function durationInString(seconds: number) {
   const result = [~~(seconds / 60) % 60, ~~seconds % 60];
+
   let hours: number;
-  if ((hours = ~~(seconds / 3600)) !== 0) result.unshift(hours);
+  if ((hours = ~~(seconds / 3600)) !== 0)
+    result.unshift(hours);
+
   return result
-    .map(n => (n < 10 ? '0' + n.toString() : n.toString()))
+    .map(n => (n < 10 ? '0' + String(n) : String(n)))
     .join(':');
 }

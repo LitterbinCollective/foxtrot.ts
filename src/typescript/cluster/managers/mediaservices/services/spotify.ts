@@ -1,6 +1,7 @@
-import { readFileSync } from 'fs';
 import SpotifyDL, { SpotifyImage, SpotifyTrack, SpotifyTrackExtended } from 's-dl';
-import { join } from 'path';
+
+import cookie from '@/managers/cookie';
+import config from '@/managers/config';
 
 import { MediaService } from './baseservice';
 import {
@@ -9,10 +10,6 @@ import {
   MediaServiceResponseMediaType
 } from '../types';
 import { DEFAULT_SOUND_ICON } from '..';
-import cookie from '@cluster/managers/cookie';
-import config from '@/managers/config';
-
-const DIST_REGEX = /dist[\/\\]{0,1}$/g;
 
 export default class SpotifyService extends MediaService {
   public disableSearch: boolean = true;
@@ -70,15 +67,6 @@ export default class SpotifyService extends MediaService {
       throw new Error('not a valid Spotify link');
 
     return url;
-  }
-
-  private get baseConfigPath() {
-    let cwd = process.cwd();
-
-    if (DIST_REGEX.test(cwd))
-      cwd = cwd.replace(DIST_REGEX, '');
-
-    return join(cwd, 'configs/');
   }
 
   private formResponse(track: SpotifyTrack | SpotifyTrackExtended, image?: SpotifyImage): MediaServiceResponse {

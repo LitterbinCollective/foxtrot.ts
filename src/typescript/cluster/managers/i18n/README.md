@@ -24,7 +24,7 @@ If you have contributed to the translations, feel free to credit yourself.
 - [@Golub'](https://discord.com/users/274911782768738304) **(orig.)**
 - https://github.com/be195 (slight corrections)
 
-### Krivoy Russian ('kr_ru.ts')
+### Krivoy Russian (`kr_ru.ts`)
 - https://github.com/chelka0 **(orig.)**
 
 ### Japanese (`ja.ts`)

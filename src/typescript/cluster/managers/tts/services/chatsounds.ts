@@ -5,7 +5,7 @@ import { Constants } from '@/utils';
 
 export default class ChatsoundsTTSService extends BaseTTSService {
   public async generate(content: string) {
-    const context = sh.worker(content);
+    const context = sh.new(content);
     return await context.buffer({
       format: 's16le',
       sampleRate: Constants.OPUS_SAMPLE_RATE,

@@ -103,16 +103,16 @@ export default class Voice extends EventEmitter {
     let samples: Buffer | null = null;
 
     const naturalLength = OPUS_FRAME_SIZE * OPUS_AUDIO_CHANNELS * 2;
-    const len = naturalLength * this.effects.speed;
+    const length = naturalLength * this.effects.speed;
     if (this.ffmpeg && !this.silence) {
-      samples = this.ffmpeg.stdout.read(len);
+      samples = this.ffmpeg.stdout.read(length);
 
       if (!samples && this.ffmpeg?.stdout.closed)
         this.skip()
       else if (samples)
         this.time += samples.length / (OPUS_SAMPLE_RATE * OPUS_AUDIO_CHANNELS * 2);
     } else
-      samples = Buffer.alloc(Math.floor(len));
+      samples = Buffer.alloc(Math.floor(length));
 
     if (samples)
       this.effects.write(samples);
@@ -201,6 +201,7 @@ export default class Voice extends EventEmitter {
 
   private cleanUp() {
     if (this.ffmpeg) {
+      this.ffmpeg.stdin.end();
       this.ffmpeg.kill('SIGKILL');
       this.ffmpeg = undefined;
     }
@@ -225,7 +226,7 @@ export default class Voice extends EventEmitter {
     if (script instanceof Buffer) return this.pipeline.playBuffer(script);
 
     try {
-      // TODO: worker
+      // TODO: mute prop in WorkerContext? optimize worker?
       const context = chatsounds.new(script.toString());
       const buffer = await context.buffer({
         sampleRate: Constants.OPUS_SAMPLE_RATE,

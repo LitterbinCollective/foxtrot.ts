@@ -29,7 +29,7 @@ export class TTSManager extends BaseManager<BaseTTSService> {
     );
   }
 
-  public async cleanMessage(message: Structures.Message) {
+  public async cleanMessage(message: Structures.Message): Promise<[string, string]> {
     if (!message.guild) throw new Error;
 
     let content = message.convertContent({
@@ -65,7 +65,7 @@ export class TTSManager extends BaseManager<BaseTTSService> {
       content = await t(message.guild, 'tts.say', name, content);
     }
 
-    return content + translated;
+    return [content + translated, translated];
   }
 
   private queueAdd(operation: () => Promise<any>) {
@@ -77,7 +77,7 @@ export class TTSManager extends BaseManager<BaseTTSService> {
     );
   }
 
-  private say(content: string) {
+  private say(content: string, translated: string, userId: string) {
     if (!this.pick) return;
 
     this.logger.debug('say:', content);
@@ -85,7 +85,7 @@ export class TTSManager extends BaseManager<BaseTTSService> {
       if (!this.pick || !(this.pick in this.imported)) return;
 
       const service = this.imported[this.pick];
-      const buffer = await service.generate(content);
+      const buffer = await service.generate(content, translated, userId);
       if (!buffer) return;
 
       if (this.voice) {
@@ -98,8 +98,8 @@ export class TTSManager extends BaseManager<BaseTTSService> {
   }
 
   public async createMessage(payload: GatewayClientEvents.MessageCreate) {
-    const content = await this.cleanMessage(payload.message);
-    return await this.say(content);
+    const [content, translated] = await this.cleanMessage(payload.message);
+    return await this.say(content, translated, payload.message.author.id);
   }
 
   public async voiceStateUpdate(payload: GatewayClientEvents.VoiceStateUpdate) {
@@ -120,7 +120,7 @@ export class TTSManager extends BaseManager<BaseTTSService> {
 
     if (!content.length) return;
 
-    return await this.say(content);
+    return await this.say(content, '', payload.voiceState.member.id);
   }
 }
 

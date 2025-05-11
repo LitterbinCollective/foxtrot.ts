@@ -8,7 +8,6 @@ import { BaseEvent } from './events/baseevent';
 
 export class Special extends BaseManager<any> {
   public current?: BaseEvent;
-  public interval: NodeJS.Timeout;
 
   constructor() {
     super({
@@ -16,10 +15,6 @@ export class Special extends BaseManager<any> {
       logger: 'Special',
       path: join(__dirname, 'events/'),
     });
-
-    this.checkDate = this.checkDate.bind(this);
-    this.interval = setInterval(this.checkDate, 60000);
-    this.checkDate();
 
     VoiceStore.subscribe(
       'voiceCreate',

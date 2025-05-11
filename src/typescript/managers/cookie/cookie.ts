@@ -13,23 +13,34 @@ export default class Cookie extends Map<string, string> {
       values = values.toString('utf-8');
 
     for (const cookie of values.toString().split(';')) {
-      const [ key, value ] = cookie.split('=').map((x: string) => x.trim());
-      this.set(key, value);
+      const [ key, ...value ] = cookie.split('=');
+      this.set(key.trim(), value.join('='));
     }
   }
 
+  private get manager() {
+    return this.jar.manager;
+  }
+
   public set(key: string, value: string) {
-    this.jar.clean = false;
+    this.jar.dirty = true;
     return super.set(key, value);
   }
 
+  public delete(key: string) {
+    this.jar.dirty = true;
+    return super.delete(key);
+  }
+
   public handleSetCookie(header: string | Headers) {
-    if (header instanceof Headers) {
+    if (typeof header === 'object') {
       const setCookie = header.get('set-cookie')
       if (!setCookie) return;
 
       header = setCookie;
     }
+
+    this.manager.logger.debug('handling set-cookie', header);
 
     const parsed = setCookieParser(header, { decodeValues: false });
     const current = new Date;
@@ -43,7 +54,12 @@ export default class Cookie extends Map<string, string> {
 
   public toString() {
     return [...this.entries()].reduce(
-      (prev, curr) => prev += (curr[0].length ? `${curr.join('=')};` : ''),
+      (prev, curr) =>
+        prev += (
+          curr[0].length ?
+          `${curr.join('=')};` :
+          ''
+        ),
       ''
     );
   }

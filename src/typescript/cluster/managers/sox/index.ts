@@ -58,7 +58,7 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
 
     const stack: BaseEffect[] = [];
     let index = start;
-    let hypotheticalLength = this.stack.length;
+    let length = this.stack.length;
     for (const part of parts) {
       const match = part.match(/^([a-zA-Z0-9_]+)(?:\((.*)\))?$/);
       if (!match)
@@ -94,12 +94,12 @@ export class SoxManager extends BaseTransformManager<new () => BaseEffect> {
         }
       }
 
-      if (hypotheticalLength === Constants.VOICE_EFFECTS_STACK_LIMIT)
+      if (length === Constants.VOICE_EFFECTS_STACK_LIMIT)
         throw new UserError('effects-mgr.stack-overflow');
 
       stack.push(effect);
       index++;
-      hypotheticalLength++;
+      length++;
     }
 
     this.stack.splice(start, 0, ...stack);
