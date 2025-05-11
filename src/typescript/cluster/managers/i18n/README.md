@@ -22,7 +22,7 @@ are very much appreciated!
 > prop to the localization object. This will ensure that some missing lines
 > get filled in with another language's lines in the future.
 
--# (Joke languages are allowed.)
+<sup><sub>(Joke languages are allowed.)</sub></sup>
 
 ## Credits
 If you have contributed to the translations, feel free to credit yourself.
