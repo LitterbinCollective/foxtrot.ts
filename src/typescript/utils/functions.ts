@@ -2,8 +2,10 @@ import UserError from './user-error';
 
 export function convertToType(value: any, type: string) {
   switch (type) {
+    case 'PgVarchar':
     case 'string':
       value = value.toString();
+      type = 'string'; // let's also set this so sanity check would work
       break;
     case 'PgInteger':
     case 'integer':
