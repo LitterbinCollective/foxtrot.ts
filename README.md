@@ -38,7 +38,16 @@ Trying to download content from YouTube has became recently hard to do so due to
 Google's efforts, hence you may need to maintain it constantly and possibly set
 up multiple accounts for foxtrot, as some can be terminated.
 
-To authorize one or multiple accounts, just run `npm run auth:youtube`.
+> [!CAUTION]
+> **DO NOT use accounts that are used by you or registered with your Google account!**
+> Doing so will most likely leave your YouTube accounts terminated.
+
+To authorize, you will need to log into YouTube and extract cookies in header format.
+Cookies for YouTube are stored at `cookies/youtube.txt`.
+
+This will most likely require constant maintenance, unless you host foxtrot.ts at home.
+In this case, authorization isn't needed, and you can use YouTube links with foxtrot, *as
+long as you can view videos on there without being logged in.*
 
 ## License
 foxtrot.ts is licensed under [AGPL-3.0](https://github.com/LitterbinCollective/foxtrot.ts/blob/master/COPYING).

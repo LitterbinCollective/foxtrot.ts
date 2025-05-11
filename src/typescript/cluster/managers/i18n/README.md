@@ -1,10 +1,10 @@
 # `i18n`
-Folder named `lang` contains translations. Any corrections or additions
+Folder named `lang` contains localization files. Any corrections or additions
 are very much appreciated!
 
 ## Tips/Guidelines
 If you are planning to translate foxtrot into another language or modify
-the already-made translations, please keep the following things in mind.
+the already-made localizations, please keep the following things in mind.
 - Keep it as casual as possible.
 - Use lowercase and be informal.
 - Be nice, do not use explicit or offensive vocabulary.
@@ -17,12 +17,22 @@ translations done by the said maintainers cannot be always correct and
 follow the guidelines above. As said before, corrections and additions
 are very much appreciated!
 
+> [!TIP]
+> If you are basing your localization file on another, add an "_extends"
+> prop to the localization object. This will ensure that some missing lines
+> get filled in with another language's lines in the future.
+
+-# (Joke languages are allowed.)
+
 ## Credits
 If you have contributed to the translations, feel free to credit yourself.
 
 ### Russian (`ru.ts`)
 - [@Golub'](https://discord.com/users/274911782768738304) **(orig.)**
 - https://github.com/be195 (slight corrections)
+
+## Blyadskiy Russian (`bl_ru.ts`)
+- https://github.com/chelka0 **(orig.)**
 
 ### Krivoy Russian (`kr_ru.ts`)
 - https://github.com/chelka0 **(orig.)**
