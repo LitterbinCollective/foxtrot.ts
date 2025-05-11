@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^18.19.87",
+    "@types/node": "^22.15.17",
     "@types/pg": "^8.11.14",
     "@types/set-cookie-parser": "^2.4.10",
     "drizzle-kit": "^0.31.1",
