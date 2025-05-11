@@ -10,5 +10,6 @@ Sentry.init({
   tracesSampleRate: 1.0,
   profilesSampleRate: 1.0,
   environment: process.env.NODE_ENV || 'development',
+  release: 'foxtrot.ts@' + gitCommit,
   beforeBreadcrumb: ConsoleSink.sentryIgnore,
 });
