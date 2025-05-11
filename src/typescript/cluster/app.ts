@@ -42,7 +42,26 @@ export default class Application {
             name: `media | run ${prefix}help`,
           },
         },
-        intents: DetritusConstants.GatewayIntents.MESSAGE_CONTENT,
+        intents: [
+          DetritusConstants.GatewayIntents.GUILDS,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGES,
+          DetritusConstants.GatewayIntents.GUILD_BANS,
+          DetritusConstants.GatewayIntents.GUILD_INTEGRATIONS,
+          DetritusConstants.GatewayIntents.GUILD_WEBHOOKS,
+          DetritusConstants.GatewayIntents.GUILD_EMOJIS,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGES,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGE_REACTIONS,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGE_TYPING,
+          DetritusConstants.GatewayIntents.GUILD_SCHEDULED_EVENTS,
+          DetritusConstants.GatewayIntents.AUTO_MODERATION_CONFIGURATION,
+          DetritusConstants.GatewayIntents.AUTO_MODERATION_EXECUTION,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGE_POLLS,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGE_POLLS,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGE_TYPING,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGE_REACTIONS,
+          DetritusConstants.GatewayIntents.GUILD_VOICE_STATES,
+          DetritusConstants.GatewayIntents.MESSAGE_CONTENT
+        ],
       },
     });
 
