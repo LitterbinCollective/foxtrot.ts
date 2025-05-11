@@ -42,7 +42,7 @@ export default class Application {
             name: `media | run ${prefix}help`,
           },
         },
-        intents: 'ALL'
+        intents: [ DetritusConstants.GatewayIntents.MESSAGE_CONTENT ],
       },
     });
 
