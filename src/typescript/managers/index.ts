@@ -25,6 +25,7 @@ export default class BaseManager<T> {
 
   constructor(options: BaseManagerOptions, rawImported?: Record<string, any>) {
     this.init(options, rawImported);
+    // foo
   }
 
   public init(options: BaseManagerOptions = this.options, rawImported?: Record<string, any>) {
