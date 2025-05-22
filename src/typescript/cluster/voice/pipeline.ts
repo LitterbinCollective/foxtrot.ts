@@ -44,6 +44,7 @@ class VoiceSafeConnection extends EventEmitter {
     });
     this.voiceConnection.sendAudioSilenceFrame();
     this.voiceConnection.on('packet', (packet) => this.emit('packet', packet));
+    this.voiceConnection.gateway.receiveEnabled = false;
 
     /*
       what we are essentially doing here is not using detritus'
