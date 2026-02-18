@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@discordjs/opus':
-        specifier: github:discordjs/opus
+        specifier: 0.10.0
         version: https://codeload.github.com/discordjs/opus/tar.gz/3f4a3d4cc3997107435a59ae86bc044d6c3be73e(encoding@0.1.13)
       '@sentry/cli':
         specifier: ^2.43.1
