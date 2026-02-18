@@ -102,7 +102,7 @@ export default class Voice extends EventEmitter {
     this.emit('initialized');
     this.initialized = true;
 
-    this.playChatsoundScript('null=1 (100500 zdorovo):realm(internal)');
+    this.playChatsoundScript('null=1 foxtrotjoin:realm(internal)');
     if (this.banServerConfig) {
       if (this.banServerConfig.annoyEvery)
         this.nextAnnoyIn = this.banServerConfig.annoyEvery[0] + Math.random() * (this.banServerConfig.annoyEvery[1] - this.banServerConfig.annoyEvery[0]);
