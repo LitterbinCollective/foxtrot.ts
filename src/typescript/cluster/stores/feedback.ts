@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import Application from '@cluster/app';
 import { branch, Feedback } from '@cluster/utils';
 import Store from './store';
+import config from '@/managers/config';
 
 const MAXIMUM_AGE = 1000 * 60 * 60 * 8;
 const CHECK_INTERVAL = 1000 * 60 * 5;
@@ -59,7 +60,9 @@ class FeedbackStore extends Store<string, Feedback> {
   public create(channel: Structures.ChannelTextType) {
     if (!channel.guild)
       throw new Error('paginator cannot be created');
-    if (branch === 'master' || branch === 'main')
+    const ban = config.ban.servers?.[channel.guild.id];
+    const banCheck = typeof ban === 'object' ? ban.block : ban;
+    if (branch === 'master' || branch === 'main' || banCheck)
       return null;
     if (this.has(channel.guild.id))
       return this.get(channel.guild.id)!;

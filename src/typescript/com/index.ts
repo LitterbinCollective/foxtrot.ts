@@ -1,6 +1,7 @@
 import { Logger } from '@/utils';
 import AbstractCommunicationWrapper from './wrappers/abstract';
-import { WorkerData } from '@/manager/managers/activities/activities/youtube';
+import { WorkerData as YouTubeWorkerData } from '@/manager/managers/activities/activities/youtube';
+import { WorkerData as SpotifyWorkerData } from '@/manager/managers/activities/activities/spotify';
 
 enum InternalOpCodes {
   BROADCAST = 'BROADCAST',
@@ -13,8 +14,10 @@ export { default as ManagerClientCommunicationWrapper } from './wrappers/manager
 
 interface Data {
   [key: string]: any;
-  _youtube?: WorkerData;
+  _youtube?: YouTubeWorkerData;
   _youtubeDirty?: boolean;
+  _spotify?: SpotifyWorkerData;
+  _spotifyDirty?: boolean;
 }
 
 // for communication between the manager and cluster processes...

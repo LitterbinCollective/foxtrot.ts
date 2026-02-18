@@ -1,0 +1,8 @@
+onlyBuiltDependencies:
+  - '@discordjs/opus'
+  - '@sentry/cli'
+  - '@sentry/profiling-node'
+  - esbuild
+  - protobufjs
+  - puppeteer
+  - re-unplayplay

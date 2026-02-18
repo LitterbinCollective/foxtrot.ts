@@ -235,7 +235,32 @@ export default class VoiceQueue {
     this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
   }
 
-  public async push(
+  public async shuffle() {
+    await this.awaitLoading();
+
+    for (let i = this.queue.length - 1; i >= 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.queue[j], this.queue[i]] = [this.queue[i], this.queue[j]];
+    }
+  }
+
+  private loading: Promise<any>[] = [];
+  public async push(url: string, message?: Structures.Message | Structures.User) {
+    const promise = this.pushInternal(url, message);
+    promise.finally(
+      () => this.loading.splice(this.loading.indexOf(promise), 1)
+    );
+    promise.catch(() => {}); // prevent UnhandledPromiseRejectionWarning
+
+    this.loading.push(promise);
+    return await promise;
+  }
+
+  public async awaitLoading() {
+    return Promise.all(this.loading);
+  }
+
+  private async pushInternal(
     url: string,
     message?: Structures.Message | Structures.User
   ) {

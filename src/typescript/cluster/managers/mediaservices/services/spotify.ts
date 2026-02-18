@@ -10,6 +10,7 @@ import {
   MediaServiceResponseMediaType
 } from '../types';
 import { DEFAULT_SOUND_ICON } from '..';
+import com from '@/com';
 
 export default class SpotifyService extends MediaService {
   public disableSearch: boolean = true;
@@ -55,6 +56,11 @@ export default class SpotifyService extends MediaService {
     if (!this._spotifyDl)
       throw new Error('spotifyDl not initialized');
 
+    if (com.data._spotifyDirty && com.data._spotify) {
+      com.data._spotifyDirty = false;
+      this._spotifyDl.setTOTP(com.data._spotify.version, Buffer.from(com.data._spotify.transformedSecret, 'utf8'));
+    }
+
     return this._spotifyDl;
   }
 
@@ -75,7 +81,9 @@ export default class SpotifyService extends MediaService {
         type: MediaServiceResponseMediaType.FETCH,
         fetch: async () => {
           const response = await this.spotifyDl?.downloadTrack(track, { spawn: false });
-          if ('streamUrl' in response) {
+          if ('stream' in response && response.stream) {
+            return response.stream as any;
+          } else if ('streamUrl' in response) {
             return {
               decryptionKey: response.decryptionKey,
               type: MediaServiceResponseMediaType.URL,

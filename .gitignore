@@ -27,3 +27,5 @@ crash.*.log
 ag.txt
 # Sentry Config File
 .sentryclirc
+
+cookies-*.txt

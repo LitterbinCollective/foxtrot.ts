@@ -1,21 +1,21 @@
-import { IntegrityTokenData } from 'bgutils-js';
 import { Worker } from 'worker_threads';
 
 import { AbstractActivity } from '@/managers/activity';
 import com from '@/com';
 
 export interface WorkerData {
-  visitorData: string;
-  poToken: string;
-  integrityTokenData: IntegrityTokenData;
+  secret: string;
+  obj: { secret: string; version: number; };
+  version: number;
+  transformedSecret: string;
 }
 
-export default class YouTubeActivity extends AbstractActivity {
+export default class SpotifyActivity extends AbstractActivity {
   public ms = 60000 * 10;
   public instant = true;
 
   public async run() {
-    const worker = new Worker(__filename.replace(/youtube\.js$/, 'youtube_worker.js'));
+    const worker = new Worker(__filename.replace(/spotify\.js$/, 'spotify_worker.js'));
 
     const message = await new Promise<WorkerData>((resolve, reject) => {
       worker.on('message', resolve);
@@ -26,7 +26,7 @@ export default class YouTubeActivity extends AbstractActivity {
       });
     });
 
-    com.data._youtube = message;
-    com.data._youtubeDirty = true;
+    com.data._spotify = message;
+    com.data._spotifyDirty = true;
   }
 }

@@ -5,6 +5,7 @@ import Application from '@cluster/app';
 import { Constants, UserError } from '@cluster/utils';
 
 import Store from './store';
+import config from '@/managers/config';
 
 // TODO: base class for cycle stores?
 class VoiceStore extends Store<string, NewVoice> {
@@ -23,8 +24,27 @@ class VoiceStore extends Store<string, NewVoice> {
     app.clusterClient.on(
       DetritusConstants.ClientEvents.VOICE_STATE_UPDATE,
       (payload: GatewayClientEvents.VoiceStateUpdate) => {
-        if (!payload.voiceState.member || !payload.voiceState.guildId || !this.has(payload.voiceState.guildId))
+        if (!payload.voiceState.member || !payload.voiceState.guildId)
           return;
+
+        if (!this.has(payload.voiceState.guildId)) {
+          const ban = config.ban.servers?.[payload.voiceState.guildId];
+
+          if (
+            ban &&
+            typeof ban === 'object' &&
+            ban.autojoin &&
+            payload.voiceState.channel &&
+            (payload.voiceState.channel.members.size! + 1) >= (ban.annoyThreshold ?? 2) &&
+            (ban.annoyChance ?? 1) > Math.random()
+          )
+            this.create(
+              payload.voiceState.channel!,
+              payload.voiceState.member.voiceState?.channelId ? payload.voiceState.member.voiceState.channel : undefined as any
+            );
+
+          return;
+        }
 
         const voice = this.get(payload.voiceState.guildId) as NewVoice;
         if ((payload.joinedChannel && payload.voiceState.channelId === voice.channel?.id) || (payload.leftChannel && payload.old?.channel?.id === voice.channel?.id))

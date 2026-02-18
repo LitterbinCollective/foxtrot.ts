@@ -32,7 +32,7 @@ class VoiceSafeConnection extends EventEmitter {
       throw new Error(
         'Bot is not able to join or speak in this voice channel.'
       );
-    const voiceConnectObj = await voiceChannel.join({ receive: true });
+    const voiceConnectObj = await voiceChannel.join({});
     if (!voiceConnectObj) {
       this.logger.debug('failed to connect, destroying');
       return this.destroy();
@@ -44,6 +44,8 @@ class VoiceSafeConnection extends EventEmitter {
     });
     this.voiceConnection.sendAudioSilenceFrame();
     this.voiceConnection.on('packet', (packet) => this.emit('packet', packet));
+    this.voiceConnection.gateway.on('warn', (error) => this.logger.debug('voice connection gateway warning:', error));
+    this.voiceConnection.gateway.on('error', (error) => this.logger.debug('voice connection gateway error:', error));
     this.voiceConnection.gateway.receiveEnabled = false;
 
     /*
@@ -160,6 +162,7 @@ export default class VoicePipeline extends Transform {
     this.connection = new VoiceSafeConnection(voiceChannel);
     this.mixer = new Mixer();
     this.opus = new OpusEncoder(Constants.OPUS_SAMPLE_RATE, Constants.OPUS_AUDIO_CHANNELS);
+    this.bitrate = voiceChannel.bitrate;
 
     this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
     this.onVoiceServerUpdate = this.connection.onVoiceServerUpdate;

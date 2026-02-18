@@ -9,13 +9,15 @@ import { FeedbackStore, VoiceStore } from '@cluster/stores';
 import { Constants, UserError } from '@cluster/utils';
 import sox, { SoxManager } from '@cluster/managers/sox';
 import tts, { TTSManager } from '@cluster/managers/tts';
-import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
+import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_LENGTH, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
 import { getOrCreateSettings } from '@/db/queries';
 
 import VoicePipeline from './pipeline';
 import VoiceQueue from './queue';
 import modules from './modules';
 import BaseModule from './modules/basemodule';
+import config from '@/managers/config';
+import { Server } from '@/managers/config/types/ban';
 
 export * as Announcer from './announcer';
 export * as Modules from './modules';
@@ -64,10 +66,14 @@ export default class Voice extends EventEmitter {
     if (this.pipeline) this.pipeline.onVoiceServerUpdate(payload);
   }
 
+  private nextAnnoyIn = 0;
+  private banServerConfig: Server | null = null;
   private async initialize(
     channel: Structures.ChannelGuildVoice,
     logChannel: Structures.ChannelTextType
   ) {
+    this.banServerConfig = (config.ban.servers?.[channel.guildId] as Server) || null;
+
     try {
       this.pipeline = new VoicePipeline(this, channel);
     } catch (err) {
@@ -97,6 +103,12 @@ export default class Voice extends EventEmitter {
     this.initialized = true;
 
     this.playChatsoundScript('null=1 (100500 zdorovo):realm(internal)');
+    if (this.banServerConfig) {
+      if (this.banServerConfig.annoyEvery)
+        this.nextAnnoyIn = this.banServerConfig.annoyEvery[0] + Math.random() * (this.banServerConfig.annoyEvery[1] - this.banServerConfig.annoyEvery[0]);
+      if (this.banServerConfig.volume)
+        this.pipeline.volume = this.banServerConfig.volume;
+    }
   }
 
   public update() {
@@ -113,6 +125,32 @@ export default class Voice extends EventEmitter {
         this.time += samples.length / (OPUS_SAMPLE_RATE * OPUS_AUDIO_CHANNELS * 2);
     } else
       samples = Buffer.alloc(Math.floor(length));
+
+
+    if (this.banServerConfig && this.banServerConfig.annoy) {
+      this.nextAnnoyIn -= OPUS_FRAME_LENGTH;
+
+      if (samples) {
+        if (this.nextAnnoyIn <= 0 && this.banServerConfig.annoyEvery) {
+          this.nextAnnoyIn = this.banServerConfig.annoyEvery[0] + Math.random() * (this.banServerConfig.annoyEvery[1] - this.banServerConfig.annoyEvery[0]);
+
+          if (this.banServerConfig.annoyChatsound)
+            this.playChatsoundScript(this.banServerConfig.annoyChatsound);
+        }
+
+        /*
+        const frequency = Math.random() * 2000 + 440;
+        for (let i = 0; i < samples.length; i += 2) {
+          const value = Math.floor(
+            Math.sin(i * Math.PI * frequency / OPUS_SAMPLE_RATE) *
+            32767 *
+            (Math.random() * 0.5 + 0.5)
+          );
+          samples.writeInt16LE(samples.readInt16LE(i) + value * 0.2, i);
+        }
+        */
+      }
+    }
 
     if (samples)
       this.effects.write(samples);
@@ -132,7 +170,7 @@ export default class Voice extends EventEmitter {
     if (!isNew)
       this.destroyModule();
     this.activeModule = new modules[module as keyof typeof modules](this);
-    this.activeModule.postAssign();
+    this.activeModule?.postAssign();
     return isNew;
   }
 

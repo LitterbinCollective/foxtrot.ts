@@ -7,6 +7,22 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "debug foxtrot",
+      "program": "${workspaceFolder}/dist/manager/index.js",
+      "sourceMaps": true,
+      "smartStep": true,
+      "internalConsoleOptions": "openOnSessionStart",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "env": {
+        "NODE_ENV": "development",
+        "LOG_LEVEL": "5"
+      },
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "debug foxtrot (TS)",
       "program": "${workspaceFolder}/dist/manager/index.js",
       "preLaunchTask": "npm: build:ts",

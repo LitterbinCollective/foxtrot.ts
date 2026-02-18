@@ -4,6 +4,7 @@ import { checkPermission, UserError, buildRuntimeErrorEmbed, Logger, logCommandE
 import { t } from '@cluster/managers/i18n';
 import app from '@cluster/index';
 import { getOrCreateSettings } from '@/db/queries';
+import config from '@/managers/config';
 
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
@@ -11,6 +12,8 @@ export class BaseInteractionCommand<
   public manageGuildOnly = false;
   public ownerOnly = false;
   public readonly disableDm = true;
+
+  public ignoreBan = false;
 
   public async onBefore(
     ctx: Interaction.InteractionContext
@@ -31,6 +34,16 @@ export class BaseInteractionCommand<
         .DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       options
     );
+
+    const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+    if (!this.ignoreBan && (typeof ban === 'object' ? ban.block : ban)) {
+      let message = await this.t(ctx, 'ban');
+      if (typeof ban === 'object' && ban.message)
+        message += `\n> ${ban.message}`;
+
+      ctx.editOrRespond(message);
+      return false;
+    }
 
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly

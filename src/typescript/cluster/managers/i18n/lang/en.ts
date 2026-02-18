@@ -1,4 +1,6 @@
 export default {
+  "ban": "you are forbidden from using this feature.",
+
   "commands": {
     "settings": {
       "unknown": "unknown setting.",

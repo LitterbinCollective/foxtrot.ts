@@ -4,6 +4,7 @@ import { VoiceStore } from '@cluster/stores';
 import { UserError } from '@cluster/utils';
 
 import { BaseCommand } from '../../base';
+import config from '@/managers/config';
 
 const CONTENT_TYPE_REGEX = /(audio|video)\/.+/;
 
@@ -21,6 +22,10 @@ export default class QueueAddCommand extends BaseCommand {
     if (!ctx.member || !ctx.guild || !ctx.channel) return;
     if (!ctx.member.voiceChannel)
       throw new UserError('voice-check.member-not-in-voice');
+
+    const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+    if (typeof ban === 'object' ? (ban.block || ban.blockMedia) : ban)
+      throw new UserError('ban');
 
     if (!url) {
       const attachment = ctx.message.attachments.first();

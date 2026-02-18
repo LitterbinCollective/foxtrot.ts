@@ -5,6 +5,7 @@ import { UserError } from '@cluster/utils';
 import app from '@cluster/index';
 
 import { BaseCommandOption } from '../../../base';
+import config from '@/managers/config';
 
 export const QUEUE_ADD_DESCRIPTION = 'add media to the queue';
 export const QUEUE_ADD_OPTIONS = [
@@ -41,6 +42,10 @@ export class QueueAddCommand extends BaseCommandOption {
       throw new UserError('voice-check.member-not-in-voice');
 
     if (!url && !file) throw new UserError('commands.url-or-file');
+
+    const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+    if (typeof ban === 'object' ? (ban.block || ban.blockMedia) : ban)
+      throw new UserError('ban');
 
     // fuck you
     const media = url || (file ? file.url : '');

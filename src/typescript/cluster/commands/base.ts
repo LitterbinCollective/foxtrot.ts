@@ -17,20 +17,32 @@ import {
 
 import app from '..';
 import { getOrCreateSettings } from '@/db/queries';
+import config from '@/managers/config';
 
 export class BaseCommand extends Command.Command {
   public manageGuildOnly = false;
   public ownerOnly = false;
-  public readonly commandClient!: CommandClient;
+  public ignoreBan = false;
+  declare public readonly commandClient: CommandClient;
   public readonly disableDm = true;
 
-  public onBefore(ctx: Command.Context): boolean {
+  public async onBefore(ctx: Command.Context): Promise<boolean> {
     /*
       discord is the most stable app to the point we can 100% rely on it
       spoiler alert: { message: 'internal network error', code: 40333 }
     */
     try {
       ctx.channel?.triggerTyping();
+
+      const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+      if (!this.ignoreBan && (typeof ban === 'object' ? ban.block : ban)) {
+        let message = await this.t(ctx, 'ban');
+        if (typeof ban === 'object' && ban.message)
+          message += `\n> ${ban.message}`;
+
+        ctx.reply(message);
+        return false;
+      }
 
       const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
       const manageGuildCheck = this.manageGuildOnly
@@ -43,7 +55,9 @@ export class BaseCommand extends Command.Command {
       }
 
       if (ctx.channel?.canAddReactions) ctx.message.react(app.emoji('LOCK'));
-    } catch (err) {}
+    } catch (err) {
+      Logger.error(err);
+    }
 
     return false;
   }

@@ -9,7 +9,7 @@ import config from '@/managers/config';
 import { Constants, UserError } from '@cluster/utils';
 
 import Voice from '..';
-import BaseModule from './basemodule';
+import BaseModule from '../modules/basemodule';
 
 const settings = config.googleAssistantSettings;
 

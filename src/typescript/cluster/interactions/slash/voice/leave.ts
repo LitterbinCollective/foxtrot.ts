@@ -9,6 +9,8 @@ export default class LeaveCommand extends BaseSlashCommand {
   public name = 'leave';
   public description = 'leaves the connected voice channel';
 
+  public ignoreBan: boolean = true;
+
   public async onBeforeRun(
     ctx: Interaction.InteractionContext
   ): Promise<boolean> {

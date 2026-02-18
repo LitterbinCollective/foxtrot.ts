@@ -43,6 +43,10 @@ export class ConfigManager extends BaseManager<ValueOf<Config>> {
       this.logger.warn(pre, 'not shutting down!');
   }
 
+  public get ban() {
+    return this.imported.ban;
+  }
+
   public get packageJson() {
     return this.imported.packageJson;
   }

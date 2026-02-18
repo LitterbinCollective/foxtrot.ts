@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { Innertube, Session } from 'youtubei.js';
-import { fetch } from 'undici';
+import { fetch as ufetch } from 'undici';
 
 import cookies from '@/managers/cookie';
 import Cookie from '@/managers/cookie/cookie';
@@ -40,7 +40,8 @@ export default class YouTubeService extends MediaService {
 
   private fetch(cookie?: Cookie) {
     return async (url: any, options?: any): Promise<any> => {
-      const result = await fetch(url, options);
+      console.log(url);
+      const result = await ufetch(url, options);
       cookie?.handleSetCookie(result.headers as Headers);
       return result;
     };
@@ -49,7 +50,7 @@ export default class YouTubeService extends MediaService {
   private async getInnertube() {
     const rawCookie = cookies.imported.youtube?.rotate();
     const cookie = rawCookie?.toString();
-    const retrievePlayer = Boolean(rawCookie);
+    const retrievePlayer = !Boolean(rawCookie);
 
     if (!this.innertube || com.data._youtubeDirty) {
       this.innertube = await Innertube.create({
@@ -83,7 +84,7 @@ export default class YouTubeService extends MediaService {
     matches: Record<string, string>
   ): Promise<MediaServiceResponse> {
     const videoId = matches.id;
-    const client = 'WEB_EMBEDDED';
+    const client = 'WEB_EMBEDDED' as any;
 
     const yt = await this.getInnertube();
     const info = await yt.getBasicInfo(videoId, client);
