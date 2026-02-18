@@ -7,3 +7,5 @@ onlyBuiltDependencies:
   - puppeteer
   - re-unplayplay
   - 'detritus-client-socket'
+  - 's-dl'
+  - sh
