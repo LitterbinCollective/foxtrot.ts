@@ -6,3 +6,4 @@ onlyBuiltDependencies:
   - protobufjs
   - puppeteer
   - re-unplayplay
+  - 'detritus-client-socket'
