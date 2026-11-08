@@ -6,7 +6,7 @@ bitrate control and more.
 Before hosting, please read ["self-hosting"](https://foxtrot.litterbin.dev/docs/self-hosting).
 
 ## Locale
-See [`modules/managers/i18n/README.md`](https://github.com/LitterbinCollective/foxtrot.ts/blob/master/modules/managers/i18n/README.md)
+See [`src/typescript/cluster/managers/i18n/README.md`](https://github.com/LitterbinCollective/foxtrot.ts/blob/master/src/typescript/cluster/managers/i18n/README.md)
 for credits and tips.
 
 ## Contributions

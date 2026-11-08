@@ -21,7 +21,7 @@ are very much appreciated!
 If you have contributed to the translations, feel free to credit yourself.
 
 ### Russian (`ru.json`)
-- [@Golub'](https://discord.com/users/274911782768738304) **(orig.)**
+- [@Goluboch](https://discord.com/users/274911782768738304) **(orig.)**
 - github.com/be195 (slight corrections)
 
 ### Japanese (`ja.json`)
