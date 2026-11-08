@@ -1,6 +1,7 @@
 export default interface ConfigApp {
   token: string,
   sentryDSN: string,
+  databaseDSN: string,
   prefix: string,
   feedbackWebhook: {
     id: string,

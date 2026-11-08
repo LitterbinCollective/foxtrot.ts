@@ -1,6 +1,7 @@
-import { readFileSync } from 'fs';
 import SpotifyDL, { SpotifyImage, SpotifyTrack, SpotifyTrackExtended } from 's-dl';
-import { join } from 'path';
+
+import cookie from '@/managers/cookie';
+import config from '@/managers/config';
 
 import { MediaService } from './baseservice';
 import {
@@ -9,10 +10,7 @@ import {
   MediaServiceResponseMediaType
 } from '../types';
 import { DEFAULT_SOUND_ICON } from '..';
-import cookie from '@cluster/managers/cookie';
-import config from '@/managers/config';
-
-const DIST_REGEX = /dist[\/\\]{0,1}$/g;
+import com from '@/com';
 
 export default class SpotifyService extends MediaService {
   public disableSearch: boolean = true;
@@ -27,6 +25,8 @@ export default class SpotifyService extends MediaService {
   constructor() {
     super();
 
+    this.rotate = this.rotate.bind(this);
+
     try {
       if (
         !cookie.imported.spotify
@@ -36,17 +36,30 @@ export default class SpotifyService extends MediaService {
         throw new Error();
 
       this.spotifyDl = new SpotifyDL({
-        cookies: cookie.imported.spotify.toString(),
-        cookiesType: 'header',
+        cookies: {
+          rotation: this.rotate,
+          type: 'header'
+        },
         clientId: config.imported.widevineClientId,
         privateKey: config.imported.widevinePrivateKey
       });
     } catch (err) {}
   }
 
+  private rotate() {
+    if (!cookie.imported.spotify)
+      throw new Error();
+    return cookie.imported.spotify.rotate().toString();
+  }
+
   private get spotifyDl() {
     if (!this._spotifyDl)
       throw new Error('spotifyDl not initialized');
+
+    if (com.data._spotifyDirty && com.data._spotify) {
+      com.data._spotifyDirty = false;
+      this._spotifyDl.setTOTP(com.data._spotify.version, Buffer.from(com.data._spotify.transformedSecret, 'utf8'));
+    }
 
     return this._spotifyDl;
   }
@@ -62,22 +75,15 @@ export default class SpotifyService extends MediaService {
     return url;
   }
 
-  private get baseConfigPath() {
-    let cwd = process.cwd();
-
-    if (DIST_REGEX.test(cwd))
-      cwd = cwd.replace(DIST_REGEX, '');
-
-    return join(cwd, 'configs/');
-  }
-
   private formResponse(track: SpotifyTrack | SpotifyTrackExtended, image?: SpotifyImage): MediaServiceResponse {
     return {
       media: {
         type: MediaServiceResponseMediaType.FETCH,
         fetch: async () => {
           const response = await this.spotifyDl?.downloadTrack(track, { spawn: false });
-          if ('streamUrl' in response) {
+          if ('stream' in response && response.stream) {
+            return response.stream as any;
+          } else if ('streamUrl' in response) {
             return {
               decryptionKey: response.decryptionKey,
               type: MediaServiceResponseMediaType.URL,
@@ -104,11 +110,11 @@ export default class SpotifyService extends MediaService {
         const object = await this.spotifyDl.getTrack(matches.track as string);
         return this.formResponse(object);
       };
-      case ('album' in matches):{
+      case ('album' in matches): {
         const object = await this.spotifyDl.getAlbum(matches.album as string);
         return object.tracks.items.map(x => this.formResponse(x, object.images[0]));
       };
-      case ('playlist' in matches):{
+      case ('playlist' in matches): {
         const object = await this.spotifyDl.getPlaylist(matches.playlist as string);
         return object.tracks.items
           .filter(x => x.track.type === 'track')

@@ -29,7 +29,4 @@ export async function getRepositories() {
   if (merge) sh.mergeSources();
 }
 
-getRepositories();
-
-export const interval = setInterval(getRepositories, 60 * 60 * 1000);
 export default sh;

@@ -4,7 +4,8 @@ import {
   Utils,
 } from 'detritus-client';
 
-import { Constants, listEffects } from '@cluster/utils';
+import { listEffects } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 import { COMMAND_NAME as COMMAND_NAME_GET } from './effect.get';
@@ -21,6 +22,7 @@ export default class EffectAddCommand extends BaseVoiceCommand {
           name: 'effect',
           type: DetritusConstants.CommandArgumentTypes.STRING,
           required: true,
+          consume: true,
         },
       ],
     });
@@ -28,42 +30,44 @@ export default class EffectAddCommand extends BaseVoiceCommand {
 
   public async run(ctx: VoiceContext, { effect }: { effect: string }) {
     if (!ctx.guild) return;
-    const id = ctx.voice.effects.addEffect(effect);
+    const [ id, single ] = ctx.voice.effects.newAddEffect(effect);
     const embed = await listEffects(
       ctx.guild,
       ctx.voice.effects.list
     );
 
     embed.setTitle(
-      Constants.EMOJIS.PLUS +
+      app.emoji('PLUS') +
         ' ' +
-        (await this.t(ctx, 'commands.effect.add', effect))
+        (await this.t(ctx, 'commands.effect.add.' + (single ? 'single' : 'multiple'), effect))
     );
 
-    // tips
-    const { name, options } = ctx.voice.effects.getEffectInfo(id);
-    const optionsKeys = Object.keys(options);
-    const key = optionsKeys[(optionsKeys.length * Math.random()) << 0];
-    const prefix = this.commandClient.prefixes.custom.first();
-    embed.addField(
-      await this.t(ctx, 'commands.effect.list-options'),
-      Utils.Markup.codestring(`${prefix}${COMMAND_NAME_OPTIONS} ${id}`),
-      true
-    );
-    embed.addField(
-      await this.t(ctx, 'commands.effect.set-option'),
-      Utils.Markup.codestring(
-        `${prefix}${COMMAND_NAME_SET} ${id} ${key} ${options[key]}`
-      ),
-      true
-    );
-    embed.addField(
-      await this.t(ctx, 'commands.effect.get-option'),
-      Utils.Markup.codestring(`${prefix}${COMMAND_NAME_GET} ${id} ${key}`),
-      true
-    );
+    if (single) {
+      // tips
+      const { name, options } = ctx.voice.effects.getEffectInfo(id);
+      const optionsKeys = Object.keys(options);
+      const key = optionsKeys[(optionsKeys.length * Math.random()) << 0];
+      const prefix = this.commandClient.prefixes.custom.first();
+      embed.addField(
+        await this.t(ctx, 'commands.effect.list-options'),
+        Utils.Markup.codestring(`${prefix}${COMMAND_NAME_OPTIONS} ${id}`),
+        true
+      );
+      embed.addField(
+        await this.t(ctx, 'commands.effect.set-option'),
+        Utils.Markup.codestring(
+          `${prefix}${COMMAND_NAME_SET} ${id} ${key} ${options[key]}`
+        ),
+        true
+      );
+      embed.addField(
+        await this.t(ctx, 'commands.effect.get-option'),
+        Utils.Markup.codestring(`${prefix}${COMMAND_NAME_GET} ${id} ${key}`),
+        true
+      );
 
-    embed.setFooter(await this.t(ctx, 'commands.effect.effect-id', id, effect));
+      embed.setFooter(await this.t(ctx, 'commands.effect.effect-id', id, name));
+    }
     ctx.reply({ embed });
   }
 }

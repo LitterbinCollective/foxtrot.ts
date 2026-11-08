@@ -1,4 +1,6 @@
 export default {
+  "ban": "you are forbidden from using this feature.",
+
   "commands": {
     "settings": {
       "unknown": "unknown setting.",
@@ -53,7 +55,10 @@ export default {
     },
 
     "effect": {
-      "add": "added effect `{0}`!",
+      "add": {
+        "single": "added effect `{0}`!",
+        "multiple": "added effects!",
+      },
       "clear": "effects cleared!",
       "remove": "removed effect `{0}`!",
       "set": "set `{0}` to `{1}`!",
@@ -89,7 +94,11 @@ export default {
     "missing-required-parameter": "missing required parameter."
   },
 
-  "runtime-error": "runtime error!!",
+  "runtime-error": {
+    "title": "ooops!!",
+    "description": "an error has occurred while executing the command. please try again later.",
+    "min": "ooops!! {0}"
+  },
 
   "voice-check": {
     "bot-not-in-voice": "i'm not connected.",
@@ -107,7 +116,15 @@ export default {
     "stack-underflow": "too few effects!",
     "option-not-found": "specified effect option not found.",
     "value-undefined": "value has to be provided",
-    "out-of-range": "given value out of range `[{0}; {1}]`"
+    "out-of-range": "given value out of range `[{0}; {1}]`",
+
+    "spec": {
+      "syntax": "syntax error in `{0}`",
+      "expected-kv": "expected key=value in `{0}`",
+      "expected-number": "expected a number in `{0}`",
+      "option-not-found": "option `{0}` not found in `{1}`",
+      "value-out-of-range": "value `{0}` out of range for `{1}` in `{2}`",
+    }
   },
 
   "queue": {
@@ -130,6 +147,45 @@ export default {
     "nye": {
       "title": "happy new years eve!",
       "description": "{0} will play westminster melody and firework sounds on jan 1st at 12 a.m. for every timezone. check the bot's status to see which timezone is next to celebrate New Year's Eve."
+    }
+  },
+
+  "tts": {
+    "content": {
+      "attachments": "this message contains attachments.",
+      "embeds": "this message contains embeds.",
+      "urls": "this message contains links.",
+      "attachments-embeds": "this message contains attachments and embeds.",
+      "attachments-urls": "this message contains attachments and links.",
+      "attachments-embeds-urls": "this message contains attachments, embeds, and links.",
+      "embeds-urls": "this message contains embeds and links."
+    },
+
+    "join": "{0} joined the voice channel.",
+    "leave": "{0} left the voice channel.",
+    "say": "{0} said: {1}"
+  },
+
+  "feedback": {
+    "title": "how was your experience?",
+    "description": "you were using `{0}` branch of {1}. it would mean a lot to us if you let us know what you think!",
+    "pre-button": "how satisfied are you using this branch of {0}?",
+    "response": "thanks for your feedback! if you want to provide more details about your experience, please click the button below.",
+    "button": "send additional feedback",
+    "thanks": "thanks for your feedback!",
+
+    "grade": {
+      "1": "1 (very unsatisfied)",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5 (very satisfied)"
+    },
+
+    "modal": {
+      "title": "supplement feedback",
+      "input": "details",
+      "placeholder": "i like the bot, but...",
     }
   }
 };

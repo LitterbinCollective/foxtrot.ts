@@ -2,6 +2,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { PackageJson, ValueOf } from 'type-fest';
 
+import { EMOJIS } from '@/utils/constants';
+
 import BaseManager from '..';
 import Config from './types';
 
@@ -10,8 +12,8 @@ export class ConfigManager extends BaseManager<ValueOf<Config>> {
 
   constructor() {
     super({
-      loggerTag: 'Config',
-      scanPath: 'configs/',
+      logger: 'Config',
+      path: 'configs/',
       file: true,
       watch: true,
       recursive: true,
@@ -41,6 +43,10 @@ export class ConfigManager extends BaseManager<ValueOf<Config>> {
       this.logger.warn(pre, 'not shutting down!');
   }
 
+  public get ban() {
+    return this.imported.ban;
+  }
+
   public get packageJson() {
     return this.imported.packageJson;
   }
@@ -55,10 +61,6 @@ export class ConfigManager extends BaseManager<ValueOf<Config>> {
 
   public get googleAssistantSettings() {
     return this.imported.googleAssistantSettings;
-  }
-
-  public get knex() {
-    return this.imported.knex;
   }
 
   public get shat() {

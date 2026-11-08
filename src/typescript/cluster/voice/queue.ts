@@ -12,7 +12,8 @@ import {
   MediaServiceResponseMedia,
   MediaServiceResponseMediaType,
 } from '@cluster/managers/mediaservices/types';
-import { Constants, sendFeedback, UserError } from '@cluster/utils';
+import { defineDefaultSentryContext, UserError } from '@cluster/utils';
+import app from '@cluster/index';
 
 import VoiceQueueAnnouncer from './announcer';
 import NewVoice from '.';
@@ -31,7 +32,7 @@ class VoiceQueueMediaError extends Error {
 }
 
 // exists solely so there will not be a racing condition
-class VoiceQueueMedia extends EventEmitter {
+class VoiceQueueMedia {
   private _children?: VoiceQueueMedia[];
   private formatData!: DownloadReturnedValue;
   private _submittee?: Structures.User;
@@ -42,23 +43,24 @@ class VoiceQueueMedia extends EventEmitter {
     url: string | MediaServiceResponse,
     message?: Structures.Message | Structures.User
   ) {
-    super();
-
     if (message instanceof Structures.User) this._submittee = message;
     else this.message = message;
 
-    if (typeof url === 'string') {
+    if (typeof url === 'string')
       this.url = url;
-      this.fetchFormatData();
-    } else {
+    else {
       this.url = url.information.url;
       this.formatData = url;
     }
   }
 
-  private get submittee(): Structures.User | undefined {
+  public get submittee(): Structures.User {
     if (this._submittee) return this._submittee;
-    return this.message ? this.message.author : undefined;
+
+    if (this.message)
+      return this._submittee = this.message.author;
+
+    throw new Error('could not get submittee of this VoiceQueueMedia');
   }
 
   public get info(): MediaServiceResponseInformation {
@@ -88,58 +90,57 @@ class VoiceQueueMedia extends EventEmitter {
     if (this._children)
       return this._children;
 
-    return (this._children = this.formatData.map(x => new VoiceQueueMedia(x)));
+    return (this._children = this.formatData.map(x => new VoiceQueueMedia(x, this.message)));
   }
 
-  private async fetchFormatData() {
-    try {
-      let result;
+  public async unzip() {
+    if (this.formatData)
+      throw new Error('unzip called on an invalid VoiceQueueMedia object');
 
-      let timeoutHandle;
-      const timeoutPromise = new Promise<void>((_, rej) => {
-        timeoutHandle = setTimeout(
-          () =>
-            rej(
-              new Error(
-                'download timed out (' + FORMAT_FROMURL_TIMEOUT_MS + 'ms)'
-              )
-            ),
-            FORMAT_FROMURL_TIMEOUT_MS
-        );
-      });
+    let result;
 
-      result = await Promise.race([
-        timeoutPromise,
-        mediaservice.download(this.url),
-      ]);
-      clearTimeout(timeoutHandle);
+    let timeoutHandle;
+    const timeoutPromise = new Promise<void>((_, rej) => {
+      timeoutHandle = setTimeout(
+        () =>
+          rej(
+            new Error(
+              'download timed out (' + FORMAT_FROMURL_TIMEOUT_MS + 'ms)'
+            )
+          ),
+          FORMAT_FROMURL_TIMEOUT_MS
+      );
+    });
 
-      if (!result) throw new UserError('queue.url-unsupported');
+    result = await Promise.race([
+      timeoutPromise,
+      mediaservice.download(this.url),
+    ]);
+    clearTimeout(timeoutHandle);
 
-      if (this.submittee) {
-        const name = this.submittee.discriminator === '0' ? this.submittee.username : this.submittee.tag;
+    if (!result) throw new UserError('queue.url-unsupported');
 
-        if (Array.isArray(result)) {
-          for (let i = 0; i < result.length; i++)
-            result[i].information.metadata = {
-              name,
-              icon_url: this.submittee.avatarUrl,
-              url: this.message ? this.message.jumpLink : undefined,
-            };
-        } else
-          result.information.metadata = {
+    if (this.submittee) {
+      const name = this.submittee.discriminator === '0' ? this.submittee.username : this.submittee.tag;
+
+      if (Array.isArray(result)) {
+        for (let i = 0; i < result.length; i++)
+          result[i].information.metadata = {
             name,
             icon_url: this.submittee.avatarUrl,
             url: this.message ? this.message.jumpLink : undefined,
           };
-      }
-
-      this.formatData = result;
-    } catch (err) {
-      return this.emit('error', err);
+      } else
+        result.information.metadata = {
+          name,
+          icon_url: this.submittee.avatarUrl,
+          url: this.message ? this.message.jumpLink : undefined,
+        };
     }
 
-    this.emit('finish');
+    this.formatData = result;
+
+    return this.children;
   }
 
   public async getPlayable(media?: MediaServiceResponseMedia): Promise<GetPlayable> {
@@ -184,6 +185,43 @@ class VoiceQueueMedia extends EventEmitter {
     if (this.formatData.media.type === MediaServiceResponseMediaType.FILE)
       unlinkSync(this.formatData.media.path);
   }
+
+  public fillInSentryContext(scope: Sentry.Scope) {
+    if (Array.isArray(this.formatData)) {
+      scope.setContext('media_info', {
+        hasChildren: true,
+        information: this.formatData.map(x => x.information)
+      });
+
+      return;
+    }
+
+    const { media } = this.formatData;
+    scope.setContext('media_info', {
+      hasChildren: false,
+      information: this.formatData.information,
+      type: media.type
+    });
+
+    switch (media.type) {
+      case MediaServiceResponseMediaType.URL:
+        scope.setContext('media_url', {
+          url: media.url,
+          decryptionKey: media.decryptionKey
+        });
+
+        return;
+      case MediaServiceResponseMediaType.FILE:
+        scope.setContext('media_file', {
+          path: media.path
+        });
+
+        return;
+      case MediaServiceResponseMediaType.FETCH:
+      default:
+        return;
+    }
+  }
 }
 
 export default class VoiceQueue {
@@ -197,31 +235,55 @@ export default class VoiceQueue {
     this.announcer = new VoiceQueueAnnouncer(voice, logChannel);
   }
 
-  public async push(
+  public async shuffle() {
+    await this.awaitLoading();
+
+    for (let i = this.queue.length - 1; i >= 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.queue[j], this.queue[i]] = [this.queue[i], this.queue[j]];
+    }
+  }
+
+  private loading: Promise<any>[] = [];
+  public async push(url: string, message?: Structures.Message | Structures.User) {
+    const promise = this.pushInternal(url, message);
+    promise.finally(
+      () => this.loading.splice(this.loading.indexOf(promise), 1)
+    );
+    promise.catch(() => {}); // prevent UnhandledPromiseRejectionWarning
+
+    this.loading.push(promise);
+    return await promise;
+  }
+
+  public async awaitLoading() {
+    return Promise.all(this.loading);
+  }
+
+  private async pushInternal(
     url: string,
     message?: Structures.Message | Structures.User
   ) {
     const object = new VoiceQueueMedia(url, message);
+    const index = this.queue.length;
     this.queue.push(object);
 
-    return new Promise((res, rej) => {
-      object.once('finish', () => {
-        const index = this.queue.indexOf(object);
-        if (index === -1) return;
-        this.queue.splice(index, 1, ...object.children);
+    let children: VoiceQueueMedia[] = [];
+    let error: unknown;
+    try {
+      children = await object.unzip();
+    } catch (err) {
+      error = err;
+    }
 
-        if (!this.voice.isPlaying) this.next();
+    this.queue.splice(index, 1, ...children);
 
-        res(true);
-      });
+    if (children.length > 0 && !this.voice.isPlaying)
+      await this.next();
 
-      object.once('error', error => {
-        rej(error);
+    if (error) throw error;
 
-        const index = this.queue.indexOf(object);
-        if (index !== -1) this.queue.splice(index, 1);
-      });
-    });
+    return true;
   }
 
   public get info() {
@@ -238,11 +300,32 @@ export default class VoiceQueue {
   }
 
   public streamingError(err: any) {
-    const error = Utils.Markup.codestring(err.toString());
-    this.announcer.createMessage(Constants.EMOJIS.BOMB + ' ' + error);
-    this.next();
+    const { currentlyPlaying } = this;
+    if (!currentlyPlaying) return;
 
-    Sentry.captureException(err);
+    let id = '';
+    Sentry.withScope(scope => {
+      const context = {
+        channel: this.voice.channel || null,
+        guild: this.voice.channel?.guild || null,
+        shardId: this.voice.channel?.shardId,
+        user: currentlyPlaying.submittee,
+      };
+
+      defineDefaultSentryContext(context, scope);
+      currentlyPlaying.fillInSentryContext(scope);
+
+      id = Sentry.captureException(err, {
+        mechanism: {
+          type: 'voice_queue_streaming_error',
+          handled: true
+        }
+      });
+    });
+
+    const error = Utils.Markup.codestring(id);
+    this.announcer.createMessage(app.emoji('BOMB') + app.emoji('PAPERCLIP') + ' ' + error);
+    this.next();
   }
 
   public async next() {

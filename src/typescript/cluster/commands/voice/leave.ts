@@ -6,6 +6,8 @@ import { BaseCommand } from '../base';
 import { VoiceContext } from './base';
 
 export default class LeaveCommand extends BaseCommand {
+  public ignoreBan: boolean = true;
+
   constructor(commandClient: CommandClient) {
     super(commandClient, {
       name: 'leave',

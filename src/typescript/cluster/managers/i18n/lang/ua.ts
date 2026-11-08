@@ -1,4 +1,6 @@
 export default {
+  "_extends": "ru",
+
   "commands": {
     "settings": {
       "unknown": "невідома налаштування.",
@@ -34,8 +36,8 @@ export default {
       "units": [
         "мс",
         "сек",
-        "мин",
-        "ч",
+        "хвил",
+        "г",
         "д"
       ]
     },
@@ -89,7 +91,11 @@ export default {
     "missing-required-parameter": "пропущено необхідний параметр."
   },
 
-  "runtime-error": "помилка середовища виконання!!",
+  "runtime-error": {
+    "title": "ой!!",
+    "description": "під час виконання команди сталася помилка. будь ласка, спробуй ще раз пізніше.",
+    "min": "ой!! {0}"
+  },
 
   "voice-check": {
     "bot-not-in-voice": "я не підключений.",

@@ -1,13 +1,12 @@
 import { BaseEffect } from './baseeffect';
 
-// TODO:
-export class SpeedEffect extends BaseEffect {
+export default class SpeedEffect extends BaseEffect {
   public name = 'speed';
   public options = {
     speed: 0.5
   };
   public optionsRange = {
-    speed: [ 0.1, 100 ],
+    speed: [ 0.1, 3 ],
   };
 
   public get speed() {

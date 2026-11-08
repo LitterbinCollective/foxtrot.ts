@@ -1,6 +1,6 @@
 import { Constants as DetritusConstants } from 'detritus-client';
 
-import { Constants } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommandOption, VoiceInteractionContext } from '../base';
 
@@ -23,6 +23,6 @@ export class ModuleInvokeCommand extends BaseVoiceCommandOption {
 
   public async run(ctx: VoiceInteractionContext, { line }: { line: string }) {
     ctx.voice.invokeModule(line);
-    return await ctx.editOrRespond(Constants.EMOJIS.OK);
+    return await ctx.editOrRespond(app.emoji('OK'));
   }
 }

@@ -4,28 +4,37 @@ import {
   CommandClient,
   InteractionCommandClient,
 } from 'detritus-client';
-import Knex from 'knex';
-import { Model } from 'objection';
 
-import { Logger } from '@cluster/utils';
-import { GuildSettingsStore, applicationCreated } from '@cluster/stores';
+import { Constants, Logger } from '@cluster/utils';
+import { applicationCreated } from '@cluster/stores';
 import mediaservice from '@cluster/managers/mediaservices';
 
-import '@cluster/managers/special';
 import config from '@/managers/config';
+import { getOrCreateSettings } from '@/db/queries';
+import com, { ClusterServerCommunicationWrapper } from '@/com';
+
+import '@cluster/managers/special';
+import '@cluster/managers/activities';
+
+type Emojis = {
+  [K in Extract<keyof typeof Constants.EMOJIS, string>]?: string;
+}
 
 export default class Application {
   public startAt: number;
   public readonly commandClient: CommandClient;
   public readonly clusterClient: ClusterClient;
   public readonly interactionCommandClient: InteractionCommandClient;
-  public readonly logger: Logger;
+  private emojis: Emojis = {};
 
   constructor() {
     const { token, prefix } = config.app;
 
     this.clusterClient = new ClusterClient(token, {
-      cache: { messages: { expire: 60 * 60 * 1000 } },
+      cache: {
+        applicationCommandPermissions: { enabled: true },
+        messages: { expire: 60 * 60 * 1000 }
+      },
       gateway: {
         presence: {
           activity: {
@@ -33,19 +42,39 @@ export default class Application {
             name: `media | run ${prefix}help`,
           },
         },
+        intents: [
+          DetritusConstants.GatewayIntents.GUILDS,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGES,
+          DetritusConstants.GatewayIntents.GUILD_BANS,
+          DetritusConstants.GatewayIntents.GUILD_INTEGRATIONS,
+          DetritusConstants.GatewayIntents.GUILD_WEBHOOKS,
+          DetritusConstants.GatewayIntents.GUILD_EMOJIS,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGES,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGE_REACTIONS,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGE_TYPING,
+          DetritusConstants.GatewayIntents.GUILD_SCHEDULED_EVENTS,
+          DetritusConstants.GatewayIntents.AUTO_MODERATION_CONFIGURATION,
+          DetritusConstants.GatewayIntents.AUTO_MODERATION_EXECUTION,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGE_POLLS,
+          DetritusConstants.GatewayIntents.DIRECT_MESSAGE_POLLS,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGE_TYPING,
+          DetritusConstants.GatewayIntents.GUILD_MESSAGE_REACTIONS,
+          DetritusConstants.GatewayIntents.GUILD_VOICE_STATES,
+          DetritusConstants.GatewayIntents.MESSAGE_CONTENT
+        ],
       },
     });
 
+    const server = new ClusterServerCommunicationWrapper(this.clusterClient);
+    com.addServer(server);
+
     let processTitle = `Shard ${this.clusterClient.shardStart} - ${this.clusterClient.shardEnd}`;
-    let tag = 'Shard';
     if (this.clusterClient.manager) {
       processTitle =
         `Cluster [${this.clusterClient.clusterId}] - ` + processTitle;
-      tag = `Cluster [${this.clusterClient.clusterId}]`;
     }
 
     process.title = processTitle;
-    this.logger = new Logger(tag);
 
     {
       this.commandClient = new CommandClient(this.clusterClient, {
@@ -53,7 +82,7 @@ export default class Application {
         activateOnEdits: true,
         onPrefixCheck: async (ctx) => {
           if (ctx.guildId) {
-            const settings = await GuildSettingsStore.getOrCreate(ctx.guildId);
+            const settings = await getOrCreateSettings(ctx.guildId);
             if (settings.prefix)
               return [settings.prefix];
           }
@@ -64,10 +93,9 @@ export default class Application {
         .addMultipleIn('commands/', {
           subdirectories: true,
         })
-        .catch(err => {
-          this.logger.error(err);
-          process.exit(1);
-        });
+        .catch(err =>
+          Logger.error(err)
+        );
 
       mediaservice.addPrefixedCommands(this.commandClient);
     }
@@ -80,20 +108,12 @@ export default class Application {
         .addMultipleIn('interactions/', {
           subdirectories: true,
         })
-        .catch(err => {
-          this.logger.error(err);
-          process.exit(1);
-        });
+        .catch(err =>
+          Logger.error(err)
+        );
 
       mediaservice.addSlashCommands(this.interactionCommandClient);
     }
-
-    const knexConfig = config.knex[process.env.NODE_ENV || 'development']
-    if (!knexConfig)
-      throw new Error('no knex config for specified NODE_ENV or "development"');
-
-    const knex = Knex(knexConfig);
-    Model.knex(knex);
 
     this.startAt = Date.now();
 
@@ -101,13 +121,36 @@ export default class Application {
     this.initialize();
   }
 
+  public emoji(emoji: keyof typeof this.emojis) {
+    return this.emojis[emoji] || Constants.EMOJIS[emoji];
+  }
+
+  private async getEmojis() {
+    const shard = this.clusterClient.shards.first();
+    if (!shard) return;
+
+    const { applicationEmojis } = shard;
+    await applicationEmojis.fill();
+
+    for (const key in Constants.EMOJIS) {
+      const emoji = applicationEmojis.find(x => x.name === key.toLowerCase());
+      if (!emoji) continue;
+
+      this.emojis[key as keyof typeof this.emojis] = emoji.format;
+    }
+  }
+
   private async initialize() {
     await this.clusterClient.run();
-    await this.commandClient.run();
-    await this.interactionCommandClient.run();
+    await this.getEmojis();
 
-    this.logger.log('bot online!');
-    this.logger.info(
+    await Promise.all([
+      this.commandClient.run(),
+      this.interactionCommandClient.run(),
+    ]);
+
+    Logger.log('bot online!');
+    Logger.info(
       `loaded shards #(${this.clusterClient.shards
         .map(shard => shard.shardId)
         .join(', ')})`

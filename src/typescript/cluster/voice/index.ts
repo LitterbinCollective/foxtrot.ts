@@ -1,21 +1,25 @@
 import { GatewayClientEvents, Structures, Utils } from 'detritus-client';
 import { EventEmitter } from 'events';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import * as Sentry from '@sentry/node';
 
 import chatsounds from '@cluster/chatsounds';
 import { t } from '@cluster/managers/i18n';
-import { GuildSettingsStore, VoiceStore } from '@cluster/stores';
+import { FeedbackStore, VoiceStore } from '@cluster/stores';
 import { Constants, UserError } from '@cluster/utils';
 import sox, { SoxManager } from '@cluster/managers/sox';
+import tts, { TTSManager } from '@cluster/managers/tts';
+import { OPUS_AUDIO_CHANNELS, OPUS_FRAME_LENGTH, OPUS_FRAME_SIZE, OPUS_SAMPLE_RATE } from '@/utils/constants';
+import { getOrCreateSettings } from '@/db/queries';
 
 import VoicePipeline from './pipeline';
-import FFMpeg from './ffmpeg';
 import VoiceQueue from './queue';
 import modules from './modules';
 import BaseModule from './modules/basemodule';
+import config from '@/managers/config';
+import { Server } from '@/managers/config/types/ban';
 
 export * as Announcer from './announcer';
-export * as FFMpeg from './ffmpeg';
 export * as Modules from './modules';
 export * as Pipeline from './pipeline';
 export * as Queue from './queue';
@@ -27,8 +31,11 @@ export default class Voice extends EventEmitter {
   public pipeline!: VoicePipeline;
   public queue!: VoiceQueue;
   public special = true;
+  public time = 0;
   private activeModule?: BaseModule;
-  private ffmpeg?: FFMpeg;
+  private ffmpeg?: ChildProcessWithoutNullStreams;
+  private silence = true;
+  private tts!: TTSManager;
 
   constructor(
     channel: Structures.ChannelGuildVoice,
@@ -46,18 +53,27 @@ export default class Voice extends EventEmitter {
     return this.ffmpeg !== undefined;
   }
 
+  public onMessageCreate(payload: GatewayClientEvents.MessageCreate) {
+    if (this.tts) this.tts.createMessage(payload);
+  }
+
   public onVoiceStateUpdate(payload: GatewayClientEvents.VoiceStateUpdate) {
     if (this.pipeline) this.pipeline.onVoiceStateUpdate(payload);
+    if (this.tts) this.tts.voiceStateUpdate(payload);
   }
 
   public onVoiceServerUpdate(payload: GatewayClientEvents.VoiceServerUpdate) {
     if (this.pipeline) this.pipeline.onVoiceServerUpdate(payload);
   }
 
+  private nextAnnoyIn = 0;
+  private banServerConfig: Server | null = null;
   private async initialize(
     channel: Structures.ChannelGuildVoice,
     logChannel: Structures.ChannelTextType
   ) {
+    this.banServerConfig = (config.ban.servers?.[channel.guildId] as Server) || null;
+
     try {
       this.pipeline = new VoicePipeline(this, channel);
     } catch (err) {
@@ -69,18 +85,76 @@ export default class Voice extends EventEmitter {
 
     this.effects = sox.clone();
     this.effects.on('data', chunk => this.pipeline.write(chunk));
+    this.effects.createAudioEffectManager();
     this.queue = new VoiceQueue(this, logChannel);
-    this.pipeline.playSilence();
 
-    const settings = await GuildSettingsStore.getOrCreate(channel.guildId);
+    const settings = await getOrCreateSettings(channel.guildId);
     this.special = settings.special;
     this.allowCorrupt = settings.allowCorrupt;
+    this.pipeline.volume = settings.defaultVolume;
+
+    this.tts = tts.clone();
+    this.tts.voice = this;
+    this.tts.pick = settings.tts || undefined;
+    this.tts.tellJoinLeave = settings.ttsTellJoinLeave;
+    this.tts.tellMessageAuthor = settings.ttsTellMessageAuthor;
 
     this.emit('initialized');
     this.initialized = true;
+
+    this.playChatsoundScript('null=1 foxtrotjoin:realm(internal)');
+    if (this.banServerConfig) {
+      if (this.banServerConfig.annoyEvery)
+        this.nextAnnoyIn = this.banServerConfig.annoyEvery[0] + Math.random() * (this.banServerConfig.annoyEvery[1] - this.banServerConfig.annoyEvery[0]);
+      if (this.banServerConfig.volume)
+        this.pipeline.volume = this.banServerConfig.volume;
+    }
   }
 
   public update() {
+    let samples: Buffer | null = null;
+
+    const naturalLength = OPUS_FRAME_SIZE * OPUS_AUDIO_CHANNELS * 2;
+    const length = naturalLength * this.effects.speed;
+    if (this.ffmpeg && !this.silence) {
+      samples = this.ffmpeg.stdout.read(length);
+
+      if (!samples && this.ffmpeg?.stdout.closed)
+        this.skip()
+      else if (samples)
+        this.time += samples.length / (OPUS_SAMPLE_RATE * OPUS_AUDIO_CHANNELS * 2);
+    } else
+      samples = Buffer.alloc(Math.floor(length));
+
+
+    if (this.banServerConfig && this.banServerConfig.annoy) {
+      this.nextAnnoyIn -= OPUS_FRAME_LENGTH;
+
+      if (samples) {
+        if (this.nextAnnoyIn <= 0 && this.banServerConfig.annoyEvery) {
+          this.nextAnnoyIn = this.banServerConfig.annoyEvery[0] + Math.random() * (this.banServerConfig.annoyEvery[1] - this.banServerConfig.annoyEvery[0]);
+
+          if (this.banServerConfig.annoyChatsound)
+            this.playChatsoundScript(this.banServerConfig.annoyChatsound);
+        }
+
+        /*
+        const frequency = Math.random() * 2000 + 440;
+        for (let i = 0; i < samples.length; i += 2) {
+          const value = Math.floor(
+            Math.sin(i * Math.PI * frequency / OPUS_SAMPLE_RATE) *
+            32767 *
+            (Math.random() * 0.5 + 0.5)
+          );
+          samples.writeInt16LE(samples.readInt16LE(i) + value * 0.2, i);
+        }
+        */
+      }
+    }
+
+    if (samples)
+      this.effects.write(samples);
+
     if (this.activeModule) this.activeModule.internalUpdate();
     if (this.pipeline) this.pipeline.update();
   }
@@ -96,7 +170,7 @@ export default class Voice extends EventEmitter {
     if (!isNew)
       this.destroyModule();
     this.activeModule = new modules[module as keyof typeof modules](this);
-    this.activeModule.postAssign();
+    this.activeModule?.postAssign();
     return isNew;
   }
 
@@ -122,43 +196,48 @@ export default class Voice extends EventEmitter {
   public play(stream: NodeJS.ReadableStream | string, decryptionKey?: string) {
     if (this.ffmpeg) this.cleanUp();
 
-    this.pipeline.stopSilence();
+    this.silence = false;
 
     const fromURL = typeof stream === 'string';
 
-    const pre = ['-re'];
+    const pre = [];
     if (decryptionKey)
       pre.push('-decryption_key', decryptionKey);
 
-    this.ffmpeg = new FFMpeg(
-      [
-        '-analyzeduration',
-        '0',
-        '-loglevel',
-        process.env.NODE_ENV === 'production' ? '0' : '32',
-        '-ar',
-        Constants.OPUS_SAMPLE_RATE.toString(),
-        '-ac',
-        Constants.OPUS_AUDIO_CHANNELS.toString(),
-        '-f',
-        's16le',
-      ],
-      pre,
-      fromURL ? stream : undefined
-    );
+    if (fromURL)
+      pre.push(
+        '-reconnect', '1',
+        '-reconnect_streamed', '1',
+        '-reconnect_delay_max', '5',
+      );
 
-    this.effects.createAudioEffectManager();
-    this.ffmpeg.on('end', () => this.skip());
+    this.ffmpeg = spawn('ffmpeg', [
+      ...pre,
+      '-i', fromURL ? stream : 'pipe:0',
+      '-f', 's16le',
+      '-ar', Constants.OPUS_SAMPLE_RATE.toString(),
+      '-ac', Constants.OPUS_AUDIO_CHANNELS.toString(),
+      'pipe:1'
+    ]);
+
+    // this.effects.createAudioEffectManager();
 
     if (!fromURL) {
-      stream.pipe(this.ffmpeg, { end: false });
+      stream.pipe(this.ffmpeg.stdin);
+      this.ffmpeg.stdin.on('error', _ => {});
       stream.on('error', err => {
         this.cleanUp();
         this.queue.streamingError(err);
       });
     }
+  }
 
-    this.ffmpeg.pipe(this.effects, { end: false });
+  public pause() {
+    if (!this.ffmpeg)
+      throw new UserError('commands.nothing-is-playing');
+
+    // this.ffmpeg.togglePause();
+    this.silence = !this.silence;
   }
 
   public skip() {
@@ -168,13 +247,13 @@ export default class Voice extends EventEmitter {
 
   private cleanUp() {
     if (this.ffmpeg) {
-      this.ffmpeg.unpipe(this.effects);
-      this.ffmpeg.destroy();
+      this.ffmpeg.stdin.end();
+      this.ffmpeg.kill('SIGKILL');
       this.ffmpeg = undefined;
     }
 
-    this.pipeline.playSilence();
-    this.effects.destroyAudioEffectManager();
+    this.time = 0;
+    // this.effects.destroyAudioEffectManager();
   }
 
   public canExecuteVoiceCommands(member: Structures.Member) {
@@ -189,11 +268,12 @@ export default class Voice extends EventEmitter {
     );
   }
 
-  public async playSoundeffect(script: string | Buffer) {
+  public async playChatsoundScript(script: string | Buffer) {
     if (script instanceof Buffer) return this.pipeline.playBuffer(script);
 
     try {
-      const context = chatsounds.new(script);
+      // TODO: mute prop in WorkerContext? optimize worker?
+      const context = chatsounds.new(script.toString());
       const buffer = await context.buffer({
         sampleRate: Constants.OPUS_SAMPLE_RATE,
         audioChannels: Constants.OPUS_AUDIO_CHANNELS,
@@ -202,8 +282,22 @@ export default class Voice extends EventEmitter {
       if (context.mute) this.pipeline.clearReadableArray();
       if (buffer) this.pipeline.playBuffer(buffer);
     } catch (err) {
-      Sentry.captureException(err);
-      throw new UserError('runtime-error')
+      let id = '';
+
+      Sentry.withScope(scope => {
+        scope.setContext('chatsoundInfo', {
+          script
+        });
+
+        id = Sentry.captureException(err, {
+          mechanism: {
+            type: 'voice_play_soundeffect',
+            handled: true
+          }
+        });
+      });
+
+      throw new UserError('runtime-error.min', Utils.Markup.codestring(id));
     }
   }
 
@@ -214,6 +308,9 @@ export default class Voice extends EventEmitter {
     } catch (err) {}
 
     this.pipeline.destroy();
-    if (this.channel) VoiceStore.delete(this.channel.guildId as string);
+    if (this.channel)
+      VoiceStore.delete(this.channel.guildId as string);
+
+    FeedbackStore.create(this.queue.announcer.channel);
   }
 }

@@ -11,7 +11,7 @@ const OPUS_HEAD = Buffer.from([...'OpusHead'].map(charCode));
 const OPUS_TAGS = Buffer.from([...'OpusTags'].map(charCode));
 
 export default class BaseModule extends EventEmitter {
-  public logger: Logger;
+  public logger;
   public voice: Voice;
   private packets: Record<string, number> = {};
   private mixer?: Mixer;
@@ -20,7 +20,7 @@ export default class BaseModule extends EventEmitter {
   constructor(voice: Voice) {
     super();
     this.voice = voice;
-    this.logger = new Logger(this.constructor.name);
+    this.logger = Logger.clone(this.constructor.name);
 
     this.receivePacket = this.receivePacket.bind(this);
   }

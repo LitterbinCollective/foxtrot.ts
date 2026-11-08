@@ -1,10 +1,10 @@
 # `i18n`
-Folder named `lang` contains translations. Any corrections or additions
+Folder named `lang` contains localization files. Any corrections or additions
 are very much appreciated!
 
 ## Tips/Guidelines
 If you are planning to translate foxtrot into another language or modify
-the already-made translations, please keep the following things in mind.
+the already-made localizations, please keep the following things in mind.
 - Keep it as casual as possible.
 - Use lowercase and be informal.
 - Be nice, do not use explicit or offensive vocabulary.
@@ -17,20 +17,33 @@ translations done by the said maintainers cannot be always correct and
 follow the guidelines above. As said before, corrections and additions
 are very much appreciated!
 
+> [!TIP]
+> If you are basing your localization file on another, add an "_extends"
+> prop to the localization object. This will ensure that some missing lines
+> get filled in with another language's lines in the future.
+
+<sup><sub>(Joke languages are allowed.)</sub></sup>
+
 ## Credits
 If you have contributed to the translations, feel free to credit yourself.
 
-### Russian (`ru.json`)
-- [@Goluboch](https://discord.com/users/274911782768738304) **(orig.)**
-- github.com/be195 (slight corrections)
+### Russian (`ru.ts`)
+- [@Golub'](https://discord.com/users/274911782768738304) **(orig.)**
+- https://github.com/be195 (slight corrections)
 
-### Japanese (`ja.json`)
+### Blyadskiy Russian (`bl_ru.ts`)
+- https://github.com/chelka0 **(orig.)**
+
+### Krivoy Russian (`kr_ru.ts`)
+- https://github.com/chelka0 **(orig.)**
+
+### Japanese (`ja.ts`)
 - [@purp](https://discord.com/users/152893129719021568) **(orig.)**
-- github.com/be195 (slight corrections)
+- https://github.com/be195 (slight corrections)
 
-### Swedish (`se.json`)
+### Swedish (`sv.ts`)
 - [@northh](https://discord.com/users/166594779096809472) **(orig.)**
-- github.com/be195 (slight corrections)
+- https://github.com/be195 (slight corrections)
 
-### Ukrainian (`ua.json`)
-- github.com/be195 **(orig.)**
+### Ukrainian (`ua.ts`)
+- https://github.com/be195 **(orig.)**

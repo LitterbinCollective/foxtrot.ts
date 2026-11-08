@@ -1,7 +1,7 @@
 import ConfigApp from './app';
+import ConfigSpecialSnowflakes from './ban';
 import ConfigFormats from './formats';
 import ConfigGoogleAssistantSettings from './google-assistant-settings';
-import ConfigKnex from './knex';
 import ConfigShat from './shat';
 
 export default interface Config {
@@ -9,8 +9,8 @@ export default interface Config {
   app: ConfigApp,
   formats: ConfigFormats,
   googleAssistantSettings: ConfigGoogleAssistantSettings,
-  knex: ConfigKnex,
   shat: ConfigShat,
+  ban: ConfigSpecialSnowflakes,
 
   widevineClientId?: Buffer,
   widevinePrivateKey?: Buffer,

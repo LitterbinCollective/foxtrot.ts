@@ -1,11 +1,10 @@
 import { Constants as DetritusConstants, Interaction } from 'detritus-client';
-import * as Sentry from '@sentry/node';
 
-import { checkPermission, UserError, buildRuntimeErrorEmbed } from '@cluster/utils';
-
-import app from '@cluster/index';
+import { checkPermission, UserError, buildRuntimeErrorEmbed, Logger, logCommandErrorToSentry } from '@cluster/utils';
 import { t } from '@cluster/managers/i18n';
-import { GuildSettingsStore } from '@cluster/stores';
+import app from '@cluster/index';
+import { getOrCreateSettings } from '@/db/queries';
+import config from '@/managers/config';
 
 export class BaseInteractionCommand<
   ParsedArgsFinished = Interaction.ParsedArgs
@@ -14,12 +13,14 @@ export class BaseInteractionCommand<
   public ownerOnly = false;
   public readonly disableDm = true;
 
+  public ignoreBan = false;
+
   public async onBefore(
     ctx: Interaction.InteractionContext
   ): Promise<boolean> {
     if (!ctx.guild) return false;
 
-    const settings = await GuildSettingsStore.getOrCreate(ctx.guild.id);
+    const settings = await getOrCreateSettings(ctx.guild.id);
     let options: { flags: DetritusConstants.MessageFlags } | undefined;
 
     if (settings.ephemeral || this.ownerOnly)
@@ -34,6 +35,16 @@ export class BaseInteractionCommand<
       options
     );
 
+    const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+    if (!this.ignoreBan && (typeof ban === 'object' ? ban.block : ban)) {
+      let message = await this.t(ctx, 'ban');
+      if (typeof ban === 'object' && ban.message)
+        message += `\n> ${ban.message}`;
+
+      ctx.editOrRespond(message);
+      return false;
+    }
+
     const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
     const manageGuildCheck = this.manageGuildOnly
       ? checkPermission(ctx, DetritusConstants.Permissions.ADMINISTRATOR) ||
@@ -44,7 +55,7 @@ export class BaseInteractionCommand<
       return true;
     }
 
-    await ctx.editOrRespond('🔒');
+    await ctx.editOrRespond(app.emoji('LOCK'));
     return false;
   }
 
@@ -66,17 +77,24 @@ export class BaseInteractionCommand<
 
   public async onRunError(
     ctx: Interaction.InteractionContext,
-    _: ParsedArgsFinished,
+    args: Interaction.ParsedArgs,
     error: any
   ) {
     if (!ctx.guild) return;
     if (error instanceof UserError)
       return ctx.editOrRespond(await this.t(ctx, error.message, ...error.formatValues));
-    const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
+
+    const id = logCommandErrorToSentry(
+      ctx,
+      await getOrCreateSettings(ctx.guild.id),
+      error,
+      this.name,
+      args
+    );
+    const embed = await buildRuntimeErrorEmbed(ctx.guild, id);
     ctx.editOrRespond({ embed });
 
-    app.logger.error(error);
-    Sentry.captureException(error);
+    Logger.error(error);
   }
 }
 

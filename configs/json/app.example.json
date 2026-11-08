@@ -1,5 +1,7 @@
 {
   "token": "",
+  "sentryDSN": "",
+  "databaseDSN": "postgres://glowmem:1@localhost:5432/glowmem",
   "prefix": "~~",
   "proxy": "",
   "feedbackWebhook": {

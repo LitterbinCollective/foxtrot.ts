@@ -222,7 +222,6 @@ export default class SoundCloudService extends MediaService {
         }
 
         const thing = (await Promise.all(chunks)).flat();
-        console.log(thing);
 
         return thing.map(x => this.formMediaServiceResponse(x));
       case !!sorted.sound:

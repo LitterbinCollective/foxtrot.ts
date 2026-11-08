@@ -8,27 +8,41 @@ import * as Sentry from '@sentry/node';
 import { t } from '@cluster/managers/i18n';
 import {
   checkPermission,
-  Constants,
   UserError,
   buildArgumentErrorEmbed,
-  buildRuntimeErrorEmbed
+  buildRuntimeErrorEmbed,
+  Logger,
+  logCommandErrorToSentry
 } from '@cluster/utils';
 
 import app from '..';
+import { getOrCreateSettings } from '@/db/queries';
+import config from '@/managers/config';
 
 export class BaseCommand extends Command.Command {
   public manageGuildOnly = false;
   public ownerOnly = false;
-  public readonly commandClient!: CommandClient;
+  public ignoreBan = false;
+  declare public readonly commandClient: CommandClient;
   public readonly disableDm = true;
 
-  public onBefore(ctx: Command.Context): boolean {
+  public async onBefore(ctx: Command.Context): Promise<boolean> {
     /*
       discord is the most stable app to the point we can 100% rely on it
       spoiler alert: { message: 'internal network error', code: 40333 }
     */
     try {
       ctx.channel?.triggerTyping();
+
+      const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+      if (!this.ignoreBan && (typeof ban === 'object' ? ban.block : ban)) {
+        let message = await this.t(ctx, 'ban');
+        if (typeof ban === 'object' && ban.message)
+          message += `\n> ${ban.message}`;
+
+        ctx.reply(message);
+        return false;
+      }
 
       const ownerCheck = this.ownerOnly ? ctx.user.isClientOwner : true;
       const manageGuildCheck = this.manageGuildOnly
@@ -40,8 +54,10 @@ export class BaseCommand extends Command.Command {
         return true;
       }
 
-      if (ctx.channel?.canAddReactions) ctx.message.react('🔒');
-    } catch (err) {}
+      if (ctx.channel?.canAddReactions) ctx.message.react(app.emoji('LOCK'));
+    } catch (err) {
+      Logger.error(err);
+    }
 
     return false;
   }
@@ -60,7 +76,7 @@ export class BaseCommand extends Command.Command {
 
   public async onRunError(
     ctx: Command.Context,
-    _args: Command.ParsedArgs,
+    args: Command.ParsedArgs,
     error: Error
   ) {
     if (!ctx.guild || !ctx.channel?.canMessage) return
@@ -70,11 +86,17 @@ export class BaseCommand extends Command.Command {
         await this.t(ctx, error.message, ...error.formatValues)
       );
 
-    const embed = await buildRuntimeErrorEmbed(ctx.guild, error);
+    const id = logCommandErrorToSentry(
+      ctx,
+      await getOrCreateSettings(ctx.guild.id),
+      error,
+      this.name,
+      args
+    );
+    const embed = await buildRuntimeErrorEmbed(ctx.guild, id);
     ctx.reply({ embed });
 
-    app.logger.error(error);
-    Sentry.captureException(error);
+    Logger.error(error);
   }
 
   public async onTypeError(
@@ -87,6 +109,6 @@ export class BaseCommand extends Command.Command {
       const embed = await buildArgumentErrorEmbed(ctx.guild, errors);
       ctx.reply({ embed });
     } else if (ctx.channel?.canAddReactions)
-      ctx.message.react(Constants.EMOJIS.QUESTION_MARK);
+      ctx.message.react(app.emoji('QUESTION_MARK'));
   }
 }

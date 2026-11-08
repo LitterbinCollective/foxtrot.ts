@@ -1,9 +1,11 @@
 import { Interaction, Constants as DetritusConstants, Structures } from 'detritus-client';
 
 import { VoiceStore } from '@cluster/stores';
+import { UserError } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseCommandOption } from '../../../base';
-import { Constants, UserError } from '@cluster/utils';
+import config from '@/managers/config';
 
 export const QUEUE_ADD_DESCRIPTION = 'add media to the queue';
 export const QUEUE_ADD_OPTIONS = [
@@ -41,12 +43,16 @@ export class QueueAddCommand extends BaseCommandOption {
 
     if (!url && !file) throw new UserError('commands.url-or-file');
 
+    const ban = config.ban.servers?.[ctx.guildId!] || config.ban.users?.[ctx.userId];
+    if (typeof ban === 'object' ? (ban.block || ban.blockMedia) : ban)
+      throw new UserError('ban');
+
     // fuck you
     const media = url || (file ? file.url : '');
 
     let voice = VoiceStore.get(ctx.guild.id);
     if (!voice) {
-      voice = await VoiceStore.create(ctx.member.voiceChannel, ctx.channel);
+      voice = await VoiceStore.create(ctx.member.voiceChannel, ctx.channel as Structures.ChannelTextType);
       await voice.queue.push(media, ctx.user);
       return await ctx.editOrRespond(await this.t(ctx, 'commands.join-msg'));
     }
@@ -57,6 +63,6 @@ export class QueueAddCommand extends BaseCommandOption {
     if (!voice.initialized) throw new UserError('voice-check.not-initialized');
 
     await voice.queue.push(media, ctx.user);
-    await ctx.editOrRespond(Constants.EMOJIS.CHECK);
+    await ctx.editOrRespond(app.emoji('CHECK'));
   }
 }

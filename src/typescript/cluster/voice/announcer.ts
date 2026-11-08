@@ -3,6 +3,7 @@ import { RequestTypes } from 'detritus-client-rest';
 
 import { MediaServiceResponseInformation } from '@cluster/managers/mediaservices/types';
 import { Constants, durationInString } from '@cluster/utils';
+import app from '@cluster/index';
 
 import NewVoice from '.';
 
@@ -13,7 +14,6 @@ export default class VoiceQueueAnnouncer {
   public channel: Structures.ChannelTextType;
   private current?: MediaServiceResponseInformation;
   private loadingMessage?: Structures.Message;
-  private startTime?: number;
   private readonly voice: NewVoice;
 
   constructor(voice: NewVoice, channel: Structures.ChannelTextType) {
@@ -29,17 +29,16 @@ export default class VoiceQueueAnnouncer {
   }
 
   public async createLoadingMessage() {
-    this.loadingMessage = await this.createMessage(Constants.EMOJIS.HOURGLASS);
+    this.loadingMessage = await this.createMessage(app.emoji('HOURGLASS'));
   }
 
   private playProgress(duration?: number) {
-    if (!this.startTime) return;
     if (!duration) {
       if (this.current) duration = this.current.duration;
       else throw new Error('Duration not provided');
     }
 
-    const progress = Math.floor((Date.now() - this.startTime) / 1000);
+    const progress = Math.floor(this.voice.time);
     const factor = Math.min(progress / duration, 1);
 
     const progressStr = durationInString(progress),
@@ -59,17 +58,14 @@ export default class VoiceQueueAnnouncer {
     streamInfo: MediaServiceResponseInformation | undefined = this.current,
     returnCreateMessage = false
   ): RequestTypes.CreateMessage | undefined {
-    if (!streamInfo) throw new Error('No stream info provided');
-    if (!this.current) {
-      this.startTime = Date.now();
-      this.current = streamInfo;
-    }
+    if (!streamInfo) throw new Error('no stream info provided');
+    this.current = streamInfo;
 
     const fromURL = typeof streamInfo.cover === 'string';
-    const title = Constants.EMOJIS.PLAY +
+    const title = app.emoji('PLAY') +
       ' ' +
       streamInfo.author +
-      ' - ' +
+      ' — ' +
       streamInfo.title;
     const truncatedTitle = title.length > DetritusConstants.MAX_LENGTH_EMBED_TITLE ?
       title.substring(DetritusConstants.MAX_LENGTH_EMBED_TITLE - ELLIPSIS.length - 1) + ELLIPSIS :
@@ -105,6 +101,5 @@ export default class VoiceQueueAnnouncer {
 
   public reset() {
     this.current = undefined;
-    this.startTime = undefined;
   }
 }

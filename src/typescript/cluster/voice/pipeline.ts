@@ -14,16 +14,16 @@ const LEAVE_TIMEOUT_LENGTH = 30000; // 30 seconds
 class VoiceSafeConnection extends EventEmitter {
   public voiceConnection!: VoiceConnection;
   private timeout: NodeJS.Timeout | null = null;
-  private readonly logger: Logger;
+  private readonly logger;
 
   constructor(voiceChannel: Structures.ChannelGuildVoice) {
     super();
-    this.logger = new Logger(`Voice safe connection [${voiceChannel.guildId}]`);
+    this.logger = Logger.clone(`VoiceSafeConnection [${voiceChannel.guildId}]`);
     this.onVoiceStateUpdate = this.onVoiceStateUpdate.bind(this);
     this.onVoiceServerUpdate = this.onVoiceServerUpdate.bind(this);
     this.destroy = this.destroy.bind(this);
-    this.on('voiceStateUpdate', this.onVoiceStateUpdate);
-    this.on('voiceServerUpdate', this.onVoiceServerUpdate);
+    // this.on('voiceStateUpdate', this.onVoiceStateUpdate);
+    // this.on('voiceServerUpdate', this.onVoiceServerUpdate);
     this.initialize(voiceChannel);
   }
 
@@ -32,7 +32,7 @@ class VoiceSafeConnection extends EventEmitter {
       throw new Error(
         'Bot is not able to join or speak in this voice channel.'
       );
-    const voiceConnectObj = await voiceChannel.join({ receive: true });
+    const voiceConnectObj = await voiceChannel.join({});
     if (!voiceConnectObj) {
       this.logger.debug('failed to connect, destroying');
       return this.destroy();
@@ -44,6 +44,9 @@ class VoiceSafeConnection extends EventEmitter {
     });
     this.voiceConnection.sendAudioSilenceFrame();
     this.voiceConnection.on('packet', (packet) => this.emit('packet', packet));
+    this.voiceConnection.gateway.on('warn', (error) => this.logger.debug('voice connection gateway warning:', error));
+    this.voiceConnection.gateway.on('error', (error) => this.logger.debug('voice connection gateway error:', error));
+    this.voiceConnection.gateway.receiveEnabled = false;
 
     /*
       what we are essentially doing here is not using detritus'
@@ -136,13 +139,12 @@ const CORRUPT_RANDSAMPLE_MINMAX_RELATIVE = 10;
 export default class VoicePipeline extends Transform {
   public mixer?: Mixer;
   private _packetLoss = 0;
-  private silent: boolean = false;
   private opus?: OpusEncoder;
   private opusLeftover? = Buffer.alloc(0);
-  private opusPacketsReceived = 0;
+  private opusPacketsSent = 0;
   private opusPacketCheck = 0;
   private readonly connection: VoiceSafeConnection;
-  private readonly logger: Logger;
+  private readonly logger;
   private readonly voice: NewVoice;
 
   public onVoiceServerUpdate: (
@@ -156,10 +158,11 @@ export default class VoicePipeline extends Transform {
     super({ readableObjectMode: true });
 
     this.voice = voice;
-    this.logger = new Logger(`VoicePipeline [${voiceChannel.guildId}]`);
+    this.logger = Logger.clone(`VoicePipeline [${voiceChannel.guildId}]`);
     this.connection = new VoiceSafeConnection(voiceChannel);
     this.mixer = new Mixer();
     this.opus = new OpusEncoder(Constants.OPUS_SAMPLE_RATE, Constants.OPUS_AUDIO_CHANNELS);
+    this.bitrate = voiceChannel.bitrate;
 
     this.onConnectionDestroy = this.onConnectionDestroy.bind(this);
     this.onVoiceServerUpdate = this.connection.onVoiceServerUpdate;
@@ -201,21 +204,19 @@ export default class VoicePipeline extends Transform {
     const lost = this._packetLoss > 0 && Math.random() < this._packetLoss / 100;
     if (packet && !lost) {
       this.connection.sendAudio(packet);
-      this.opusPacketsReceived++;
+      this.opusPacketsSent++;
     }
-
-    if (this.silent) this.write(Buffer.alloc(Constants.OPUS_REQUIRED_SAMPLES));
 
     const time = Date.now() - this.opusPacketCheck;
     if (time >= 1000) {
       this.logger.debug(
-        'received',
-        this.opusPacketsReceived,
+        'sent',
+        this.opusPacketsSent,
         'over',
         time,
         'ms'
       );
-      this.opusPacketsReceived = 0;
+      this.opusPacketsSent = 0;
       this.opusPacketCheck = Date.now();
     }
   }
@@ -245,16 +246,6 @@ export default class VoicePipeline extends Transform {
     if (n > 0)
       this.opusLeftover = this.opusLeftover.subarray(n * Constants.OPUS_REQUIRED_SAMPLES);
     return callback();
-  }
-
-  public playSilence() {
-    this.logger.debug('playSilence()');
-    this.silent = true;
-  }
-
-  public stopSilence() {
-    this.logger.debug('stopSilence()');
-    this.silent = false;
   }
 
   public sendEmptyOpusPacket() {
@@ -342,7 +333,6 @@ export default class VoicePipeline extends Transform {
   }
 
   public destroy() {
-    this.stopSilence();
     this.connection.off('destroy', this.onConnectionDestroy);
     this.connection.destroy();
     this.mixer = undefined;

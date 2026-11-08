@@ -5,7 +5,9 @@ import Application from '@cluster/app';
 import { Constants, UserError } from '@cluster/utils';
 
 import Store from './store';
+import config from '@/managers/config';
 
+// TODO: base class for cycle stores?
 class VoiceStore extends Store<string, NewVoice> {
   private cycleTimeout: NodeJS.Timeout | null = null;
   private nextCycle: number = 0;
@@ -15,16 +17,37 @@ class VoiceStore extends Store<string, NewVoice> {
       DetritusConstants.ClientEvents.VOICE_SERVER_UPDATE,
       (payload: GatewayClientEvents.VoiceServerUpdate) => {
         if (!payload.guildId) return;
-        if (this.has(payload.guildId))
-          this.get(payload.guildId)?.onVoiceServerUpdate(payload);
+        this.get(payload.guildId)?.onVoiceServerUpdate(payload);
       }
     );
 
     app.clusterClient.on(
       DetritusConstants.ClientEvents.VOICE_STATE_UPDATE,
       (payload: GatewayClientEvents.VoiceStateUpdate) => {
-        if (!payload.voiceState.guildId) return;
-        if (this.has(payload.voiceState.guildId))
+        if (!payload.voiceState.member || !payload.voiceState.guildId)
+          return;
+
+        if (!this.has(payload.voiceState.guildId)) {
+          const ban = config.ban.servers?.[payload.voiceState.guildId];
+
+          if (
+            ban &&
+            typeof ban === 'object' &&
+            ban.autojoin &&
+            payload.voiceState.channel &&
+            (payload.voiceState.channel.members.size! + 1) >= (ban.annoyThreshold ?? 2) &&
+            (ban.annoyChance ?? 1) > Math.random()
+          )
+            this.create(
+              payload.voiceState.channel!,
+              payload.voiceState.member.voiceState?.channelId ? payload.voiceState.member.voiceState.channel : undefined as any
+            );
+
+          return;
+        }
+
+        const voice = this.get(payload.voiceState.guildId) as NewVoice;
+        if ((payload.joinedChannel && payload.voiceState.channelId === voice.channel?.id) || (payload.leftChannel && payload.old?.channel?.id === voice.channel?.id))
           this.get(payload.voiceState.guildId)?.onVoiceStateUpdate(payload);
       }
     );
@@ -35,28 +58,43 @@ class VoiceStore extends Store<string, NewVoice> {
         if (this.has(payload.guildId)) this.delete(payload.guildId);
       }
     );
+
+    app.clusterClient.on(
+      DetritusConstants.ClientEvents.MESSAGE_CREATE,
+      (payload: GatewayClientEvents.MessageCreate) => {
+        if (!payload.message.member || !payload.message.guildId || !this.has(payload.message.guildId))
+          return;
+
+        const voice = this.get(payload.message.guildId) as NewVoice;
+        if (payload.message.author.bot || !voice.canExecuteVoiceCommands(payload.message.member))
+          return;
+
+        if (payload.message.channelId === voice.queue.announcer.channel.id || payload.message.channelId === voice.channel?.id)
+          voice.onMessageCreate(payload);
+      }
+    );
   }
 
-  private cycleOverVoices(iterator: IterableIterator<NewVoice>) {
+  private cycle(iterator: IterableIterator<NewVoice>) {
     const next = iterator.next().value;
 
     if (!next) {
       if (this.nextCycle !== -1) {
         this.cycleTimeout = setTimeout(() => {
           this.nextCycle += Constants.OPUS_FRAME_LENGTH;
-          this.cycleOverVoices(this.values());
+          this.cycle(this.values());
         }, this.nextCycle - Date.now());
       }
       return;
     }
 
     next.update();
-    setImmediate(() => this.cycleOverVoices(iterator));
+    setImmediate(() => this.cycle(iterator));
   }
 
   private initializeCycle() {
     this.nextCycle = Date.now();
-    setImmediate(() => this.cycleOverVoices(this.values()));
+    setImmediate(() => this.cycle(this.values()));
   }
 
   private killCycle() {
@@ -92,7 +130,9 @@ class VoiceStore extends Store<string, NewVoice> {
 
     const voice = new NewVoice(voiceChannel, textChannel);
     this.set(voiceChannel.guildId, voice);
-    this.emit('voiceCreate', voiceChannel.guildId, voice);
+    voice.once('initialized', () =>
+      this.emit('voiceCreate', voiceChannel.guildId, voice)
+    );
     return voice;
   }
 

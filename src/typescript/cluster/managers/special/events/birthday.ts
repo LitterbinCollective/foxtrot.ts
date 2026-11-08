@@ -6,10 +6,10 @@ export default class BirthdayEvent extends BaseEvent {
   constructor() {
     super();
 
-    this.editAvatar('avatar-birthday.png');
+    this.editAvatar('birthday.png');
   }
 
   public cleanUp(): void {
-    this.editAvatar('avatar.png');
+    this.editAvatar('default.png');
   }
 }

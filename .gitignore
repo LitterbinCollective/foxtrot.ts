@@ -23,7 +23,9 @@ cache/
 # Development files
 dev.sqlite3
 crash.*.log
-
-knexfile.ts
-
+.pid
 ag.txt
+# Sentry Config File
+.sentryclirc
+
+cookies-*.txt

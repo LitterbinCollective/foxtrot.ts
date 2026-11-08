@@ -27,7 +27,7 @@ export default class SfxCommand extends BaseVoiceSlashCommand {
   ) {
     if (!ctx.guild) return;
 
-    await ctx.voice.playSoundeffect(script);
+    await ctx.voice.playChatsoundScript(script);
     ctx.editOrRespond(await this.t(ctx, 'commands.play-sfx', script));
   }
 }

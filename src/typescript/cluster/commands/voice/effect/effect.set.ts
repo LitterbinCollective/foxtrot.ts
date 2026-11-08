@@ -4,7 +4,8 @@ import {
   Utils,
 } from 'detritus-client';
 
-import { Constants, listOptions } from '@cluster/utils';
+import { listOptions } from '@cluster/utils';
+import app from '@cluster/index';
 
 import { BaseVoiceCommand, VoiceContext } from '../base';
 
@@ -46,7 +47,7 @@ export default class EffectSetCommand extends BaseVoiceCommand {
       ctx.voice.effects.getEffectInfo(effect);
     const embed = await listOptions(ctx.guild, name, options, optionsRange);
     embed.setTitle(
-      Constants.EMOJIS.CHECK +
+      app.emoji('CHECK') +
         ' ' +
         (await this.t(ctx, 'commands.effect.set', key, value))
     );

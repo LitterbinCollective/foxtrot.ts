@@ -1,25 +1,119 @@
 import { Command, Interaction, Structures, Utils } from 'detritus-client';
-import { RestClient } from 'detritus-client/lib/rest';
-import { Client } from 'detritus-client-rest';
+import { getTableConfig } from 'drizzle-orm/pg-core';
+import * as Sentry from '@sentry/node';
 
-import { GuildSettings } from '@cluster/models';
 import { t } from '@cluster/managers/i18n';
-import config from '@/managers/config';
-import { Constants } from '@cluster/utils';
+import { branch, Constants, gitCommit } from '@cluster/utils';
+import { guildSettings } from '@/db/schema';
+import { GuildSettings } from '@/db/types';
+import app from '@cluster/index';
 
-import UserError from './user-error';
+interface ContextLike {
+  user: {
+    id: string;
+    username: string;
+    discriminator: string;
+  };
+  message?: {
+    id: string;
+    content: string;
+    timestamp: Date;
+    editedTimestamp: Date | null;
+  };
+  channel: {
+    id: string;
+    name?: string;
+    isDm: boolean;
+  } | null;
+  guild: {
+    id: string;
+    name: string;
+    region?: string;
+    memberCount?: number;
+  } | null;
+  shardId?: number;
+}
+
+export function defineDefaultSentryContext(ctx: ContextLike, scope: Sentry.Scope, settings?: GuildSettings) {
+  scope.setUser({
+    id: ctx.user.id,
+    username: ctx.user.username,
+    discriminator: ctx.user.discriminator,
+  });
+
+  if (ctx.guild)
+    scope.setContext('guild', {
+      id: ctx.guild.id,
+      name: ctx.guild.name,
+      region: ctx.guild.region,
+      memberCount: ctx.guild.memberCount,
+      settings
+    });
+
+  if (ctx.channel)
+    scope.setContext('channel', {
+      id: ctx.channel.id,
+      name: ctx.channel.name,
+      isDm: ctx.channel.isDm,
+    });
+
+  if (ctx.message)
+    scope.setContext('message', {
+      id: ctx.message.id,
+      timestamp: ctx.message.timestamp,
+      editedTimestamp: ctx.message.editedTimestamp,
+      content: ctx.message.content,
+    });
+
+  scope.setContext('client', {
+    shardId: ctx.shardId ?? 'unknown',
+    branch,
+    gitCommit,
+  });
+}
+
+export function logCommandErrorToSentry(
+  ctx: ContextLike,
+  settings: GuildSettings,
+  error: Error,
+  commandName: string,
+  args: any
+): string {
+  let eventId = '';
+
+  Sentry.withScope((scope) => {
+    defineDefaultSentryContext(ctx, scope, settings);
+
+    scope.setContext('command', {
+      name: commandName,
+      args
+    });
+
+    eventId = Sentry.captureException(error, {
+      mechanism: {
+        type: 'cmd_handler_' + ctx.constructor.name.toLowerCase(),
+        handled: true
+      }
+    });
+  });
+
+  return eventId;
+}
+
 
 export async function buildRuntimeErrorEmbed(
   guild: Structures.Guild,
-  error: Error
+  id?: string
 ) {
-  const { name, message } = error;
   const embed = new Utils.Embed({
     title:
-      Constants.EMOJIS.BOMB + ' ' + (await t(guild, 'runtime-error')),
-    description: `**${name}**: ${message}`,
+      app.emoji('BOMB') + ' ' + (await t(guild, 'runtime-error.title')),
+    description: await t(guild, 'runtime-error.description'),
     color: Constants.EMBED_COLORS.ERROR,
   });
+
+  if (id)
+    embed.setFooter(Constants.EMOJIS.PAPERCLIP + ' ' + id);
 
   return embed;
 }
@@ -30,7 +124,7 @@ export async function buildArgumentErrorEmbed(
 ) {
   const embed = new Utils.Embed({
     title:
-      Constants.EMOJIS.QUESTION_MARK +
+      app.emoji('QUESTION_MARK') +
       ' ' +
       (await t(guild, 'commands.argument-error')),
     color: Constants.EMBED_COLORS.ERROR,
@@ -65,7 +159,7 @@ export async function listOptions(
   for (const key in options) {
     const value = options[key];
     const range = ranges[key];
-    const suffix = range ? `(${range[0]} to ${range[1]})` : '';
+    const suffix = range ? `(${range[0]} - ${range[1]})` : '';
     const keyValue = key + ' = ' + value;
     keyValueMaximum = Math.max(keyValueMaximum, keyValue.length);
     suffixMaximum = Math.max(suffixMaximum, suffix.length);
@@ -107,16 +201,16 @@ export async function listSettings(
   guild: Structures.Guild,
   settings: GuildSettings
 ) {
-  const { properties } = GuildSettings.jsonSchema;
   const description = [];
-  for (const key in properties)
-    if (key !== GuildSettings.idColumn)
+  for (const column of getTableConfig(guildSettings).columns) {
+    if (!column.primary)
       description.push(
-        key +
+        column.name +
           ' = ' +
-          (settings[key as keyof typeof settings]?.toString() ||
+          (settings[column.name as keyof typeof settings]?.toString() ||
             (await t(guild, 'commands.settings.no-value')))
       );
+  }
   return new Utils.Embed({
     title: await t(guild, 'commands.settings.current'),
     color: Constants.EMBED_COLORS.DEFAULT,
@@ -124,70 +218,7 @@ export async function listSettings(
   });
 }
 
-export function sendFeedback(
-  rest: RestClient | Client,
-  content: string,
-  user?: Structures.User | string
-) {
-  let webhook: IConfigFeedbackWebhook = config.app.feedbackWebhook;
-  if (!webhook || webhook.id.length === 0 || webhook.token.length === 0)
-    return false;
-
-  rest.executeWebhook(webhook.id, webhook.token, {
-    content,
-    username:
-      typeof user === 'object'
-        ? `${user.tag} (${user.id})`
-        : user || 'Anonymous',
-    avatarUrl: typeof user === 'object' ? user.avatarUrl : undefined,
-    allowedMentions: {
-      parse: ['users'],
-    },
-  });
-
-  return true;
-}
-
-export function convertToType(value: any, type: string) {
-  switch (type) {
-    case 'string':
-      value = value.toString();
-      break;
-    case 'number':
-      value = +value;
-      if (isNaN(value)) throw new UserError('invalid-number');
-      break;
-    case 'boolean':
-      value = !(
-        value === undefined ||
-        value === false ||
-        value === 0 ||
-        value === '0' ||
-        value === 'false' ||
-        value === 'off'
-      );
-      break;
-    case 'undefined':
-      value = undefined;
-      break;
-    default:
-      throw new Error('could not convert given value to needed type! ' + type);
-  }
-
-  // safety check
-  const type2 = typeof value;
-  if (type !== type2)
-    throw new Error(
-      'the type of value is not equal to the type of a specified type: ' +
-        type2 +
-        ' !== ' +
-        type
-    );
-
-  return value;
-}
-
-// https://gitlab.com/Cynosphere/HiddenPhox/-/blob/ffa8ceec9203cb5667708538d4e520136929dbf6/src/lib/utils.js#L340
+// https://stackoverflow.com/a/39243641
 const HTML_ENTITIES = {
   nbsp: ' ',
   cent: '¢',
@@ -228,9 +259,12 @@ export function checkPermission(
 
 export function durationInString(seconds: number) {
   const result = [~~(seconds / 60) % 60, ~~seconds % 60];
+
   let hours: number;
-  if ((hours = ~~(seconds / 3600)) !== 0) result.unshift(hours);
+  if ((hours = ~~(seconds / 3600)) !== 0)
+    result.unshift(hours);
+
   return result
-    .map(n => (n < 10 ? '0' + n.toString() : n.toString()))
+    .map(n => (n < 10 ? '0' + String(n) : String(n)))
     .join(':');
 }

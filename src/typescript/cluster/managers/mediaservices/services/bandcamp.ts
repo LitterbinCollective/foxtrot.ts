@@ -27,7 +27,7 @@ interface BandcampInfo {
   url: string;
 }
 
-const TRALBUM_REGEX = /<script.+src="https?:\/\/s.\.bcbits\.com\/bundle\/bundle\/1\/tralbum_head-.+\.js".+data-tralbum="(.*?)".+><\/script>/g;
+const TRALBUM_REGEX = /<script.+src="https?:\/\/s.\.bcbits\.com\/.+\/tralbum_head-.+\.js".+data-tralbum="(.*?)".+><\/script>/g;
 
 export default class BandcampService extends MediaService {
   public disableSearch = true;

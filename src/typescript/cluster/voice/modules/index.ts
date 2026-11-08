@@ -1,5 +1,4 @@
-import GoogleAssistantModule from './google';
+import Voice from '..';
+import BaseModule from './basemodule';
 
-export default {
-  google: GoogleAssistantModule
-};
+export default {} as Record<string, new (voice: Voice) => BaseModule>;

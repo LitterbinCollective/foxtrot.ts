@@ -1,18 +1,25 @@
 {
   "include": [ "./src/typescript" ],
   "compilerOptions": {
-    "outDir": "dist/",
-    "target": "es2021",
-    "moduleResolution": "node",
+    "outDir": "./dist",
     "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2021",
+    "allowJs": true,
+    "sourceMap": true,
+    "inlineSources": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "strict": true,
+    "incremental": true,
+    "skipLibCheck": true,
     "baseUrl": "./src/typescript/",
+
     "paths": {
       "@/*": ["./*"],
       "@cluster/*": ["./cluster/*"],
-      "@manager/*": ["./manager/*"]
+      "@manager/*": ["./manager/*"],
+      "@db/*": ["./db/*"]
     },
   },
 }
